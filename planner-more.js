@@ -7,6 +7,7 @@
 'use strict';
 if(typeof planner!=='function'||planner.more) return;
 const PTM={
+  broke:{ja:'{name}：{w}',en:'{name}: {w}'}, moveOpen:{ja:'朝に移す',en:'Move to its open hours'}, movedOpen:{ja:'{name}を開いている時間へ移しました',en:'Moved {name} into its open hours'}, endsAt:{ja:'{t}着',en:'ends {t}'}, storySoon:{ja:'ストーリー画像は準備中です',en:'Story images are coming soon'}, moveT:{ja:'別の日へ移す',en:'Move to another day'}, moveS:{ja:'移した日の中で、いちばん遠回りにならない位置に入ります',en:'Goes where it adds the least time that day'}, movedTo:{ja:'{d} に移しました',en:'Moved to {d}'}, added:{ja:'{d} に追加しました',en:'Added to {d}'}, addedN:{ja:'{n}件を {d} に追加しました',en:'Added {n} to {d}'}, nothingAdded:{ja:'すべて予定済みです',en:'All already planned'}, reset:{ja:'マイプランを消す',en:'Delete My plan'}, resetDone:{ja:'「{name}」に戻しました',en:'Back to “{name}”'}, all:{ja:'すべて',en:'All'}, count:{ja:'{n}件',en:'{n} places'}, noMatch:{ja:'条件に合う候補はありません。絞り込みを外してください。',en:'No places match. Clear a filter.'}, copiedC:{ja:'座標をコピーしました',en:'Coordinates copied'}, verDeleted:{ja:'「{name}」を削除しました',en:'Deleted “{name}”'}, impDel:{ja:'この取り込みを削除',en:'Delete this import'}, openReel:{ja:'リールを見る',en:'Open reel'},
   rvS:{ja:'日付をタップするとその日を組み立てます。表は案ごとの違い',en:'Tap a day to plan it; the table compares versions'}, pinK:{ja:'くらべる案',en:'Compare with'}, nowUsing:{ja:'「{name}」にしました',en:'Now using “{name}”'},
   groupName:{ja:'グループの名前',en:'Group name'}, newGroup:{ja:'新しいグループ',en:'New group'}, cSave:{ja:'保存',en:'Save'}, groupN:{ja:'グループ {n}',en:'Group {n}'}, grouped:{ja:'{n}件を「{g}」に',en:'{n} into “{g}”'},
   sharedGroup:{ja:'共有されたグループ {n}',en:'Shared group {n}'},

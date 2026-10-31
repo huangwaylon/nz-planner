@@ -8,7 +8,7 @@ const T=['must','want','maybe','skip'];
 const PTC={
   t_must:{ja:'絶対行く',en:'Must go'}, t_want:{ja:'行きたい',en:'Want'}, t_maybe:{ja:'時間があれば',en:'If time'}, t_skip:{ja:'見送り',en:'Skip'}, t_:{ja:'未仕分け',en:'To sort'},
   s_must:{ja:'絶対',en:'Must'}, s_want:{ja:'行きたい',en:'Want'}, s_maybe:{ja:'時間あれば',en:'If time'}, s_skip:{ja:'見送り',en:'Skip'},
-  cT:{ja:'集める',en:'Collect'}, cS:{ja:'1・2・3・0 で仕分け、⌫ で戻す',en:'Sort with 1 2 3 0, ⌫ to unsort'},
+  cT:{ja:'集める',en:'Collect'}, cS:{ja:'カードのボタンで仕分け、もう一度押すと戻ります',en:'Sort with the buttons on each card; tap again to unsort'},
   byTier:{ja:'ティア',en:'Tier'}, byGroup:{ja:'グループ',en:'Group'}, byArea:{ja:'エリア',en:'Area'}, sortBy2:{ja:'並べ方',en:'Arrange by'},
   fromSaved:{ja:'保存済みから',en:'from your saves'}, tierOf:{ja:'{name} の行きたさ',en:'How much for {name}'},
   sel:{ja:'選択',en:'Select'}, selN:{ja:'{n}件選択',en:'{n} selected'}, selDone:{ja:'選択をやめる',en:'Stop selecting'},
@@ -18,11 +18,11 @@ const PTC={
   bestDay:{ja:'最適 {d}',en:'Best {d}'}, placedN:{ja:'{n}/{of} 配置',en:'{n}/{of} placed'}, noDay:{ja:'⚠ どの日も崩れます',en:'⚠ breaks every day'}, grpSum:{ja:'約{d}・運転{m}',en:'about {d}, {m} driving'},
   inGroup:{ja:'→ {g}',en:'→ {g}'}, inDay2:{ja:'{d}に配置',en:'on {d}'}, tiered:{ja:'{n}件を「{t}」に',en:'{n} set to “{t}”'},   ungrouped:{ja:'「{g}」を解きました',en:'Ungrouped “{g}”'}, made:{ja:'「{g}」を作りました',en:'Made “{g}”'}, nothingSel:{ja:'カードを選んでください',en:'Select some cards first'},
   allPlaced:{ja:'絶対行く場所はすべて日程に入っています',en:'Every must is on a day'}, nextMust:{ja:'まず {name}：{d} が空いています',en:'Start with {name}: {d} has room'},
-  none2:{ja:'当てはまる場所はありません',en:'No places match'}, cSearch:{ja:'名前・キーワードで絞る',en:'Filter by name or keyword'}, };
+  none2:{ja:'該当なし・絞り込みを外す',en:'Nothing matches: clear the filters'}, emptyT:{ja:'まだありません。カードの［{t}］で入ります',en:'None yet: tap [{t}] on a card'}, emptyG:{ja:'まだありません',en:'None yet'}, ss_maybe:{ja:'余裕',en:'If time'}, cSearch:{ja:'名前・キーワードで絞る',en:'Filter by name or keyword'}, };
 planner.collect=function(c){
   const {S,DB,E,pt,esc,ic,head,doneBar,openSheet,closeSheet,toast,editTrip,tierOf,seeded,place,nm,nmLang,wbr,thumb,tr,CAT,AREA,
     plannedMap,dlabel,dur,ja,fold,isCand,cover,setStage,setDay,openPlace,saveUI,clone}=c;
-  c.addStrings(PTC);
+  c.addStrings(PTC,1);   /* soft: the desktop's own copy (planner-desk) wins whichever loads first */
   const el=E.collect;
   let focus=null, selMode=false, KEY='', skip=false;
   const sel=S.csel||(S.csel=new Set());
@@ -34,10 +34,10 @@ planner.collect=function(c){
       .sort((a,b)=>(!!b.saved)-(!!a.saved)||(b.trend||0)*10+(b.aesthetic||0)-(a.trend||0)*10-(a.aesthetic||0)); }
   /* one card: the place, where it already is, and the four tier buttons (44 px each, the word always shown) */
   function card(p,pm){ const t=tierOf(p.id), g=groupOf(p.id), on=pm.get(p.id), N=esc(nm(p));
-    return `<article class="pl-cc${sel.has(p.id)?' pl-csel':''}" data-id="${p.id}" data-tier="${t}" tabindex="${focus===p.id?0:-1}">${thumb(p)}
+    return `<article class="pl-cc${sel.has(p.id)?' pl-csel':''}" data-id="${p.id}" data-tier="${t}" tabindex="${focus===p.id?0:-1}">${(S.cardMedia||thumb)(p)}
       <div class="pl-ccb"><button type="button" class="pl-ccn" data-ca="open" data-id="${p.id}"${nmLang(p)}>${wbr(nm(p))}</button>
       <small><span>${tr(CAT,p.cat)}</span><span>${tr(AREA,p.area)}</span>${on!=null?`<span class="pl-ccd">${pt('inDay2',{d:dlabel(DB.days[on])})}</span>`:''}${g?`<span>${esc(pt('inGroup',{g:g.name}))}</span>`:''}${seeded(p.id)?`<span class="pl-ccs">${pt('fromSaved')}</span>`:''}${sel.has(p.id)?`<span class="sr">${pt('selN',{n:''})}</span>`:''}</small></div>
-      <div class="pl-tseg" role="group" aria-label="${esc(pt('tierOf',{name:nm(p)}))}">${T.map(k=>`<button type="button" data-ca="tier" data-t="${k}" data-id="${p.id}" aria-pressed="${t===k}">${pt('s_'+k)}</button>`).join('')}</div></article>`; }
+      <div class="pl-tseg" role="group" aria-label="${esc(pt('tierOf',{name:nm(p)}))}">${T.map(k=>`<button type="button" data-ca="tier" data-t="${k}" data-id="${p.id}" aria-pressed="${t===k}" title="${esc(pt('t_'+k))}">${k==='maybe'?`<span class="pl-tl">${pt('s_maybe')}</span><span class="pl-ts">${pt('ss_maybe')}</span>`:pt('s_'+k)}</button>`).join('')}</div></article>`; }
   const sec=(k,title,n,body,extra,shut)=>`<section class="pl-cs" data-k="${esc(k)}">${shut?'<details>':''}<${shut?'summary':'div'} class="pl-csh"><h3>${title}<small>${n}</small></h3>${extra||''}</${shut?'summary':'div'}><div class="pl-csl">${body}</div>${shut?'</details>':''}</section>`;
   /* a group's outing, simulated: its time on foot and road, and the cheapest day it fits cleanly */
   const BD=new Map();
@@ -48,31 +48,31 @@ planner.collect=function(c){
   function gsum(ids){ let m=0, d=0; ids.forEach((id,k)=>{ const p=place(id); m+=p.dur||60; if(k){ const x=c.sim().legAt(ids[k-1],id,600,DB.days[0].date,[]); m+=x.min; d+=x.drove; } });
     return pt('grpSum',{d:dur(m),m:dur(d)}); }
   function sections(list,pm){ const by=f=>{ const o=new Map(); list.forEach(p=>{ const k=f(p); if(!o.has(k)) o.set(k,[]); o.get(k).push(p); }); return o; };
-    const cards=a=>a.map(p=>card(p,pm)).join('')||`<p class="pl-cn">—</p>`;
+    const cards=(a,k)=>a.map(p=>card(p,pm)).join('')||`<p class="pl-cn">${k?pt('emptyT',{t:pt('s_'+k),n:'1230'[T.indexOf(k)]}):pt('emptyG')}</p>`;
     if(cf.mode==='area'){ const o=by(p=>p.area); return [...o.keys()].map(k=>sec(k,esc(tr(AREA,k)),o.get(k).length,cards(o.get(k)))).join(''); }
     if(cf.mode==='group'){ const o=by(p=>(groupOf(p.id)||{}).id||''), used=new Set(S.trip.groups.map(g=>g.from).filter(Boolean));
       const gs=S.trip.groups.map(g=>sec(g.id,esc(g.name),g.ids.length,cards(o.get(g.id)||[]),`<span class="pl-csm">${pt('placedN',{n:g.ids.filter(i=>pm.has(i)).length,of:g.ids.length})}　${gsum(g.ids)}　${bestDay(g)}</span><button type="button" class="pl-cbtn" data-ca="gname" data-id="${g.id}">${pt('rename2')}</button><button type="button" class="pl-cbtn" data-ca="gdrop" data-id="${g.id}">${pt('drop')}</button>`)).join('');
       const picks=DB.clusters.filter(x=>!used.has(x.id)&&x.ids.some(i=>!groupOf(i))).map(x=>`<li><b>${esc((ja()?x.nameJa:x.name)||x.id)}</b><small>${esc(x.ids.map(i=>nm(place(i))+(groupOf(i)?' '+pt('inGroup',{g:groupOf(i).name}):'')).join('・'))}</small><button type="button" class="pl-cbtn" data-ca="guse" data-id="${x.id}">${pt('use')}</button></li>`).join('');
       return gs+(picks?`<section class="pl-cs pl-picks"><details><summary class="pl-csh"><h3>${pt('picks')}<small>${DB.clusters.filter(x=>!used.has(x.id)).length}</small></h3></summary><ul>${picks}</ul></details></section>`:'')+sec('',pt('noGroup'),(o.get('')||[]).length,cards(o.get('')||[])); }
     const o=by(p=>tierOf(p.id));
-    return ['must','want','maybe',''].map(k=>sec(k,pt('t_'+k),(o.get(k)||[]).length,cards(o.get(k)||[]))).join('')+sec('skip',pt('t_skip'),(o.get('skip')||[]).length,cards(o.get('skip')||[]),'',true); }
+    return ['must','want','maybe',''].map(k=>sec(k,pt('t_'+k),(o.get(k)||[]).length,cards(o.get(k)||[],k))).join('')+sec('skip',pt('t_skip'),(o.get('skip')||[]).length,cards(o.get('skip')||[]),'',true); }
   function chips(){ const cats=Object.keys(CAT).filter(k=>DB.list.some(p=>isCand(p)&&p.cat===k));
     const ch=(k,v,l,on)=>`<button type="button" class="pl-chip" data-ca="f" data-k="${k}" data-v="${v}" aria-pressed="${on}">${l}</button>`;
     return `<div class="pl-seg" role="group" aria-label="${esc(pt('sortBy2'))}">${['tier','group','area'].map(m=>`<button type="button" data-ca="mode" data-v="${m}" aria-pressed="${cf.mode===m}">${pt('by'+m[0].toUpperCase()+m.slice(1))}</button>`).join('')}</div>
       <div class="pl-chips">${ch('saved','1',pt('saved'),!!cf.saved)}${cats.map(k=>ch('cat',k,tr(CAT,k),cf.cat===k)).join('')}</div>`; }
   function bar(){ const n=sel.size;
     return n||selMode?`<div class="pl-cbar" role="toolbar" aria-label="${esc(pt('selN',{n}))}"><span>${pt('selN',{n})}</span>${T.map((k,i)=>`<button type="button" data-ca="bulk" data-t="${k}"><b>${'1230'[i]}</b> ${pt('s_'+k)}</button>`).join('')}
-      <button type="button" data-ca="group">${pt('toGroup')}</button><button type="button" data-ca="days">${pt('toDays')}</button><button type="button" data-ca="selx" aria-label="${esc(pt('selDone'))}">${ic('x','sm')}</button></div>`
-      :`<div class="pl-cbar pl-chand"><button type="button" class="pl-btn pl-pri" data-ca="handoff">${pt('handoff')}</button></div>`; }
+      <button type="button" data-ca="group">${pt('toGroup')}</button><button type="button" data-ca="days">${pt('toDays')}</button><button type="button" data-ca="selx" aria-label="${esc(pt('selDone'))}">${ic('x','sm')}</button></div>`:''; }
   function render(force){
-    const P=c.plan(), k=JSON.stringify([cf,S.trip,P.days,sel.size,selMode,ja(),S.hist.length>0]);
+    const P=c.plan(), k=JSON.stringify([cf,S.trip,P.days,sel.size,selMode,ja(),S.hist.length>0,!!DB.photos,!!S.cardMedia]);
     if(skip&&!force){ skip=false; KEY=k; return; }
     if(k===KEY&&!force) return; KEY=k;
     const pm=plannedMap(P), list=pool(), y=el.querySelector('.pl-clist')?scrollY:null;
-    el.innerHTML=`<div class="pl-ctop2"><div><h2 class="pl-cl-t">${pt('cT')}</h2><p class="pl-hint">${pt('cS')}</p></div>
+    el.innerHTML=`<div class="pl-crail"><div class="pl-ctop2"><div><h2 class="pl-cl-t">${pt('cT')}</h2><p class="pl-hint">${pt('cS')}</p></div>
         <span><button type="button" class="pl-cbtn" data-ca="undo"${S.hist.length?'':' disabled'}>${ic('undo','sm')}<span class="sr">${pt('undo')}</span></button> <button type="button" class="pl-cbtn${selMode?' pl-on':''}" data-ca="selmode" aria-pressed="${selMode}">${pt('sel')}</button></span></div>
       <label class="pl-search">${ic('search','sm')}<span class="sr">${pt('cSearch')}</span><input class="pl-cq" type="search" value="${esc(cf.q||'')}" placeholder="${esc(pt('cSearch'))}" autocomplete="off" enterkeyhint="search"></label>
-      ${chips()}<div class="pl-clist">${list.length?sections(list,pm):`<p class="pl-cn">${pt('none2')}</p>`}</div>${bar()}`;
+      ${chips()}${sel.size||selMode?'':`<div class="pl-cbar pl-chand"><button type="button" class="pl-btn pl-pri" data-ca="handoff">${pt('handoff')}</button></div>`}</div>
+      <div class="pl-clist">${list.length?sections(list,pm):`<button type="button" class="pl-cn" data-ca="clearf">${pt('none2')}</button>`}</div>${bar()}`;
     if(y!=null) scrollTo(0,y);
     if(focus){ const f=el.querySelector(`.pl-cc[data-id="${focus}"]`); if(f&&document.activeElement===document.body) f.focus({preventScroll:true}); }
   }
@@ -92,9 +92,6 @@ planner.collect=function(c){
     DB.days.forEach((d,i)=>{ const pv=c.sim().insertPlan(d,c.idsOf(d.date,P),[o[0].id],P,{deadline:S.dayEnd},null); if(pv&&(!best||(pv.breaks.length-best.b||pv.dDrive-best.v)<0)) best={i,b:pv.breaks.length,v:pv.dDrive}; });
     if(best){ setDay(best.i); toast(pt('nextMust',{name:nm(o[0]),d:dlabel(DB.days[best.i])})); }
     openPlace(o[0].id); }
-  function cards(){ return [...el.querySelectorAll('.pl-cc')].filter(x=>x.offsetParent!==null); }
-  function moveFocus(d){ const a=cards(); if(!a.length) return; let i=a.findIndex(x=>x.dataset.id===focus); i=i<0?0:Math.max(0,Math.min(a.length-1,i+d));
-    a.forEach(x=>x.tabIndex=-1); focus=a[i].dataset.id; a[i].tabIndex=0; a[i].focus(); }
   function toggle(id){ if(sel.has(id)) sel.delete(id); else sel.add(id); render(true); }
   el.addEventListener('click',e=>{ const b=e.target.closest('[data-ca]'), cc=e.target.closest('.pl-cc');
     if(cc) focus=cc.dataset.id;
@@ -113,6 +110,7 @@ planner.collect=function(c){
         S.selc={id:'_sel',ids,name:pt('selN',{n:ids.length}),nameJa:pt('selN',{n:ids.length})};
         c.needMore().then(m=>openSheet(head(pt('toDays'),pt('selN',{n:ids.length}))+m.dayPick('_sel','pl-dayq-big',S.selc)+doneBar(),'cdays')); break; }
       case 'handoff': handoff(); break;
+      case 'clearf': Object.assign(cf,{q:'',cat:null,saved:null}); saveUI(); render(true); break;
       case 'undo': c.undo(); break;
       case 'gname': { const g=S.trip.groups.find(x=>x.id===id); if(g) c.needMore().then(m=>m.nameSheet(g)); break; }
       case 'gdrop': { const g=S.trip.groups.find(x=>x.id===id); if(g) editTrip(x=>{ x.groups=x.groups.filter(o=>o.id!==id); },pt('ungrouped',{g:g.name})); break; }
@@ -125,15 +123,8 @@ planner.collect=function(c){
     qf=setTimeout(()=>{ const pos=e.target.selectionStart; render(true); const i=el.querySelector('.pl-cq'); if(i){ i.focus(); try{ i.setSelectionRange(pos,pos); }catch(x){} } },120); });
   return {
     render,
-    key(e){ if((e.metaKey||e.ctrlKey)&&e.code!=='KeyA') return; const k=e.code, t={Digit1:'must',Numpad1:'must',Digit2:'want',Numpad2:'want',Digit3:'maybe',Numpad3:'maybe',Digit0:'skip',Numpad0:'skip'}[k];
-      if(k==='KeyJ'||k==='ArrowDown'){ e.preventDefault(); moveFocus(1); }
-      else if(k==='KeyK'||k==='ArrowUp'){ e.preventDefault(); moveFocus(-1); }
-      else if(t||k==='Backspace'||k==='Delete'){ const ids=targets(); if(!ids.length) return; e.preventDefault(); setTier(ids,t||'',ids.length>1?pt('tiered',{n:ids.length,t:pt('t_'+(t||''))}):null); }
-      else if(k==='KeyX'&&focus){ e.preventDefault(); toggle(focus); }
-      else if(k==='KeyA'&&(e.metaKey||e.ctrlKey)){ e.preventDefault(); cards().forEach(x=>sel.add(x.dataset.id)); render(true); }
-      else if(k==='KeyG'){ e.preventDefault(); const ids=targets(); if(ids.length) c.needMore().then(m=>m.groupSheet(ids)); }
-      else if(k==='Enter'&&focus&&e.target.classList.contains('pl-cc')){ e.preventDefault(); openPlace(focus); }
-      else if(k==='Escape'&&sel.size){ sel.clear(); selMode=false; render(true); } }
+    /* for planner-desk's keys (J K 1 2 3 0 ⌫ X ⌘A G Enter): the selection, the focused card, the moves */
+    sel, setTier, targets, toggle, focus:id=>{ if(id!==undefined) focus=id; return focus; }
   };
 };
 })();

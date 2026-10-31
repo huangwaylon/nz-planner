@@ -425,17 +425,21 @@ html.pl-failed .pl-skel{display:none;}
   .v-plan[data-stage="collect"] .pl-mapcard{top:24px;}
 }
 @container plan (min-width:1024px){
-  .pl-shell{grid-template-columns:280px minmax(360px,440px) minmax(0,1fr);grid-template-areas:"bar bar bar" "stg stg stg" "days days days" "pal note map" "pal main map" "col col map" "rev rev rev";}
-  .v-plan[data-stage="plan"] .pl-palette{display:block;grid-area:pal;position:sticky;top:96px;max-height:calc(100dvh - 120px);overflow:auto;}
-  .v-plan[data-stage="collect"] .pl-shell{grid-template-columns:minmax(0,1fr) 420px;grid-template-areas:"bar bar" "stg stg" "col map";}
+  /* one 64 px header row: the plan menu and the tools at its ends, the stepper over its middle */
+  .pl-shell{grid-template-columns:var(--pl-pal-w,248px) minmax(360px,440px) minmax(0,1fr);grid-template-rows:64px;grid-template-areas:"hdr hdr hdr" "days days days" "pal note map" "pal main map" "rev rev rev";}
+  .pl-bar,.pl-stages{grid-area:hdr;align-self:center;}
+  .pl-stages{justify-self:center;width:min(560px,48%);z-index:1;}
+  .pl-stage{min-height:44px;column-gap:6px;grid-template-columns:auto auto auto;}
+  .pl-stc{grid-column:auto;}
+  .pl-mapcard{top:76px;} .pl-mapcard .pl-mapbox{height:calc(100vh - 100px);height:calc(100dvh - 100px);}
+  .v-plan[data-stage="plan"] .pl-palette{display:block;grid-area:pal;position:sticky;top:76px;max-height:calc(100dvh - 92px);overflow:auto;}
+  /* ①: a filter rail, the cards, the map */
+  .v-plan[data-stage="collect"] .pl-shell{grid-template-columns:208px minmax(0,1fr) 420px;grid-template-areas:"hdr hdr hdr" "rail col map";}
+  .pl-shell .pl-collect{display:contents;}
+  .pl-crail{grid-area:rail;position:sticky;top:76px;align-self:start;display:flex;flex-direction:column;gap:10px;padding:14px 0 24px;}
+  .pl-collect .pl-clist{grid-area:col;padding:0 0 96px;}
 }
-/* the 6-day board (planner-desk.js sets .pl-6): six columns, the map docked narrow */
-@container plan (min-width:1440px){
-  .v-plan.pl-6[data-stage="plan"] .pl-shell{grid-template-columns:280px minmax(0,1fr) 360px;grid-template-areas:"bar bar bar" "stg stg stg" "days days days" "pal brd map";}
-  .v-plan.pl-6[data-stage="plan"] :is(.pl-main,.pl-notice){display:none;}
-  .v-plan.pl-6[data-stage="plan"] .pl-board{display:grid;grid-area:brd;}
-}
-@container plan (min-width:1600px){ .pl-shell{column-gap:32px;} }
+@container plan (min-width:1600px){ .pl-shell{column-gap:32px;} .v-plan[data-stage="collect"] .pl-shell{grid-template-columns:232px minmax(0,1fr) 560px;} }
 /* short screens (SE 1st gen): the zoom cluster goes sideways so it cannot meet the footer */
 @media (max-height:600px){ .pl-mapctl{flex-direction:row;} }
 /* 200% page zoom: icon-only map buttons, the numeral above the title */

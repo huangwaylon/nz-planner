@@ -142,10 +142,9 @@
     ok(await until(() => q('.pl-collect .pl-cc')), '① opens from plan-ui and shows cards');
     ok(localStorage.getItem('plan:nz:v1') === seedV1, 'v1 -> v2: the v1 string is copied to plan:nz:v1 first');
     ok(view()._pl.trip().notes.piha === 'タオル', 'v1 -> v2: notes move up to the trip');
-    /* key 2 tiers the focused card; it survives a reload and an undo */
-    const tc = q('.pl-cs[data-k=""] .pl-cc'), tid = tc.dataset.id; tc.click(); tc.focus();
-    doc().dispatchEvent(new KeyboardEvent('keydown', {code: 'Digit2', key: '2', bubbles: true}));
-    ok(view()._pl.tier(tid) === 'want' && JSON.parse(localStorage.getItem('plan:nz')).v === 2, 'key 2 sets 行きたい and saves v2');
+    /* a tap on 行きたい tiers the card (keys are the desktop's, tested at 1440); it survives a reload and an undo */
+    const tc = q('.pl-cs[data-k=""] .pl-cc'), tid = tc.dataset.id; tc.querySelector('[data-t="want"]').click();
+    ok(view()._pl.tier(tid) === 'want' && JSON.parse(localStorage.getItem('plan:nz')).v === 2, 'the 行きたい button sets the tier and saves v2');
     await load(); await until(() => q('.pl-collect .pl-cc'));
     ok(view()._pl.tier(tid) === 'want', 'the tier survives a reload');
     q('.pl-cs[data-k="want"] .pl-cc[data-id="'+tid+'"] [data-t="want"]').click();
@@ -153,12 +152,11 @@
     doc().dispatchEvent(new KeyboardEvent('keydown', {code: 'KeyZ', key: 'z', metaKey: true, bubbles: true})); await wait(200);
     ok(view()._pl.tier(tid) === 'want', '⌘Z undoes a tier change');
     /* group by the sheet, then carry tiers and the group's ids through a v3 link */
-    const gc = q('.pl-cs[data-k=""] .pl-cc'), gid0 = gc.dataset.id; gc.click(); gc.focus();
-    doc().dispatchEvent(new KeyboardEvent('keydown', {code: 'Digit1', key: '1', bubbles: true}));
-    doc().dispatchEvent(new KeyboardEvent('keydown', {code: 'KeyG', key: 'g', bubbles: true}));
+    const gc = q('.pl-cs[data-k=""] .pl-cc'), gid0 = gc.dataset.id; gc.querySelector('[data-t="must"]').click();
+    q('[data-ca="selmode"]').click(); await wait(100); q('.pl-cc[data-id="' + gid0 + '"] .pl-ccb small').click(); await wait(100); q('[data-ca="group"]').click();
     const gname = await until(() => q('.pl-cgname'));
     if (gname) { gname.value = 'テスト外出'; q('[data-act="cgnew"]').click(); }
-    ok(view()._pl.trip().groups.some(g => g.name === 'テスト外出' && g.ids.indexOf(gid0) >= 0), 'G makes a group from the focused card');
+    ok(view()._pl.trip().groups.some(g => g.name === 'テスト外出' && g.ids.indexOf(gid0) >= 0), '選択 then グループへ makes a group');
     const code = await view()._pl.code();
     localStorage.setItem('plan:nz', JSON.stringify({v: 2, active: 'classic', trip: {tier: {}, groups: [], notes: {}}, my: null, versions: [], imports: [], booked: {}}));
     await load(); await until(() => q('.pl-collect .pl-cc'));
@@ -190,6 +188,15 @@
     const R = s => wq(s).getBoundingClientRect(), pal = R('.pl-palette'), mn = R('.pl-main'), mp = R('.pl-mapcard');
     ok(pal.right <= mn.left + 1 && mn.right <= mp.left + 1 && wd().documentElement.scrollWidth <= wf.contentWindow.innerWidth, 'palette | day | map side by side, no sideways scroll');
     const mapNode = wq('svg.pl-map');
+    /* ① at 1440: the keys (J then 3) tier the focused card, and the rail sits beside the cards */
+    wq('.pl-stage[data-stage="collect"]').click();
+    const k1 = await until(() => wq('.pl-collect .pl-cs[data-k=""] .pl-cc'), 6000);
+    if (k1) { const kid = k1.dataset.id; k1.click(); k1.focus();
+      wd().dispatchEvent(new KeyboardEvent('keydown', {code: 'Digit3', key: '3', bubbles: true}));
+      ok(wv()._pl.tier(kid) === 'maybe', 'at 1440 key 3 sets 時間があれば on the focused card');
+      ok(R('.pl-crail').right <= R('.pl-clist').left + 1, 'the filter rail sits left of the cards'); }
+    else ok(false, '① cards at 1440');
+    wq('.pl-stage[data-stage="plan"]').click(); await wait(500);
     /* drag a palette place onto the day; the ghost's arrival is the applied time */
     const src = wq('.pl-palette .pl-pi'), sid = src.dataset.id, sr = src.getBoundingClientRect(), tl = wq('.pl-main .pl-tl').getBoundingClientRect();
     const pe = (el, type, x, y) => el.dispatchEvent(new (wf.contentWindow.PointerEvent)(type, {bubbles: true, cancelable: true, pointerType: 'mouse', clientX: x, clientY: y, button: 0, pointerId: 1, isPrimary: true}));

@@ -13,7 +13,7 @@ var planner=(function(){
 /* ---------- strings: {key:{ja,en}}; {x} placeholders ---------- */
 const PT={
   saveVer:{ja:'この案を保存',en:'Save this version'}, st_collect:{ja:'集める',en:'Collect'}, st_plan:{ja:'組み立てる',en:'Plan'}, st_review:{ja:'見直す',en:'Review'},
-  inboxN:{ja:'未仕分け {n}',en:'{n} to sort'}, todoK:{ja:'絶対・未配置 {n}',en:'Must, not placed: {n}'}, mustN:{ja:'絶対 {n}/{of}',en:'Must {n}/{of}'}, stagesL:{ja:'作業の段階',en:'Stages'}, otherTab:{ja:'別のタブの変更を読み込みました',en:'Loaded the changes from another tab'},
+  inboxN:{ja:'未仕分け {n}',en:'{n} to sort'}, daysN:{ja:'{n}日・{s}件',en:'{n} days, {s} stops'}, todoK:{ja:'絶対・未配置 {n}',en:'Must, not placed: {n}'}, mustN:{ja:'絶対 {n}/{of}',en:'Must {n}/{of}'}, otherTab:{ja:'別のタブの変更を読み込みました',en:'Loaded the changes from another tab'},
   plan:{ja:'プラン',en:'Plan'}, my:{ja:'マイプラン',en:'My plan'}, share:{ja:'共有',en:'Share'}, browse:{ja:'候補をさがす',en:'Browse places'},
   zoomIn:{ja:'拡大',en:'Zoom in'}, zoomOut:{ja:'縮小',en:'Zoom out'}, fit:{ja:'この日に合わせる',en:'Fit to day'},
   expand:{ja:'地図を大きく',en:'Enlarge map'}, shrink:{ja:'地図を小さく',en:'Shrink map'},
@@ -22,11 +22,9 @@ const PT={
   days:{ja:'日付',en:'Days'}, depart:{ja:'出発',en:'Start'}, arrive:{ja:'到着',en:'End'}, startTime:{ja:'出発時刻',en:'Start time'},
   dayN:{ja:'{n}日目',en:'Day {n}'}, stops:{ja:'{n}か所',en:'{n} stops'}, drive:{ja:'運転 {d}',en:'Drive {d}'}, ends:{ja:'着 {t}',en:'In by {t}'},
   slack:{ja:'{t}まで 余裕{d}',en:'{d} spare before {t}'}, over:{ja:'{t}を{d}超過',en:'{d} past {t}'}, overFlight:{ja:'フライト（{t}）に間に合いません',en:'Misses the flight ({t})'},
-  broke:{ja:'{name}：{w}',en:'{name}: {w}'}, moveOpen:{ja:'朝に移す',en:'Move to its open hours'}, movedOpen:{ja:'{name}を開いている時間へ移しました',en:'Moved {name} into its open hours'},
-  tapAgainDo:{ja:'もう一度タップで確定',en:'tap again to go ahead'}, thisOrder:{ja:'この並びだと：{w}',en:'With this order: {w}'}, keepIt:{ja:'このままにする',en:'Keep it'}, endsAt:{ja:'{t}着',en:'ends {t}'},   wait:{ja:'{t}開店まで待ち {d}',en:'{d} wait until {t}'}, estT:{ja:'直線距離からの概算',en:'Estimate from straight-line distance'},
+    tapAgainDo:{ja:'もう一度タップで確定',en:'tap again to go ahead'}, thisOrder:{ja:'この並びだと：{w}',en:'With this order: {w}'}, keepIt:{ja:'このままにする',en:'Keep it'},   wait:{ja:'{t}開店まで待ち {d}',en:'{d} wait until {t}'}, estT:{ja:'直線距離からの概算',en:'Estimate from straight-line distance'},
   ferry:{ja:'フェリー',en:'Ferry'}, board:{ja:'乗船 {d}前',en:'board {d} before'}, sail:{ja:'{t}発 ⛴ {d}',en:'⛴ {t}, {d}'}, sailAny:{ja:'⛴ {d}',en:'⛴ {d}'},
-  unverified:{ja:'未確認',en:'Unverified'}, toTerm:{ja:'港まで',en:'to the wharf'}, fromTerm:{ja:'港から',en:'from the wharf'},
-  closed:{ja:'{w}曜は定休日',en:'Closed on {w}'}, closedAt:{ja:'{t}閉店に間に合いません',en:'Closes {t} before the visit ends'},
+  unverified:{ja:'未確認',en:'Unverified'},   closed:{ja:'{w}曜は定休日',en:'Closed on {w}'}, closedAt:{ja:'{t}閉店に間に合いません',en:'Closes {t} before the visit ends'},
   hoursUnknown:{ja:'営業時間 未確認',en:'Hours unverified'}, overnight:{ja:'日付をまたぎます',en:'Runs past midnight'},
   dark:{ja:'日没（{t}）後まで屋外',en:'Outdoors after sunset ({t})'}, darkDrive:{ja:'日没（{t}）後の運転',en:'Driving after sunset ({t})'},
   tide:{ja:'干潮（{t}）から外れています',en:'Outside low tide ({t})'}, tideCheck:{ja:'潮位を確認',en:'Check the tide'},
@@ -40,28 +38,18 @@ const PT={
   landed:{ja:'着陸',en:'Land'}, limitHint:{ja:'{t} = 1日の終わりの目安（設定で変更）',en:'{t} is the end-of-day guide (change it in Plan)'}, limitFlight:{ja:'{t} = フライトに間に合う空港着',en:'{t} = at the airport in time for the flight'}, limitAnchor:{ja:'{t} = {name}に着く期限（このプランの設定）',en:'{t} = this plan’s time to reach {name}'},
   overAt:{ja:'{name}の期限{t}を{d}超過',en:'{d} past the {t} limit at {name}'}, dawn:{ja:'日の出（{t}）前に屋外',en:'Outdoors before sunrise ({t})'}, missRise:{ja:'日の出（{t}）に間に合いません',en:'Misses sunrise ({t})'}, missSet:{ja:'日の入り（{t}）に間に合いません',en:'Misses sunset ({t})'},
   goldRise:{ja:'日の出（{t}）の時間帯から外れています',en:'Not at sunrise ({t})'}, goldSet:{ja:'夕日（{t}）の時間帯から外れています',en:'Not at sunset ({t})'},
-  clearDay:{ja:'この日を空にする',en:'Clear this day'}, cleared:{ja:'{d} を空にしました',en:'Cleared {d}'},   noFit:{ja:'開いている時間に入りません',en:'No slot while it is open'},
-    stayDec:{ja:'{name} の滞在を15分短く',en:'15 min shorter at {name}'}, stayInc:{ja:'{name} の滞在を15分長く',en:'15 min longer at {name}'},
+  clearDay:{ja:'この日を空にする',en:'Clear this day'}, cleared:{ja:'{d} を空にしました',en:'Cleared {d}'},       stayDec:{ja:'{name} の滞在を15分短く',en:'15 min shorter at {name}'}, stayInc:{ja:'{name} の滞在を15分長く',en:'15 min longer at {name}'},
   swap:{ja:'入れ替え',en:'Swap'}, move:{ja:'日を移動',en:'Move day'}, del:{ja:'外す',en:'Remove'}, note:{ja:'メモ',en:'Note'},
   swapN:{ja:'入れ替え：{name}',en:'Swap {name}'}, moveN:{ja:'日を移動：{name}',en:'Move {name} to another day'}, delN:{ja:'外す：{name}',en:'Remove {name}'},
   noteN:{ja:'メモ：{name}',en:'Note for {name}'}, notePh:{ja:'メモ（ふたりで共有）',en:'A note for both of you'},
   orderN:{ja:'並べ替え：{name}',en:'Reorder {name}'},     focus:{ja:'地図で見る：{name}',en:'Show {name} on the map'}, emptyDay:{ja:'この日はまだ空いています。',en:'Nothing planned yet.'}, addHere:{ja:'この日に追加',en:'Add to this day'},
-  prevDay:{ja:'前の日',en:'Previous day'}, nextDay:{ja:'次の日',en:'Next day'}, story:{ja:'ストーリー画像',en:'Story image'}, storySoon:{ja:'ストーリー画像は準備中です',en:'Story images are coming soon'},
-        moveT:{ja:'別の日へ移す',en:'Move to another day'}, moveS:{ja:'移した日の中で、いちばん遠回りにならない位置に入ります',en:'Goes where it adds the least time that day'},
-  movedTo:{ja:'{d} に移しました',en:'Moved to {d}'}, reordered:{ja:'順番を変えました',en:'Reordered'},
-  removed:{ja:'{name} を外しました',en:'Removed {name}'}, added:{ja:'{d} に追加しました',en:'Added to {d}'},
-  addedN:{ja:'{n}件を {d} に追加しました',en:'Added {n} to {d}'}, nothingAdded:{ja:'すべて予定済みです',en:'All already planned'},
-    undo:{ja:'元に戻す',en:'Undo'}, forked:{ja:'マイプランに保存',en:'Saved to My plan'}, keptAs:{ja:'前のマイプランは「{name}」に残しています',en:'your previous My plan is kept as “{name}”'},
+  prevDay:{ja:'前の日',en:'Previous day'}, nextDay:{ja:'次の日',en:'Next day'}, story:{ja:'ストーリー画像',en:'Story image'},           reordered:{ja:'順番を変えました',en:'Reordered'},
+  removed:{ja:'{name} を外しました',en:'Removed {name}'},       undo:{ja:'元に戻す',en:'Undo'}, forked:{ja:'マイプランに保存',en:'Saved to My plan'}, keptAs:{ja:'前のマイプランは「{name}」に残しています',en:'your previous My plan is kept as “{name}”'},
   editedName:{ja:'{name}（編集）',en:'{name} (edited)'},
-      reset:{ja:'マイプランを消す',en:'Delete My plan'}, resetDone:{ja:'「{name}」に戻しました',en:'Back to “{name}”'},             all:{ja:'すべて',en:'All'},   creditBook:{ja:'写真：旅のしおり',en:'Photo: travel book'}, saved:{ja:'保存済み',en:'Saved'}, savedS:{ja:'Google マップに保存済み',en:'Saved in Google Maps'}, count:{ja:'{n}件',en:'{n} places'},
-    noMatch:{ja:'条件に合う候補はありません。絞り込みを外してください。',en:'No places match. Clear a filter.'},
-      needBook:{ja:'必要',en:'Required'},     gmaps:{ja:'Google マップ',en:'Google Maps'}, insta:{ja:'Instagram',en:'Instagram'},   copiedC:{ja:'座標をコピーしました',en:'Coordinates copied'},
-  offlineLink:{ja:'電波がないと開けません',en:'Needs a connection'},
-  loadFail:{ja:'データを読み込めませんでした。再読み込みしてください。',en:'Could not load the data. Reload the page.'},
+                    creditBook:{ja:'写真：旅のしおり',en:'Photo: travel book'}, saved:{ja:'保存済み',en:'Saved'}, savedS:{ja:'Google マップに保存済み',en:'Saved in Google Maps'},               gmaps:{ja:'Google マップ',en:'Google Maps'},       loadFail:{ja:'データを読み込めませんでした。再読み込みしてください。',en:'Could not load the data. Reload the page.'},
   close:{ja:'閉じる',en:'Close'}, done:{ja:'完了',en:'Done'},
     autoSaved:{ja:'自動保存 {t}',en:'Autosave {t}'},
-        shared:{ja:'共有された案 {t}',en:'Shared {t}'}, verDeleted:{ja:'「{name}」を削除しました',en:'Deleted “{name}”'},
-  compare:{ja:'くらべる',en:'Compare'},       noUndo:{ja:'これ以上は戻せません',en:'Nothing left to undo'}, undone:{ja:'元に戻しました',en:'Undone'},
+        shared:{ja:'共有された案 {t}',en:'Shared {t}'},   compare:{ja:'くらべる',en:'Compare'},       noUndo:{ja:'これ以上は戻せません',en:'Nothing left to undo'}, undone:{ja:'元に戻しました',en:'Undone'},
   saveFail:{ja:'保存できませんでした（容量）。古い自動保存を消すと空きます。',en:'Could not save (storage full). Deleting old autosaves frees space.'},
   purgeAuto:{ja:'自動保存を消す',en:'Delete autosaves'}, purged:{ja:'自動保存を消しました',en:'Autosaves deleted'},
   intro:{ja:'6日間のNZ旅。日付をタップして予定を見て、「候補をさがす」から足せます。',en:'Six days in New Zealand. Tap a date to see its plan, and add places from Browse.'},
@@ -73,8 +61,8 @@ const PT={
         en:'All times NZDT. Drive times are free-flow; Auckland peak adds 20–40 min. Distances are approximate.'},
   imp:{ja:'取り込み',en:'Imported'}, impT:{ja:'取り込む',en:'Import'},
   impS:{ja:'保存しておいた場所を候補に足します。ファイルはこの端末の中だけで読みます。',en:'Add places you saved elsewhere. Files are read on this phone only.'},
-                          reading:{ja:'読み込み中…',en:'Reading…'},                           impDel:{ja:'この取り込みを削除',en:'Delete this import'}, impDeleted:{ja:'取り込みを削除しました',en:'Import deleted'},
-      openReel:{ja:'リールを見る',en:'Open reel'}, 
+                          reading:{ja:'読み込み中…',en:'Reading…'},                           impDeleted:{ja:'取り込みを削除しました',en:'Import deleted'},
+      
 };
 const CAT={imp:{ja:'取り込み',en:'Imported'},hike:{ja:'ハイク',en:'Hike'},beach:{ja:'ビーチ',en:'Beach'},view:{ja:'眺め',en:'View'},cafe:{ja:'カフェ',en:'Cafe'},food:{ja:'食',en:'Food'},
   sight:{ja:'名所',en:'Sight'},activity:{ja:'体験',en:'Activity'},town:{ja:'町',en:'Town'},camp:{ja:'キャンプ',en:'Camp'},swim:{ja:'泳ぐ',en:'Swim'}};
@@ -680,7 +668,7 @@ const plannerFn=function planner(g){
   /* ---------- stages: ① collect ② plan ③ review. A stepper, not a wizard: every stage is always
      reachable; each shows one live count. ---------- */
   function renderStages(){ const P=plan(), cv=cover(P), inbox=DB.list.filter(p=>isCand(p)&&tierOf(p.id)==='').length, w=warnCount(P);
-    const txt={collect:pt('inboxN',{n:inbox}),plan:cv.of?pt('mustN',{n:cv.n,of:cv.of}):'',review:w?'⚠ '+w:'✓'};
+    const txt={collect:pt('inboxN',{n:inbox}),plan:cv.of?pt('mustN',{n:cv.n,of:cv.of}):pt('daysN',{n:DB.days.length,s:DB.days.reduce((t,d)=>t+idsOf(d.date,P).length,0)}),review:w?'⚠ '+w:'✓'};
     E.stages.querySelectorAll('.pl-stage').forEach(b=>{ const k=b.dataset.stage; b.setAttribute('aria-current',k===S.stage?'step':'false'); b.querySelector('.pl-stc').textContent=txt[k]; }); }
   function setStage(st,quiet){ if(st===S.stage) return; S.stage=st; view.dataset.stage=st; saveUISoon(); if(sheetKind) closeSheet(); scrollTo(0,0);
     renderStages();
@@ -1066,11 +1054,11 @@ const plannerFn=function planner(g){
       if(t<1) M.tw=raf(step); else { M.tw=0; setNow(to); setTimeout(afterUI,0); } };
     M.tw=raf(step);
   }
-  function fitDay(instant){
+  function fitDay(instant,only){
     if(!M.ready||S.map==='closed'||!S.sc){ M.needFit=true; return; }
     M.needFit=false;
     const xs=[], ys=[];
-    (view.classList.contains('pl-6')?DB.days.flatMap(d=>schedule(d).rows):S.sc.rows).forEach(r=>{ const p=place(r.id), xy=prj(p.lat,p.lon); xs.push(xy[0]); ys.push(xy[1]); });   /* the board fits every day */
+    (only||(view.classList.contains('pl-6')?DB.days.flatMap(d=>schedule(d).rows):S.sc.rows)).forEach(r=>{ const p=place(r.id), xy=prj(p.lat,p.lon); xs.push(xy[0]); ys.push(xy[1]); });   /* the board fits every day */
     const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys), pw=M.pxw, ph=pw/M.A;
     const PL=24, PR=62, PT=26, PB=58;   /* clear of the zoom buttons (right) and the map footer (bottom) */
     const floor=x1-x0<1&&y1-y0<1?120:16;  /* one place only: a city-sized frame, not 43× on a roof */
@@ -1477,7 +1465,7 @@ const plannerFn=function planner(g){
   function ctx(){ return {S,DB,E,view,svg,slug,SRC,pt,esc,ic,head,doneBar,openSheet,closeSheet,toast,undo,pushHist,save,render,edit,plan,findPlan,planName,presetName,
     idsOf,schedule,dayStyle,dlabel,dayTitle,dur,hm,nm,nmLang,wbr,place,bodyOf,snapshot,renderTop,fitDay,isCand,plannedMap,FAMILY,thumb,tr,CAT,AREA,
     unverifiedHours,reorder,focusStop,afterRender,okHM,clone,switchToMe,hav,mapState,saveUI,select,unprj,ja,showCands,stopPlacing,impChanged,
-    savedTag,sigLine,warnText,breakText,guard,trial,breakLine,keepMy,armed,legSegments,geom,arc,pathD,g,main,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,loadCss,loadJs,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:o=>Object.assign(PT,o)}; }
+    savedTag,sigLine,warnText,breakText,guard,trial,breakLine,keepMy,armed,legSegments,geom,arc,pathD,g,main,heroOf,thumb,glyphOf,ic,col:()=>CM,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,loadCss,loadJs,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:(o,soft)=>Object.keys(o).forEach(k=>{ if(!soft||!PT[k]) PT[k]=o[k]; })}; }
   const openOrder=id=>needMore().then(m=>m.openOrder(id));
   const openSwap=id=>needMore().then(m=>m.openSwap(id));
   const openCompare=(a,b)=>needMore().then(m=>m.openCompare(a,b));
@@ -1605,7 +1593,7 @@ const plannerFn=function planner(g){
       if(mod&&e.code==='KeyZ'&&!e.shiftKey){ e.preventDefault(); undo(); }
       else if(!mod&&e.code==='BracketLeft'&&i>0){ e.preventDefault(); setStage(st[i-1],'key'); }
       else if(!mod&&e.code==='BracketRight'&&i<2){ e.preventDefault(); setStage(st[i+1],'key'); }
-      else if(S.stage==='collect'&&CM) CM.key(e); });
+      });
     view.querySelector('.pl-sharebtn').addEventListener('click',shareLink);
     view.querySelector('.pl-browsebtn').addEventListener('click',()=>openBrowse());
     E.undo.addEventListener('click',undo);
