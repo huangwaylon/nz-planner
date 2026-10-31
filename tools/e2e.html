@@ -28,6 +28,7 @@
     const errs = [];
     const load = () => new Promise(res => { fr.onload = () => { const w = fr.contentWindow;
       w.addEventListener('error', e => errs.push(String(e.message)));
+      w.addEventListener('unhandledrejection', e => errs.push('rejection: ' + String(e.reason && (e.reason.stack || e.reason)).slice(0, 400)));
       w.addEventListener('unhandledrejection', e => errs.push(String(e.reason)));
       const ce = w.console.error; w.console.error = (...a) => { errs.push(a.map(String).join(' ')); ce.apply(w.console, a); };
       res(); }; fr.src = '../index.html?nosw&e2e=' + Date.now(); });
