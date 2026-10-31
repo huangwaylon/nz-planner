@@ -43,6 +43,15 @@
     q('.pl-browsebtn').click();
     const add = await until(() => qa('.pl-clist .pl-addbtn')[0]);
     ok(!!add, 'the candidate list opens');
+    if (!add) {   /* say why, so a CI-only failure can be read from the log */
+      const w = fr.contentWindow, d = w.document;
+      lines.push('  diag ' + JSON.stringify({errs, more: !!(w.planner && w.planner.more),
+        moreScript: [...d.scripts].map(x => x.src).filter(x => /more/.test(x)),
+        browse: !!d.querySelector('.pl-browse'), clist: !!d.querySelector('.pl-clist'),
+        rows: d.querySelectorAll('.pl-clist > *').length, sheet: (d.querySelector('[role=dialog]') || {}).className || null,
+        online: w.navigator.onLine}));
+      throw new Error('stop: no candidate list');
+    }
     add.click();
     const pill = await until(() => q('.pl-dayq .pl-dq[data-day="1"]'));
     ok(!!pill && /\d/.test(pill.textContent), 'the day pill shows its simulated cost');
