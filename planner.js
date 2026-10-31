@@ -438,7 +438,7 @@ const plannerFn=function planner(g){
     hideInstall:!!ui.hideInstall, hideIntro:!!ui.hideIntro, saveFail:false,
     sel:null, sc:null, f:{q:'',cat:null,area:null,saved:null,sort:'trend'}, hist:[], browsing:false, drafts:{}, noteOpen:null,
     dayEnd:okHM(ui.dayEnd)?toMin(ui.dayEnd):DEADLINE,
-    stage:['collect','plan','review'].indexOf(ui.stage)>=0?ui.stage:'plan', board:typeof ui.board==='boolean'?ui.board:null, cf:ui.cf&&typeof ui.cf==='object'?ui.cf:{}
+    stage:['collect','plan','review'].indexOf(ui.stage)>=0?ui.stage:'plan', board:typeof ui.board==='boolean'?ui.board:null, pin:Array.isArray(ui.pin)?ui.pin.filter(x=>typeof x==='string').slice(0,3):null, cf:ui.cf&&typeof ui.cf==='object'?ui.cf:{}
   };
   /* road geometry cache, LRU, in plan-ui */
   const RC={map:ui.routes&&typeof ui.routes==='object'?ui.routes:{}, order:Array.isArray(ui.rorder)?ui.rorder.filter(k=>typeof k==='string'):[]};
@@ -529,7 +529,7 @@ const plannerFn=function planner(g){
      replaced was copied to plan:<slug>:v1 before the first v2 write (loadState). */
   function save(){ const ok=LSJ.set(KP,{v:2,active:S.planId,trip:S.trip,my:S.my,versions:S.versions,imports:S.imports,booked:S.booked}); noteSave(ok); return ok; }
   let uiT=0; const saveUISoon=()=>{ clearTimeout(uiT); uiT=setTimeout(()=>idle(saveUI,2000),400); };
-  function saveUI(){ LSJ.set(KU,{v:1,stage:S.stage,cf:S.cf,board:S.board,day:S.day,map:S.map==='full'?'peek':S.map,dayEnd:S.dayEnd!==DEADLINE?hhmm(S.dayEnd):undefined,hideInstall:S.hideInstall,hideIntro:S.hideIntro,routes:RC.map,rorder:RC.order}); }
+  function saveUI(){ LSJ.set(KU,{v:1,stage:S.stage,cf:S.cf,board:S.board,pin:S.pin,day:S.day,map:S.map==='full'?'peek':S.map,dayEnd:S.dayEnd!==DEADLINE?hhmm(S.dayEnd):undefined,hideInstall:S.hideInstall,hideIntro:S.hideIntro,routes:RC.map,rorder:RC.order}); }
   function noteSave(ok){ if(ok===!S.saveFail) return; S.saveFail=!ok; renderNotice(); }
   const bodyOf=p=>JSON.stringify([p.days,p.stay||{},p.start||{},p.notes||{},p.stayDay||{}]);
   const nowHM=()=>{ const d=new Date(); return (d.getMonth()+1)+'/'+d.getDate()+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); };
@@ -1477,7 +1477,7 @@ const plannerFn=function planner(g){
   function ctx(){ return {S,DB,E,view,svg,slug,SRC,pt,esc,ic,head,doneBar,openSheet,closeSheet,toast,undo,pushHist,save,render,edit,plan,findPlan,planName,presetName,
     idsOf,schedule,dayStyle,dlabel,dayTitle,dur,hm,nm,nmLang,wbr,place,bodyOf,snapshot,renderTop,fitDay,isCand,plannedMap,FAMILY,thumb,tr,CAT,AREA,
     unverifiedHours,reorder,focusStop,afterRender,okHM,clone,switchToMe,hav,mapState,saveUI,select,unprj,ja,showCands,stopPlacing,impChanged,
-    savedTag,sigLine,warnText,breakText,guard,trial,breakLine,keepMy,armed,legSegments,geom,arc,pathD,g,main,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:o=>Object.assign(PT,o)}; }
+    savedTag,sigLine,warnText,breakText,guard,trial,breakLine,keepMy,armed,legSegments,geom,arc,pathD,g,main,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,loadCss,loadJs,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:o=>Object.assign(PT,o)}; }
   const openOrder=id=>needMore().then(m=>m.openOrder(id));
   const openSwap=id=>needMore().then(m=>m.openSwap(id));
   const openCompare=(a,b)=>needMore().then(m=>m.openCompare(a,b));

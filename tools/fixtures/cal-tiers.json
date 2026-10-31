@@ -1,0 +1,16 @@
+{
+ "tier": {
+  "kitekite-falls": "must",
+  "piha": "must",
+  "parnell-farmers-market": "must",
+  "waitomo-glowworm-caves": "must",
+  "pouakai-tarns": "must",
+  "waiheke-te-ara-hura": "must",
+  "maungawhau-mt-eden": "must",
+  "karangahape-road": "must",
+  "tiritiri-matangi": "must",
+  "cathedral-cove": "want",
+  "daily-bread-belmont": "maybe",
+  "hobbiton": "skip"
+ }
+}

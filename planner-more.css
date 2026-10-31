@@ -144,3 +144,9 @@
 .pl-rv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line-2);}
 .pl-rv b{display:block;font:600 16px/1.4 var(--pl-serif);}
 .pl-rv small{font:600 12.5px/1.5 var(--pl-num);color:var(--muted);}
+/* ③: heading, the versions to compare, then the calendar and the versions grid (planner-cal) */
+.pl-rvh{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin:0 0 20px;}
+.pl-rvpin{flex:1 1 320px;margin:0;padding:0;align-items:center;}
+.pl-rvact{display:flex;gap:8px;}
+.pl-rvact .pl-btn{min-height:44px;}
+.pl-rvpin .pl-hint{flex:none;margin:0 4px 0 0;white-space:nowrap;}

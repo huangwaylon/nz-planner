@@ -90,6 +90,7 @@ no new globals beyond `planner` (with `planner.sim`, `planner.more`, `planner.sw
 | `planner.css` | with the book | every rule under `.v-plan` / `pl-`; layout by `@container plan` (`.v-plan{container:plan/inline-size}`), never by the window |
 | `planner-collect.js` + `planner-collect.css` | ① opens (or the last stage was ①) | `planner.collect(ctx)`: tiers, groups, the bulk bar; ≤7.5 KB gz |
 | `planner-desk.js` + `planner-desk.css` | the planner itself is ≥1024 wide, after paint (never a phone; not in sw.js APP) | `planner.desk(ctx)`: palette, 6-day board, drag controller, hover; ≤6.5 KB gz |
+| `planner-cal.js` + `planner-cal.css` | ③ opens | `planner.cal.render` / `renderVersions(el, model, opts)`: the month calendar and the versions grid, model from planner.sim (tools/cal_fixture.py is the field reference) |
 | `planner-more.js` + `planner-more.css` + `data/nz/groups.json` | the first touch (prefetched), or any sheet | `planner.more(ctx)`: candidates, place, plans, move, order, swap, compare, version name, share and paste |
 | `import.js` + `planner-import.js` + `planner-import.css` | the 取り込む sheet | parsers (`plimport.gm/ig`), the sheet (`plimport.ui`) and its styles |
 | `story.js` | 「ストーリー画像」 | `plstory.open(model, g)`; the model carries `guide` and `slug` |
@@ -111,3 +112,6 @@ no new globals beyond `planner` (with `planner.sim`, `planner.more`, `planner.sw
    book's `PHOTOS` / `media` cache (about 200 files, 11 MB) so a deploy does not re-send them.
    The data must be fetched network-first or renamed with `SHELL` (as the POC's `sw.js` does).
 8. Bump `SHELL`; delete `host.js`, `poc.css` and the POC `sw.js`.
+
+## The book's 720 px clamp
+The book caps `.views` at 720 px. Folding the planner adds `.guide:has(.t-plan:checked) .views{max-width:none}` to the book's CSS, so the planner's container queries (`@container plan`, on `.v-plan`) see the real width and the wide layouts (≥1024 palette | day | map, ≥1440 the 6日 board, ③'s calendar beside the versions grid) can open.

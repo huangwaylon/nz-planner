@@ -20,9 +20,9 @@ const collect = ['planner-collect.js', 'planner-collect.css'];
 const plan1 = sum(SHELL.concat(collect));
 ok(plan1 <= 100 * KB, `phone ① first screen ${plan1} B gz (≤ 100 000; coastline deferred)`);
 
-const CAPS = [[['planner-collect.js', 'planner-collect.css'], 7.5], [['planner-desk.js', 'planner-desk.css'], 6.5], [['planner-cal.js', 'planner-cal.css'], 6]];
-const shellSrc = fs.readFileSync(path.join(ROOT, 'planner.js'), 'utf8');
-/* a chunk counts once the shell can load it; one still being built beside it is reported only */
+const CAPS = [[['planner-collect.js', 'planner-collect.css'], 7.5], [['planner-desk.js', 'planner-desk.css'], 16], [['planner-cal.js', 'planner-cal.css'], 6]];
+const shellSrc = ['planner.js', 'planner-more.js'].map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
+/* desktop-only, after paint (coordinator's budget decision): 16 KB. A chunk counts once the shell or planner-more can load it; one still being built beside it is reported only */
 CAPS.forEach(([fs_, cap]) => { const n = sum(fs_); if (!fs_.some(has)) { console.log(`--   ${fs_[0]} not built yet`); return; }
   const live = shellSrc.includes("'" + fs_[0] + "'");
   if (live) ok(n <= cap * KB, `${fs_.join(' + ')} ${n} B gz (≤ ${cap * KB})`);
@@ -31,7 +31,7 @@ CAPS.forEach(([fs_, cap]) => { const n = sum(fs_); if (!fs_.some(has)) { console
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8'), app = (sw.match(/const APP = \[([^\]]*)\]/) || [])[1] || '';
 ok(app && !/planner-desk/.test(app), 'sw.js APP does not pre-cache the desktop chunk');
 const dist = fs.readFileSync(path.join(ROOT, 'tools', 'dist.sh'), 'utf8');
-const shell = fs.readFileSync(path.join(ROOT, 'planner.js'), 'utf8');
+const shell = shellSrc;
 const chunks = [...new Set([...shell.matchAll(/'((?:planner-[a-z]+|import|story)\.(?:js|css))'/g)].map(m => m[1]))];
 chunks.forEach(f => { ok(has(f), `${f} exists`); ok(new RegExp('\\b' + f.replace('.', '\\.') + '\\b').test(dist), `dist.sh ships ${f}`); });
 ['data/nz/groups.json', 'data/nz/flags.json'].forEach(f => ok(has(f) && /data\/nz\/\*\.json/.test(dist), `dist.sh ships ${f}`));

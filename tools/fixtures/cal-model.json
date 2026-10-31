@@ -1,0 +1,530 @@
+{
+ "trip": {
+  "start": "2027-02-11",
+  "end": "2027-02-16",
+  "lang": "ja"
+ },
+ "days": [
+  {
+   "date": "2027-02-11",
+   "weekday": "thu",
+   "colorVar": "--d1",
+   "inkVar": "--pl-d1-ink",
+   "sleep": {
+    "name": "New Lynn",
+    "nameJa": "ニューリン"
+   },
+   "stops": 3,
+   "mustPlaced": 0,
+   "mustTotal": 9,
+   "driveMin": 65,
+   "endTime": "18:11",
+   "limit": {
+    "time": "22:30",
+    "label": ""
+   },
+   "warn": [],
+   "booked": {
+    "done": 0,
+    "total": 0
+   },
+   "sunrise": "06:47",
+   "sunset": "20:23",
+   "fact": {
+    "ja": "09:00 着",
+    "en": "Land 09:00"
+   }
+  },
+  {
+   "date": "2027-02-12",
+   "weekday": "fri",
+   "colorVar": "--d2",
+   "inkVar": "--pl-d2-ink",
+   "sleep": {
+    "name": "New Lynn",
+    "nameJa": "ニューリン"
+   },
+   "stops": 5,
+   "mustPlaced": 2,
+   "mustTotal": 9,
+   "driveMin": 149,
+   "endTime": "16:39",
+   "limit": {
+    "time": "22:30",
+    "label": ""
+   },
+   "warn": [],
+   "booked": {
+    "done": 0,
+    "total": 0
+   },
+   "sunrise": "06:49",
+   "sunset": "20:23",
+   "fact": null
+  },
+  {
+   "date": "2027-02-13",
+   "weekday": "sat",
+   "colorVar": "--d3",
+   "inkVar": "--pl-d3-ink",
+   "sleep": {
+    "name": "New Plymouth",
+    "nameJa": "ニュープリマス"
+   },
+   "stops": 4,
+   "mustPlaced": 2,
+   "mustTotal": 9,
+   "driveMin": 333,
+   "endTime": "17:04",
+   "limit": {
+    "time": "22:30",
+    "label": ""
+   },
+   "warn": [
+    {
+     "kind": "long",
+     "text": "05:33 of driving"
+    }
+   ],
+   "booked": {
+    "done": 0,
+    "total": 1
+   },
+   "sunrise": "06:49",
+   "sunset": "20:21",
+   "fact": {
+    "ja": "パーネルのマーケット",
+    "en": "Parnell market"
+   }
+  },
+  {
+   "date": "2027-02-14",
+   "weekday": "sun",
+   "colorVar": "--d4",
+   "inkVar": "--pl-d4-ink",
+   "sleep": {
+    "name": "New Lynn",
+    "nameJa": "ニューリン"
+   },
+   "stops": 8,
+   "mustPlaced": 1,
+   "mustTotal": 9,
+   "driveMin": 354,
+   "endTime": "18:09",
+   "limit": {
+    "time": "22:30",
+    "label": ""
+   },
+   "warn": [
+    {
+     "kind": "long",
+     "text": "05:54 of driving"
+    }
+   ],
+   "booked": {
+    "done": 0,
+    "total": 0
+   },
+   "sunrise": "06:50",
+   "sunset": "20:26",
+   "fact": {
+    "ja": "バレンタインデー",
+    "en": "Valentine's Day"
+   }
+  },
+  {
+   "date": "2027-02-15",
+   "weekday": "mon",
+   "colorVar": "--d5",
+   "inkVar": "--pl-d5-ink",
+   "sleep": {
+    "name": "New Lynn",
+    "nameJa": "ニューリン"
+   },
+   "stops": 5,
+   "mustPlaced": 1,
+   "mustTotal": 9,
+   "driveMin": 51,
+   "endTime": "18:52",
+   "limit": {
+    "time": "22:30",
+    "label": ""
+   },
+   "warn": [],
+   "booked": {
+    "done": 0,
+    "total": 1
+   },
+   "sunrise": "06:51",
+   "sunset": "20:18",
+   "fact": {
+    "ja": "休みのカフェ多め",
+    "en": "many cafes closed"
+   }
+  },
+  {
+   "date": "2027-02-16",
+   "weekday": "tue",
+   "colorVar": "--d6",
+   "inkVar": "--pl-d6-ink",
+   "sleep": {
+    "name": "In flight",
+    "nameJa": "機内"
+   },
+   "stops": 7,
+   "mustPlaced": 2,
+   "mustTotal": 9,
+   "driveMin": 70,
+   "endTime": "19:28",
+   "limit": {
+    "time": "20:30",
+    "label": {
+     "ja": "返車",
+     "en": "car"
+    }
+   },
+   "warn": [],
+   "booked": {
+    "done": 0,
+    "total": 1
+   },
+   "sunrise": "06:53",
+   "sunset": "20:18",
+   "fact": {
+    "ja": "20:30返車",
+    "en": "car back 20:30"
+   }
+  }
+ ],
+ "versions": [
+  {
+   "id": "classic",
+   "name": "Taranaki classic",
+   "nameJa": "タラナキ王道",
+   "active": true,
+   "totals": {
+    "driveMin": 1022,
+    "warn": 2,
+    "must": [
+     8,
+     9
+    ]
+   },
+   "days": {
+    "2027-02-11": {
+     "stops": [
+      "ワン・ツリー・ヒル(マウンガキエキエ)",
+      "デイリーブレッド ニューリン店",
+      "オークランド・ナイトマーケット（ヘンダーソン／木曜）"
+     ],
+     "endTime": "18:11",
+     "warn": 0,
+     "label": {
+      "ja": "火山とナイトマーケット",
+      "en": "A cone and a night market"
+     }
+    },
+    "2027-02-12": {
+     "stops": [
+      "キテキテ滝",
+      "ピハ・ビーチ & ライオンロック",
+      "The Piha Cafe",
+      "マーサー・ベイ・ループ",
+      "ムリワイ・ビーチのカツオドリ繁殖地"
+     ],
+     "endTime": "16:39",
+     "warn": 0,
+     "label": {
+      "ja": "滝と黒い砂浜",
+      "en": "Waterfall and black sand"
+     }
+    },
+    "2027-02-13": {
+     "stops": [
+      "パーネル・ファーマーズマーケット",
+      "ワイトモ洞窟（土ボタル）",
+      "HUHU Cafe",
+      "テ・レワレワ・ブリッジ"
+     ],
+     "endTime": "17:04",
+     "warn": 1,
+     "label": {
+      "ja": "土ボタルの洞窟",
+      "en": "Glowworm cave day"
+     }
+    },
+    "2027-02-14": {
+     "stops": [
+      "マンゴレイ・トラック登山口",
+      "ポウアカイ・ターンズ（逆さタラナキ山）",
+      "マンゴレイ・トラック登山口",
+      "スリーシスターズ & エレファントロック（トンガポルトゥ）",
+      "モカウ（ホワイトベイトの村）",
+      "テ・クイティ（休憩）",
+      "Hayes Common",
+      "デコ・イータリー"
+     ],
+     "endTime": "18:09",
+     "warn": 1,
+     "label": {
+      "ja": "逆さタラナキの朝",
+      "en": "Taranaki in the tarn"
+     }
+    },
+    "2027-02-15": {
+     "stops": [
+      "ワイヘキ島 テ・アラ・フラ(マティアティア〜オネロア)",
+      "Wai Kitchen",
+      "オネタンギ・ビーチ",
+      "Island Gelato Co. (Oneroa)",
+      "Amano"
+     ],
+     "endTime": "18:52",
+     "warn": 0,
+     "label": {
+      "ja": "ワイヘキの海",
+      "en": "Waiheke by the sea"
+     }
+    },
+    "2027-02-16": {
+     "stops": [
+      "Bestie Cafe",
+      "Karangahape Road (K Road)",
+      "マウント・イーデン（マウンガファウ）",
+      "Ponsonby Central",
+      "Silo Park & Wynyard Quarter",
+      "Commercial Bay",
+      "Ahi"
+     ],
+     "endTime": "19:28",
+     "warn": 0,
+     "label": {
+      "ja": "Kロードと火口",
+      "en": "K Road and the crater"
+     }
+    }
+   }
+  },
+  {
+   "id": "hut",
+   "name": "Pouākai Hut night",
+   "nameJa": "ポウアカイ小屋泊",
+   "active": false,
+   "totals": {
+    "driveMin": 1013,
+    "warn": 2,
+    "must": [
+     8,
+     9
+    ]
+   },
+   "days": {
+    "2027-02-11": {
+     "stops": [
+      "ワン・ツリー・ヒル(マウンガキエキエ)",
+      "デイリーブレッド ニューリン店",
+      "オークランド・ナイトマーケット（ヘンダーソン／木曜）"
+     ],
+     "endTime": "18:11",
+     "warn": 0,
+     "label": {
+      "ja": "火山とナイトマーケット",
+      "en": "A cone and a night market"
+     }
+    },
+    "2027-02-12": {
+     "stops": [
+      "キテキテ滝",
+      "ピハ・ビーチ & ライオンロック",
+      "The Piha Cafe",
+      "マーサー・ベイ・ループ",
+      "ムリワイ・ビーチのカツオドリ繁殖地"
+     ],
+     "endTime": "16:39",
+     "warn": 0,
+     "label": {
+      "ja": "滝と黒い砂浜",
+      "en": "Waterfall and black sand"
+     }
+    },
+    "2027-02-13": {
+     "stops": [
+      "パーネル・ファーマーズマーケット",
+      "ワイトモ洞窟（土ボタル）",
+      "HUHU Cafe",
+      "ウールワース（ニュープリマス）",
+      "マンゴレイ・トラック登山口",
+      "ポウアカイ・ハット（DOC山小屋）",
+      "ポウアカイ・ターンズ（逆さタラナキ山）"
+     ],
+     "endTime": "20:43",
+     "warn": 1,
+     "label": {
+      "ja": "山小屋への登り",
+      "en": "Up to the hut"
+     }
+    },
+    "2027-02-14": {
+     "stops": [
+      "ポウアカイ・ターンズ（逆さタラナキ山）",
+      "マンゴレイ・トラック登山口",
+      "スリーシスターズ & エレファントロック（トンガポルトゥ）",
+      "モカウ（ホワイトベイトの村）",
+      "テ・クイティ（休憩）",
+      "Hayes Common",
+      "Ahi"
+     ],
+     "endTime": "19:18",
+     "warn": 1,
+     "label": {
+      "ja": "湖沼の朝焼け",
+      "en": "Sunrise at the tarns"
+     }
+    },
+    "2027-02-15": {
+     "stops": [
+      "ワイヘキ島 テ・アラ・フラ(マティアティア〜オネロア)",
+      "Wai Kitchen",
+      "オネタンギ・ビーチ",
+      "Island Gelato Co. (Oneroa)",
+      "Amano"
+     ],
+     "endTime": "18:52",
+     "warn": 0,
+     "label": {
+      "ja": "ワイヘキの海",
+      "en": "Waiheke by the sea"
+     }
+    },
+    "2027-02-16": {
+     "stops": [
+      "Bestie Cafe",
+      "Karangahape Road (K Road)",
+      "マウント・イーデン（マウンガファウ）",
+      "Ponsonby Central",
+      "Silo Park & Wynyard Quarter",
+      "Commercial Bay",
+      "Hello Beasty"
+     ],
+     "endTime": "18:11",
+     "warn": 0,
+     "label": {
+      "ja": "Kロードと火口",
+      "en": "K Road and the crater"
+     }
+    }
+   }
+  },
+  {
+   "id": "cafes",
+   "name": "More cafes",
+   "nameJa": "カフェ巡り多め",
+   "active": false,
+   "totals": {
+    "driveMin": 500,
+    "warn": 0,
+    "must": [
+     6,
+     9
+    ]
+   },
+   "days": {
+    "2027-02-11": {
+     "stops": [
+      "Best Ugly Bagels (City Works Depot)",
+      "マウント・イーデン（マウンガファウ）",
+      "Small Mercies"
+     ],
+     "endTime": "13:43",
+     "warn": 0,
+     "label": {
+      "ja": "イーデン山とドーナツ",
+      "en": "Mt Eden and doughnuts"
+     }
+    },
+    "2027-02-12": {
+     "stops": [
+      "Honey Sundays",
+      "Karangahape Road (K Road)",
+      "Bestie Cafe",
+      "Slow Koi Manual Kohi Brew Bar",
+      "ワン・ツリー・ヒル(マウンガキエキエ)",
+      "Giapo",
+      "Silo Park & Wynyard Quarter"
+     ],
+     "endTime": "16:11",
+     "warn": 0,
+     "label": {
+      "ja": "Kロードと抹茶",
+      "en": "K Road and matcha"
+     }
+    },
+    "2027-02-13": {
+     "stops": [
+      "パーネル・ファーマーズマーケット",
+      "Vaniyé Patisserie",
+      "デボンポート & マウント・ビクトリア",
+      "Dulcie",
+      "ノース・ヘッド(マウンガウイカ)",
+      "Takapuna Beach Cafe & Store",
+      "タカプナ〜ミルフォード海岸歩き(化石の森)"
+     ],
+     "endTime": "18:47",
+     "warn": 0,
+     "label": {
+      "ja": "マルシェとデボンポート",
+      "en": "Market and Devonport"
+     }
+    },
+    "2027-02-14": {
+     "stops": [
+      "Fort Greene",
+      "キテキテ滝",
+      "The Piha Cafe",
+      "ピハ・ビーチ & ライオンロック",
+      "Ahi"
+     ],
+     "endTime": "19:18",
+     "warn": 0,
+     "label": {
+      "ja": "ピハの浜とAhi",
+      "en": "Piha, then Ahi"
+     }
+    },
+    "2027-02-15": {
+     "stops": [
+      "Allpress Auckland Roastery",
+      "ワイヘキ島 テ・アラ・フラ(マティアティア〜オネロア)",
+      "Wai Kitchen",
+      "オネタンギ・ビーチ",
+      "Island Gelato Co. (Oneroa)"
+     ],
+     "endTime": "17:54",
+     "warn": 0,
+     "label": {
+      "ja": "ワイヘキのカフェ",
+      "en": "Waiheke cafes"
+     }
+    },
+    "2027-02-16": {
+     "stops": [
+      "Beabea's Bakery",
+      "MIBO Bakery Wynyard Quarter",
+      "マウント・ウェリントン(マウンガレイ)",
+      "ONDA",
+      "Maru's House (Maru Matcha)",
+      "Amano",
+      "Britomart",
+      "Hello Beasty"
+     ],
+     "endTime": "17:48",
+     "warn": 0,
+     "label": {
+      "ja": "抹茶と最後の夜",
+      "en": "Matcha, last night"
+     }
+    }
+   }
+  }
+ ]
+}

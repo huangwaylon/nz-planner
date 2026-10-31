@@ -41,3 +41,4 @@
 .pl-map .pl-cands [data-t="skip"]{opacity:.35;}
 .pl-dtog{margin-left:auto;}
 .v-plan.pl-6[data-stage="plan"] .pl-days{display:none;}
+.pl-cal-d.pl-dzon{background:color-mix(in srgb,var(--c) 14%,var(--surface));}

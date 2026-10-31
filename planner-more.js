@@ -7,7 +7,7 @@
 'use strict';
 if(typeof planner!=='function'||planner.more) return;
 const PTM={
-  rvS:{ja:'案ごとの運転・⚠・絶対の数。カレンダーはこのあと',en:'Each version’s driving, ⚠ and musts. The calendar comes next'}, useThis:{ja:'この案にする',en:'Use this version'},
+  rvS:{ja:'日付をタップするとその日を組み立てます。表は案ごとの違い',en:'Tap a day to plan it; the table compares versions'}, pinK:{ja:'くらべる案',en:'Compare with'}, nowUsing:{ja:'「{name}」にしました',en:'Now using “{name}”'},
   groupName:{ja:'グループの名前',en:'Group name'}, newGroup:{ja:'新しいグループ',en:'New group'}, cSave:{ja:'保存',en:'Save'}, groupN:{ja:'グループ {n}',en:'Group {n}'}, grouped:{ja:'{n}件を「{g}」に',en:'{n} into “{g}”'},
   sharedGroup:{ja:'共有されたグループ {n}',en:'Shared group {n}'},
   warnsN:{ja:'注意 {n}',en:'{n} alerts'}, tapAgain:{ja:'もう一度タップで追加',en:'tap again to add'}, pillKey:{ja:'運転の増減・帰着',en:'added driving · day ends'}, addDrive:{ja:'運転 {d}',en:'driving {d}'}, closureAsk:{ja:'一部閉鎖があります。それでも追加しますか？',en:'Part of it is closed. Add anyway?'}, dayEnd:{ja:'1日の終わりの目安',en:'End-of-day guide'}, pasteT:{ja:'リンクを貼り付け',en:'Paste a link'}, pasteS:{ja:'ホーム画面のアプリでは、共有されたリンクをここに貼ります',en:'In the Home Screen app, paste a shared link here'}, pasteGo:{ja:'読み込む',en:'Open'}, pasteClip:{ja:'クリップボードから',en:'From clipboard'}, whichDay:{ja:'どの日に入れる？',en:'Which day?'}, addNTo:{ja:'{name} を {d} に追加',en:'Add {name} to {d}'}, planT:{ja:'プランを選ぶ',en:'Choose a plan'}, planS:{ja:'編集すると「マイプラン」に保存されます',en:'Edits are saved to My plan'}, presets:{ja:'用意したプラン',en:'Presets'}, basedOn:{ja:'「{name}」をもとに編集',en:'Edited from “{name}”'}, shareLink:{ja:'リンクで共有',en:'Share as link'}, inDay:{ja:'{d} に予定',en:'Planned on {d}'}, moveHere:{ja:'{d} に移す',en:'Move to {d}'}, removeFrom:{ja:'{d} から外す',en:'Remove from {d}'}, hoursDay:{ja:'この日の営業',en:'Hours that day'}, cost:{ja:'料金',en:'Cost'}, dur:{ja:'滞在目安',en:'Typical stay'}, booking:{ja:'予約',en:'Booking'}, noBook:{ja:'不要',en:'Not needed'}, best:{ja:'時間帯',en:'Best time'}, aesthetic:{ja:'写真映え',en:'Photogenic'}, of5:{ja:'5段階中{n}',en:'{n} of 5'}, why:{ja:'なぜ話題？',en:'Why it’s talked about'}, whyJa:{ja:'{n}件の記事・投稿で紹介されています（出典は下）',en:'{n} mentions'}, tagSearch:{ja:'#{t}',en:'#{t}'}, coords:{ja:'座標',en:'Coordinates'}, copy:{ja:'コピー',en:'Copy'}, backList:{ja:'候補一覧へ',en:'All places'}, versions:{ja:'保存した案',en:'Saved versions'}, renameN:{ja:'名前を変える：{name}',en:'Rename {name}'}, verDel:{ja:'「{name}」を削除',en:'Delete “{name}”'}, fromGm:{ja:'Googleマップから取り込み',en:'Imported from Google Maps'}, fromIg:{ja:'Instagramから取り込み',en:'Imported from Instagram'}, impGroup:{ja:'取り込んだ場所',en:'Imported places'},
@@ -170,16 +170,16 @@ planner.more=function(c){
   }
   /* Copy one day of another version into the active plan: its stops leave any other day, and
      their stays, the day's start and their notes come along. */
-  /* checked like any change: what it breaks asks for a second tap */
-  function useDay(pid,date,arg,btn){
-    const P=findPlan(pid), d=DB.days.find(x=>x.date===date); if(!P||!d) return;
-    const ids=idsOf(date,P);
-    if(c.guard(btn,'use'+pid+date,m=>{
+  /* one day of version P, copied into the active plan: its stops leave their other days */
+  const takeFn=(P,date)=>m=>{ const ids=idsOf(date,P);
       DB.days.forEach(x=>{ if(x.date!==date&&m.days[x.date]) m.days[x.date]=m.days[x.date].filter(id=>ids.indexOf(id)<0); });
       m.days[date]=ids.slice();
       ids.forEach(id=>{ if(P.stay&&P.stay[id]!=null) m.stay[id]=P.stay[id]; });
-      if(P.start&&P.start[date]) m.start[date]=P.start[date]; else delete m.start[date];
-    },pt('usedDayIn',{name:planName(P),d:dlabel(d),into:planName(S.my||{id:'my'})}))){
+      if(P.start&&P.start[date]) m.start[date]=P.start[date]; else delete m.start[date]; };
+  /* checked like any change: what it breaks asks for a second tap */
+  function useDay(pid,date,arg,btn){
+    const P=findPlan(pid), d=DB.days.find(x=>x.date===date); if(!P||!d) return;
+    if(c.guard(btn,'use'+pid+date,takeFn(P,date),pt('usedDayIn',{name:planName(P),d:dlabel(d),into:planName(S.my||{id:'my'})}))){
       /* the day went into the active plan (forked into My plan when that was a preset or a
          version), so the side that was not the source becomes My plan; then on to the next difference */
       const a=arg.a===pid?pid:'my', b=arg.a===pid?'my':pid;
@@ -382,17 +382,51 @@ planner.more=function(c){
   }
 
 
-  /* ---------- ③ 見直す, until the calendar lands: every version with its driving, ⚠ and must coverage ---------- */
+  /* ---------- ③ 見直す: the month calendar and the versions grid (planner-cal.js, loaded when ③ opens).
+     The model is planner.sim's: per day the sleep, stops, musts placed, driving, end against its limit,
+     ⚠, bookings, sun at the first stop and one fixed fact (tools/cal_fixture.py is the field reference). */
+  let CALP=null;
+  const needCal=()=>CALP||(CALP=Promise.all([c.loadCss('pl-cal',c.view.dataset.calCss||'planner-cal.css'),planner.cal?0:c.loadJs(c.view.dataset.calSrc||'planner-cal.js')]).catch(e=>{ CALP=null; throw e; }));
+  const bare=s=>String(s||'').replace(/\s*[(（].*?[)）]/g,'');
+  const plus=m=>{ m=Math.round(m); return (m>=1440?'+':'')+hm(m%1440); };
+  const musts=()=>DB.list.filter(p=>c.isCand(p)&&c.tierOf(p.id)==='must').map(p=>p.id);
+  function dayModel2(P,d,i,mu){ const sc=schedule(d,null,P), ids=sc.rows.slice(1,-1).map(r=>r.id), e=sc.rows[sc.rows.length-1], an=e.an||{}, last=e.id==='akl';
+    const warn=[]; sc.rows.forEach(r=>r.warns.forEach(w=>warn.push({kind:w.k,text:(r.kind==='stop'?nm(place(r.id))+'：':'')+c.warnText(w,d)}))); if(sc.long) warn.push({kind:'long',text:pt('longDrive',{d:dur(sc.drive)})});
+    const first=place(ids[0]||e.id), sl=place(e.id), lb=d.labelJa||'';
+    return {date:d.date,colorVar:'--d'+(i%6+1),inkVar:'--pl-d'+(i%6+1)+'-ink',sleep:last?{name:'In flight',nameJa:'機内'}:{name:bare(sl.name),nameJa:bare(sl.nameJa||sl.name)},
+      stops:ids.length,ids,mustPlaced:ids.filter(x=>mu.indexOf(x)>=0).length,mustTotal:mu.length,driveMin:Math.round(sc.drive),endTime:plus(sc.end),
+      limit:{time:an.time||c.hhmm(S.dayEnd),label:last?{ja:'返車',en:'car'}:''},warn,
+      booked:{done:ids.filter(x=>S.booked[x]).length,total:ids.filter(x=>(place(x)||{}).book).length},
+      sunrise:hm(c.sim().sunriseOf(first,d.date)),sunset:hm(c.sim().sunsetOf(first,d.date)),
+      fact:i===0?{ja:d.start.time+' 着',en:'Land '+d.start.time}:lb.indexOf('・')>=0?{ja:lb.split('・').slice(1).join('・'),en:String(d.label||'').split(': ').pop()}:null}; }
+  function calModel(){ const P=plan(), mu=musts(), days=DB.days.map((d,i)=>dayModel2(P,d,i,mu));
+    const all=[S.my].filter(Boolean).concat(S.versions,DB.presets), pin=(S.pin||[]).filter(id=>id!==P.id&&findPlan(id));
+    const others=pin.length?pin:all.filter(x=>x.id!==P.id).slice(0,2).map(x=>x.id);
+    const ver=x=>{ const ds=DB.days.map((d,i)=>dayModel2(x,d,i,mu)), placed=new Set(ds.flatMap(d=>d.ids.filter(i=>mu.indexOf(i)>=0)));
+      return {id:x.id,name:planName(x),nameJa:planName(x),active:x.id===P.id,totals:{driveMin:ds.reduce((t,d)=>t+d.driveMin,0),warn:ds.reduce((t,d)=>t+d.warn.length,0),must:[placed.size,mu.length]},
+        days:Object.fromEntries(ds.map((d,i)=>[d.date,{stops:d.ids.map(i=>nm(place(i))),endTime:d.endTime,warn:d.warn.length,label:x.titles&&x.titles[d.date]||null}]))}; };
+    return {trip:{start:DB.days[0].date,end:DB.days[DB.days.length-1].date,lang:c.lang()},days,versions:[P].concat(others.map(findPlan)).map(ver)}; }
   function renderReview(el){
-    const cur=plan(), all=[S.my].filter(Boolean).concat(S.versions,DB.presets);
-    const row=P=>{ const cv=c.cover(P), drive=DB.days.reduce((t,d)=>t+schedule(d,null,P).drive,0), w=c.warnCount(P);
-      return `<li class="pl-rv${P.id===cur.id?' pl-on':''}"><div><b>${esc(planName(P))}</b><small>${pt('drive',{d:dur(drive)})}　${w?'⚠ '+w:'✓'}${cv.of?'　'+pt('mustN',{n:cv.n,of:cv.of}):''}</small></div>
-        ${P.id===cur.id?`<span class="pl-cmpact">${pt('isActive')}</span>`:`<button type="button" class="pl-btn pl-sec" data-rv="use" data-id="${P.id}">${pt('useThis')}</button>`}</li>`; };
-    el.innerHTML=`<h2 class="pl-cl-t">${pt('st_review')}</h2><p class="pl-hint">${pt('rvS')}</p><ul class="pl-rvl">${all.map(row).join('')}</ul>
-      <div class="pl-sheet-acts"><button type="button" class="pl-btn pl-sec" data-rv="cmp">${ic('compare','sm')}${pt('compare')}</button><button type="button" class="pl-btn pl-sec" data-rv="share">${ic('share','sm')}${pt('shareLink')}</button></div>`;
-    if(!el._rv){ el._rv=1; el.addEventListener('click',e=>{ const b=e.target.closest('[data-rv]'); if(!b) return;
-      if(b.dataset.rv==='use'){ pushHist(); S.planId=b.dataset.id; save(); render(true); }
-      else if(b.dataset.rv==='cmp') openCompare(plan().id); else shareLink(); }); }
+    const all=[S.my].filter(Boolean).concat(S.versions,DB.presets), cur=plan(), pin=new Set(S.pin||[]);
+    if(!el._rv){ el._rv=1;
+      el.innerHTML=`<div class="pl-rvh"><div><h2 class="pl-cl-t">${pt('st_review')}</h2><p class="pl-hint">${pt('rvS')}</p></div><div class="pl-chips pl-rvpin"></div>
+        <div class="pl-rvact"><button type="button" class="pl-btn pl-sec" data-rv="cmp">${ic('compare','sm')}${pt('compare')}</button><button type="button" class="pl-btn pl-sec" data-rv="share">${ic('share','sm')}${pt('shareLink')}</button></div></div>
+        <div class="pl-cal-pair"><div class="pl-rvcal"></div><div class="pl-rvver"></div></div>`;
+      el.addEventListener('click',e=>{ const b=e.target.closest('[data-rv]'); if(!b) return;
+        if(b.dataset.rv==='pin'){ const id=b.dataset.id, p=(S.pin||[]).filter(x=>x!==id); if(p.length===(S.pin||[]).length) p.push(id); S.pin=p.slice(-3); c.saveUI(); renderReview(el); }
+        else if(b.dataset.rv==='cmp') openCompare(plan().id); else shareLink(); }); }
+    el.querySelector('.pl-rvpin').innerHTML=`<span class="pl-hint">${pt('pinK')}</span>`+all.filter(x=>x.id!==cur.id).map(x=>`<button type="button" class="pl-chip" data-rv="pin" data-id="${x.id}" aria-pressed="${pin.has(x.id)}">${esc(planName(x))}</button>`).join('');
+    const opts={
+      onDay:date=>{ c.setStage('plan'); c.setDay(DB.days.findIndex(d=>d.date===date)); },
+      onUseVersion:id=>{ if(!findPlan(id)) return; pushHist(); S.planId=id; save(); render(true); toast(pt('nowUsing',{name:planName(findPlan(id))}),undo); },
+      onTakeDay:(id,date)=>{ const P=findPlan(id), d=DB.days.find(x=>x.date===date), btn=el.querySelector(`.pl-cal-c[data-v="${CSS.escape(id)}"][data-date="${date}"]`);
+        if(P&&d) c.guard(btn,'take'+id+date,takeFn(P,date),pt('usedDayIn',{name:planName(P),d:dlabel(d),into:planName(S.my||{id:'my'})})); },
+      /* a stop or a place dropped on a calendar day goes there, checked like any move */
+      onDropStop:(date,p)=>{ const k=DB.days.findIndex(d=>d.date===date); if(k<0||!p||!p.ids) return;
+        if(p.from) c.guard(null,'cal'+p.ids[0]+date,moveFn(p.ids[0],p.from,DB.days[k]),pt('movedTo',{d:dlabel(DB.days[k])}));
+        else applyAdd(k,p.ids,p.group?c.clusterOf(p.group):null); }};
+    needCal().then(()=>{ const m=calModel(); planner.cal.render(el.querySelector('.pl-rvcal'),m,opts); planner.cal.renderVersions(el.querySelector('.pl-rvver'),m,opts); },
+      ()=>{ el.querySelector('.pl-rvcal').textContent=pt('loadFail'); });
   }
   /* ---------- ①'s group sheets: into a group, or a new one; renaming ---------- */
   /* groups: one outing each; a place leaves its old group when it joins another */
