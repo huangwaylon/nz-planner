@@ -803,7 +803,11 @@ const plannerFn=function planner(g){
     return c[0]||null;
   }
   const srcset=ph=>ph.src2x?` srcset="${esc(ph.src)} 1x, ${esc(ph.src2x)} 2x"`:'';
-  const thumb=p=>{ const ph=p&&DB.photos&&DB.photos[p.id];
+  /* gallery.json and its chunk, on first need, never on the first screen (docs/FOLD.md "Gallery") */
+  let GAL=null, GX=null;
+  function loadGallery(){ return GAL||(GAL=Promise.all([fetch(SRC+'gallery.json').then(r=>r.ok?r.json():{}),loadCss('pl-gal',view.dataset.galleryCss||'planner-gallery.css'),planner.gallery?0:loadJs(view.dataset.gallerySrc||'planner-gallery.js')])
+    .then(([j])=>{ DB.gallery=j&&typeof j==='object'?j:{}; GX=planner.gallery(ctx()); if(CM) CM.render(1); if(!DRAG) renderSoon(); if(sheetKind==='place'&&DB.gallery[sheetArg.id]) refreshSheet(); return DB.gallery; },()=>{ GAL=null; return {}; })); }
+  const thumb=p=>{ const ph=p&&DB.photos&&DB.photos[p.id]; if(GX&&GX.gal(p).length) return GX.thumb(p,ph);
     return ph?`<span class="pl-glyph pl-thumb"><img src="${esc(ph.thumb||ph.src)}" alt="" loading="lazy" decoding="async" width="40" height="40"></span>`:`<span class="pl-glyph">${ic(glyphOf(p))}</span>`; };
   const photoHTML=(p,cls,eager)=>{ const ph=p&&DB.photos&&DB.photos[p.id]; if(!ph) return '';
     return `<figure class="${cls}"><img src="${esc(ph.src)}"${srcset(ph)} width="${ph.w||480}" height="${ph.h||320}" alt="" ${eager?'fetchpriority="high"':'loading="lazy"'} decoding="async">
@@ -1465,7 +1469,7 @@ const plannerFn=function planner(g){
   function ctx(){ return {S,DB,E,view,svg,slug,SRC,pt,esc,ic,head,doneBar,openSheet,closeSheet,toast,undo,pushHist,save,render,edit,plan,findPlan,planName,presetName,
     idsOf,schedule,dayStyle,dlabel,dayTitle,dur,hm,nm,nmLang,wbr,place,bodyOf,snapshot,renderTop,fitDay,isCand,plannedMap,FAMILY,thumb,tr,CAT,AREA,
     unverifiedHours,reorder,focusStop,afterRender,okHM,clone,switchToMe,hav,mapState,saveUI,select,unprj,ja,showCands,stopPlacing,impChanged,
-    savedTag,sigLine,warnText,breakText,guard,trial,breakLine,keepMy,armed,legSegments,geom,arc,pathD,g,main,heroOf,thumb,glyphOf,ic,col:()=>CM,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,loadCss,loadJs,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:(o,soft)=>Object.keys(o).forEach(k=>{ if(!soft||!PT[k]) PT[k]=o[k]; })}; }
+    savedTag,sigLine,warnText,breakText,guard,trial,breakLine,keepMy,armed,legSegments,geom,arc,pathD,g,main,heroOf,thumb,glyphOf,ic,col:()=>CM,gal:p=>GX?GX.gal(p):[],gx:()=>GX,loadGallery,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,loadCss,loadJs,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:(o,soft)=>Object.keys(o).forEach(k=>{ if(!soft||!PT[k]) PT[k]=o[k]; })}; }
   const openOrder=id=>needMore().then(m=>m.openOrder(id));
   const openSwap=id=>needMore().then(m=>m.openSwap(id));
   const openCompare=(a,b)=>needMore().then(m=>m.openCompare(a,b));
@@ -1528,6 +1532,7 @@ const plannerFn=function planner(g){
   /* new minutes: the candidates list re-ranks, but an open day picker keeps its place and only re-simulates */
   function refreshPicks(){ if(sheetKind==='browse') renderList(); }
   function loadLazy(){
+    loadGallery();
     if(!MOREP) needMore(true).catch(()=>{});      /* the drawer and the other sheets, before the first tap on them */
     if(!lazy.land){ lazy.land=true; idle(()=>fetch(SRC+'land.svg.html').then(r=>r.ok?r.text():'').then(putLand).catch(()=>{ lazy.land=false; }),4000); }
     if(!lazy.travel) fetch(SRC+'travel.json').then(r=>r.ok?r.json():null).then(t=>{
@@ -1622,7 +1627,7 @@ const plannerFn=function planner(g){
         warns:sc.rows.flatMap(r=>r.warns.map(w=>w.k)).concat(sc.long?['long']:[])}; }), ready:()=>lazy.travel,
       /* tools/e2e.html: is a gesture or tween still thought to be running; how much coastline is drawn */
       busy:()=>busyUI(), land:()=>svg.querySelectorAll('.pl-land path').length, places:()=>DB.places.size,
-      code:()=>needMore(true).then(m=>m.codeNow()), tier:id=>tierOf(id), trip:()=>S.trip}});
+      code:()=>needMore(true).then(m=>m.codeNow()), tier:id=>tierOf(id), trip:()=>S.trip, gal:loadGallery, open:openPlace}});
     if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{});
   }
   const get=u=>fetch(u).then(r=>{ if(!r.ok) throw new Error(u+' '+r.status); return r.json(); });

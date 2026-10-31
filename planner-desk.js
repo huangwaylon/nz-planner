@@ -28,17 +28,21 @@ const PTD={
 };
 planner.desk=function(c){
   const {S,DB,E,view,svg,pt,esc,ic,place,nm,nmLang,dlabel,dayStyle,hm,dur,plan,edit,openPlace,setDay,tierOf,cover,plannedMap,isCand,clone,
-    breakLine,legSegments,geom,arc,pathD,glyphOf,tr,AREA}=c;
+    breakLine,legSegments,geom,arc,pathD,glyphOf,tr,AREA,gal}=c; const gimg=(...a)=>c.gx().gimg(...a);
   c.addStrings(PTD);
   const sim=()=>c.sim(), o=()=>({deadline:S.dayEnd}), fine=matchMedia('(hover:hover) and (pointer:fine)').matches;
   const groupOf=id=>S.trip.groups.find(g=>g.ids.indexOf(id)>=0), ph=p=>p&&DB.photos&&DB.photos[p.id];
   let q='';
   /* ---------- photos: ① plates and the small thumbs; the credit rides on the picture ---------- */
   const cred=x=>x.credit==='Travel book'?pt('creditBook'):x.credit||'';
-  S.cardMedia=p=>{ const x=ph(p);
+  /* the gallery's three as a mosaic over the plate; the plate shows only if none of them loads */
+  S.cardMedia=p=>{ const g=gal(p).slice(0,3); if(!g.length) return plate(p);
+    return `<span class="pl-glyph pl-plate pl-mos">${g.map((x,i)=>gimg(x,i?'110px':'220px',i?320:640)).join('')}<small class="pl-cred">${esc([...new Set(g.map(x=>x.by))].join(' · '))}</small><span class="pl-mfb">${plate(p)}</span></span>`; };
+  const plate=p=>{ const x=ph(p);
     return x?`<span class="pl-glyph pl-thumb pl-plate"><img src="${esc(x.thumb||x.src)}" srcset="${esc(x.thumb||x.src)} 208w, ${esc(x.src)} 480w${x.src2x?`, ${esc(x.src2x)} 960w`:''}" sizes="(min-width:1024px) 300px, 44px" width="3" height="2" alt="" loading="lazy" decoding="async">${x.credit?`<small class="pl-cred">${esc(cred(x))}</small>`:''}</span>`
       :`<span class="pl-glyph pl-plate pl-noph">${ic(glyphOf(p))}<small>${esc(tr(AREA,p.area))}</small></span>`; };
-  const tn=(p,n)=>{ const x=ph(p); return x?`<img class="pl-tn" src="${esc(x.thumb||x.src)}" alt="" width="${n}" height="${n}" loading="lazy" decoding="async">`:`<span class="pl-tn">${ic(glyphOf(p),'xs')}</span>`; };
+  const tn=(p,n)=>{ const x=ph(p), g=gal(p)[0];
+    return `<span class="pl-tn pl-g1">${g?gimg(g,n+'px',320):''}${x?`<img src="${esc(x.thumb||x.src)}" alt="" width="${n}" height="${n}" loading="lazy" decoding="async" data-gi>`:''}<span class="pl-gfb">${ic(glyphOf(p),'xs')}</span></span>`; };
   /* ---------- the 1日|6日 toggle: 6日 from 1360 wide, the default from 1600 ---------- */
   const tg=document.createElement('div'); tg.className='pl-seg pl-dtog'; view.querySelector('.pl-tools').before(tg);
   const board=()=>view.clientWidth>=1360&&(S.board!=null?S.board:view.clientWidth>=1600);

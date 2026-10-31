@@ -1,0 +1,5 @@
+/* planner-gallery.css — the small gallery picture, with planner-gallery.js. The first picture that
+   loads shows; the photo or the glyph only when none did. ① cards add 「+n」 for the rest. */
+.pl-g1{position:relative;}
+.pl-g1>img:not(:first-of-type),.pl-g1:has(img)>.pl-gfb,.pl-gn{display:none;}
+.pl-cc .pl-gn{display:block;position:absolute;right:2px;bottom:2px;padding:0 4px;border-radius:7px;background:rgba(var(--pl-scrim),.72);color:#fff;font:700 10px/14px var(--pl-num);font-style:normal;}

@@ -19,8 +19,12 @@ ok(plan2 <= 100 * KB, `phone ② first screen ${plan2} B gz (≤ 100 000)`);
 const collect = ['planner-collect.js', 'planner-collect.css'];
 const plan1 = sum(SHELL.concat(collect));
 ok(plan1 <= 100 * KB, `phone ① first screen ${plan1} B gz (≤ 100 000; coastline deferred)`);
+/* the gallery (data and chunk) loads only from loadGallery(), which nothing on the boot path calls directly */
+const coreSrc = fs.readFileSync(path.join(ROOT, 'planner.js'), 'utf8');
+ok(!SHELL.concat(collect).some(f => /gallery/.test(f)) && (coreSrc.match(/'gallery\.json'/g) || []).length === 1 && /function loadLazy\(\)\{\s*loadGallery\(\);/.test(coreSrc),
+  'gallery.json is fetched only by loadGallery(), from the deferred loadLazy() and on demand — not on the first screen');
 
-const CAPS = [[['planner-collect.js', 'planner-collect.css'], 7.5], [['planner-desk.js', 'planner-desk.css'], 16], [['planner-cal.js', 'planner-cal.css'], 6]];
+const CAPS = [[['planner-collect.js', 'planner-collect.css'], 7.5], [['planner-desk.js', 'planner-desk.css'], 16], [['planner-cal.js', 'planner-cal.css'], 6], [['planner-gallery.js', 'planner-gallery.css'], 2]];
 const shellSrc = ['planner.js', 'planner-more.js'].map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
 /* desktop-only, after paint (coordinator's budget decision): 16 KB. A chunk counts once the shell or planner-more can load it; one still being built beside it is reported only */
 CAPS.forEach(([fs_, cap]) => { const n = sum(fs_); if (!fs_.some(has)) { console.log(`--   ${fs_[0]} not built yet`); return; }

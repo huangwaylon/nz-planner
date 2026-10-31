@@ -84,6 +84,7 @@
     return new Promise(res => {
       if (!src) return res(null);
       const i = new Image(); i.decoding = 'async';
+      if (new URL(src, location.href).origin !== location.origin) { i.crossOrigin = 'anonymous'; i.referrerPolicy = 'no-referrer'; }   // Commons gallery pictures: CORS keeps the canvas exportable
       i.onload = () => (i.decode ? i.decode() : Promise.resolve()).then(() => res(i), () => res(i));
       i.onerror = () => res(null);
       i.src = src;

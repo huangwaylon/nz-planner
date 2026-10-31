@@ -91,6 +91,7 @@ no new globals beyond `planner` (with `planner.sim`, `planner.more`, `planner.sw
 | `planner-collect.js` + `planner-collect.css` | ① opens (or the last stage was ①) | `planner.collect(ctx)`: tiers, groups, the bulk bar; ≤7.5 KB gz |
 | `planner-desk.js` + `planner-desk.css` | the planner itself is ≥1024 wide, after paint (never a phone; not in sw.js APP) | `planner.desk(ctx)`: palette, 6-day board, drag controller, hover; ≤6.5 KB gz |
 | `planner-cal.js` + `planner-cal.css` | ③ opens | `planner.cal.render` / `renderVersions(el, model, opts)`: the month calendar and the versions grid, model from planner.sim (tools/cal_fixture.py is the field reference) |
+| `planner-gallery.js` + `planner-gallery.css` | with `data/nz/gallery.json`, from `loadGallery()`: the deferred `loadLazy()`, a place sheet, a story | `planner.gallery(ctx)` → `{gal, gimg, gw, isWM, thumb}` (core exposes `c.gal(p)` and `c.gx()`): picture markup, the small picture, the drop-on-error listener |
 | `planner-more.js` + `planner-more.css` + `data/nz/groups.json` | the first touch (prefetched), or any sheet | `planner.more(ctx)`: candidates, place, plans, move, order, swap, compare, version name, share and paste |
 | `import.js` + `planner-import.js` + `planner-import.css` | the 取り込む sheet | parsers (`plimport.gm/ig`), the sheet (`plimport.ui`) and its styles |
 | `story.js` | 「ストーリー画像」 | `plstory.open(model, g)`; the model carries `guide` and `slug` |
@@ -115,3 +116,14 @@ no new globals beyond `planner` (with `planner.sim`, `planner.more`, `planner.sw
 
 ## The book's 720 px clamp
 The book caps `.views` at 720 px. Folding the planner adds `.guide:has(.t-plan:checked) .views{max-width:none}` to the book's CSS, so the planner's container queries (`@container plan`, on `.v-plan`) see the real width and the wide layouts (≥1024 palette | day | map, ≥1440 the 6日 board, ③'s calendar beside the versions grid) can open.
+
+
+## Gallery
+
+`data/nz/gallery.json` (`{placeId:[{u,w,h,by,lic,page,alt,altJa}]}`) links pictures; nothing is stored in the repo. It and its chunk load on first need, never on the first screen (`tools/budget.test.js` checks the boot path). Every picture is `loading="lazy" decoding="async" referrerpolicy="no-referrer"` with its width and height; Commons (`upload.wikimedia.org`) comes as a 320/640/960 `srcset` by swapping `960px-` in `u`, with `crossorigin="anonymous"`. A picture that errors is removed (its `[data-gw]` figure, if any) and the next shows; past the last, the markup's fallback: the photos.json photo, then the colour/sig card or glyph.
+
+- Place sheet: a scroll-snap strip with dots and `by · lic` linked to `page` on each picture; a tap shows the picture whole at its own ratio, a second tap crops it back.
+- ① cards: at ≥1024 a three-picture mosaic over the plate (planner-desk); on phone the first picture and 「+n」.
+- ② (desk): one thumb per palette place and board stop.
+- Story: a stop without its own photo may use its first Commons picture (the canvas needs CORS).
+- Offline: sw.js keeps viewed Commons pictures in `nzp-gallery`, CORS 200s only (never opaque), LRU, 300 entries. Other hosts are network-only.

@@ -6,7 +6,8 @@
 (function(){
 'use strict';
 if(typeof planner!=='function'||planner.more) return;
-const PTM={
+const PTM={ galT:{ja:'写真',en:'Photos'}, galZ:{ja:'写真を全体表示',en:'Show the whole photo'}, licSite:{ja:'公式サイト',en:'own site'}, galN:{ja:'{i} / {n}',en:'{i} of {n}'},
+
   broke:{ja:'{name}：{w}',en:'{name}: {w}'}, moveOpen:{ja:'朝に移す',en:'Move to its open hours'}, movedOpen:{ja:'{name}を開いている時間へ移しました',en:'Moved {name} into its open hours'}, endsAt:{ja:'{t}着',en:'ends {t}'}, storySoon:{ja:'ストーリー画像は準備中です',en:'Story images are coming soon'}, moveT:{ja:'別の日へ移す',en:'Move to another day'}, moveS:{ja:'移した日の中で、いちばん遠回りにならない位置に入ります',en:'Goes where it adds the least time that day'}, movedTo:{ja:'{d} に移しました',en:'Moved to {d}'}, added:{ja:'{d} に追加しました',en:'Added to {d}'}, addedN:{ja:'{n}件を {d} に追加しました',en:'Added {n} to {d}'}, nothingAdded:{ja:'すべて予定済みです',en:'All already planned'}, reset:{ja:'マイプランを消す',en:'Delete My plan'}, resetDone:{ja:'「{name}」に戻しました',en:'Back to “{name}”'}, all:{ja:'すべて',en:'All'}, count:{ja:'{n}件',en:'{n} places'}, noMatch:{ja:'条件に合う候補はありません。絞り込みを外してください。',en:'No places match. Clear a filter.'}, copiedC:{ja:'座標をコピーしました',en:'Coordinates copied'}, verDeleted:{ja:'「{name}」を削除しました',en:'Deleted “{name}”'}, impDel:{ja:'この取り込みを削除',en:'Delete this import'}, openReel:{ja:'リールを見る',en:'Open reel'},
   rvS:{ja:'日付をタップするとその日を組み立てます。表は案ごとの違い',en:'Tap a day to plan it; the table compares versions'}, pinK:{ja:'くらべる案',en:'Compare with'}, nowUsing:{ja:'「{name}」にしました',en:'Now using “{name}”'},
   groupName:{ja:'グループの名前',en:'Group name'}, newGroup:{ja:'新しいグループ',en:'New group'}, cSave:{ja:'保存',en:'Save'}, groupN:{ja:'グループ {n}',en:'Group {n}'}, grouped:{ja:'{n}件を「{g}」に',en:'{n} into “{g}”'},
@@ -470,16 +471,18 @@ planner.more=function(c){
       color:cs.getPropertyValue('--c').trim(), ink:cs.getPropertyValue('--ci').trim(),
       stops:sc.rows.filter(r=>r.kind==='stop').map(r=>{ const p=place(r.id); return {id:p.id,time:hm(r.begin),end:hm(r.dep),name:p.name,nameJa:p.nameJa||p.name,cat:p.cat,best:p.best||'',
         sun:(r.infos.find(x=>x.k==='sunrise'||x.k==='sunsetAt')||{}).t!=null?hm(r.infos.find(x=>x.k==='sunrise'||x.k==='sunsetAt').t):'',
-        lat:p.lat,lon:p.lon,photo:DB.photos&&DB.photos[p.id]||null}; }),
+        lat:p.lat,lon:p.lon,photo:DB.photos&&DB.photos[p.id]||commons(p)}; }),
       stats:pt('drive',{d:dur(sc.drive)})+' · '+Math.round(sc.km)+' km · '+pt('stops',{n:sc.rows.length-2}),
       tags:[...new Set(sc.rows.map(r=>place(r.id).igTag).filter(Boolean))].slice(0,3),
       legs:c.legSegments(sc).map(s=>({kind:s.kind,pts:(s.kind==='drive'&&c.geom(s.a,s.b)||{pts:[s.p0,s.p1]}).pts}))};
   }
+  /* a stop without its own photo may use the gallery's first Commons picture: the canvas needs CORS, which only Commons gives */
+  const commons=p=>{ const G=c.gx(), x=c.gal(p).find(x=>G.isWM(x.u)); return x?{src:G.gw(x.u,640),src2x:x.u,credit:x.by}:null; };
   let STORY=null;
   function openStory(){
     if(!STORY) STORY=window.plstory?Promise.resolve(window.plstory):new Promise((res,rej)=>{ const s=document.createElement('script');
       s.src=c.view.dataset.storySrc||'story.js'; s.onload=()=>window.plstory?res(window.plstory):rej(); s.onerror=rej; document.head.appendChild(s); });
-    Promise.all([STORY,loadMore()]).then(([st])=>st.open(dayModel(),c.g),()=>{ STORY=null; toast(pt('storySoon')); });
+    Promise.all([STORY,loadMore(),c.loadGallery()]).then(([st])=>st.open(dayModel(),c.g),()=>{ STORY=null; toast(pt('storySoon')); });
   }
 
   /* ---------- 日を移動 ---------- */
@@ -538,9 +541,10 @@ planner.more=function(c){
       else action=dayPick(id,'pl-dayq-big');
     }
     const more=DB.more&&DB.more[id], evid=more&&(more.evidence||[]).filter(x=>!/^coords:/i.test(x)).slice(0,4);
-    const ph=photoHTML(p,'pl-photo',true);
+    const G=c.gal(p);
+    const ph=photoHTML(p,'pl-photo',!G.length)||colorCard(p,'pl-colorcard');
     openSheet(`${back?`<button type="button" class="pl-back" data-act="back"><span class="pl-chev" aria-hidden="true">‹</span>${pt('backList')}</button>`:''}
-      ${ph||colorCard(p,'pl-colorcard')}
+      ${G.length?galHTML(G,ph):ph}
       <div class="pl-ph">
         <div><h2 class="pl-sh-t" id="pl-sht-${slug}"${nmLang(p)}>${wbr(nm(p))}</h2><div class="pl-sh-s">${p.imp?pt(p.imp.src==='ig'?'fromIg':'fromGm')+(p.imp.regionJa||p.imp.region?'　'+esc(ja()?p.imp.regionJa||p.imp.region:p.imp.region):''):`${alt(p)?`<span${altLang(p)}>${esc(alt(p))}</span>　`:''}${tr(CAT,p.cat)}　${tr(AREA,p.area)}`}</div></div>${closeBtn()}</div>
       ${p.badge||p.saved?`<p class="pl-sigline">${savedTag(p)}${p.badge?`<span class="pl-sig">${esc(p.badge[lang()]||p.badge.ja)}</span>`:''}</p>`:''}
@@ -563,6 +567,26 @@ planner.more=function(c){
       ${p.imp?`<button type="button" class="pl-btn pl-ghost" data-act="impdel" data-id="${esc(p.imp.id)}">${ic('trash','sm')}${pt('impDel')}</button>`:''}
       ${doneBar()}`,'place',{id,back});
     if(!DB.more) loadMore().then(()=>{ const a=c.arg(); if(c.kind()==='place'&&a&&a.id===id) openPlace(id,back); });
+    if(!DB.gallery) c.loadGallery();
+    const gl=E.sbody.querySelector('.pl-gal'); if(gl) wireGal(gl);
+  }
+  /* ---------- the place's gallery: a scroll-snap strip, one dot per picture, the credit on each.
+     Tapping a picture shows it whole (uncropped, its own ratio); tapping again crops it back. A picture
+     that fails is dropped (core) and the dots follow; with none left, the photo or the colour card. ---------- */
+  const lic=x=>x.lic==='site'?pt('licSite'):x.lic||'';
+  const galHTML=(G,fb)=>`<div class="pl-gal" role="group" aria-label="${esc(pt('galT'))}"><div class="pl-gtrack" tabindex="0">${G.map(x=>`<figure class="pl-gf" data-gw>
+      <button type="button" class="pl-gz" data-act="gzoom" data-ar="${x.w&&x.h?x.w+'/'+x.h:'3/2'}">${c.gx().gimg(x,'(min-width:640px) 640px, 100vw')}<span class="sr">${pt('galZ')}</span></button>
+      <figcaption>${x.page?`<a href="${esc(x.page)}" target="_blank" rel="noopener">`:'<span>'}${esc(x.by||'')}${lic(x)?' · '+esc(lic(x)):''}${x.page?'</a>':'</span>'}</figcaption></figure>`).join('')}</div>
+    <div class="pl-gdots" aria-hidden="true"></div><div class="pl-gfb">${fb}</div></div>`;
+  function wireGal(gl){
+    const tr=gl.querySelector('.pl-gtrack'), dots=gl.querySelector('.pl-gdots');
+    const at=()=>Math.round(tr.scrollLeft/Math.max(1,tr.clientWidth));
+    const paint=()=>{ const n=tr.children.length, i=Math.min(at(),n-1);
+      dots.innerHTML=n>1?[...tr.children].map((_,k)=>`<i${k===i?' class="pl-on"':''}></i>`).join(''):'';
+      tr.setAttribute('aria-label',n>1?pt('galN',{i:i+1,n}):''); };
+    let q=0; tr.addEventListener('scroll',()=>{ if(!q) q=requestAnimationFrame(()=>{ q=0; paint(); }); },{passive:true});
+    gl.addEventListener('error',()=>setTimeout(paint),true);
+    paint();
   }
 
   function openPlans(){
@@ -635,6 +659,8 @@ planner.more=function(c){
           add.forEach(patchCand); const q=b.closest('.pl-dayq'); if(q) q.remove(); break; }
         case 'clearf': S.f={q:'',cat:null,area:null,saved:null,sort:S.f.sort}; openBrowse(); break;
         case 'dayend': break;
+        case 'gzoom': { const gl=b.closest('.pl-gal'), tr=gl.querySelector('.pl-gtrack'), i=[...tr.children].indexOf(b.parentNode);
+          gl.style.setProperty('--ar',b.dataset.ar); gl.classList.toggle('pl-gfull'); tr.scrollLeft=i*tr.clientWidth; break; }
         case 'copyc': { const v=b.dataset.v; (navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast(pt('copiedC')),()=>toast(v)); break; }
         case 'f': { const k=b.dataset.k, v=b.dataset.v; S.f[k]=S.f[k]===v||!v?null:v;
           b.parentNode.querySelectorAll('.pl-chip').forEach(c=>c.setAttribute('aria-pressed',(S.f[c.dataset.k]||'')===c.dataset.v)); renderList(); break; }

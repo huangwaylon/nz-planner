@@ -17,6 +17,14 @@
   .pl-collect .pl-cc{grid-template-columns:minmax(0,1fr);margin:0;padding:0 0 12px;overflow:hidden;contain-intrinsic-size:auto 330px;container:card/inline-size;}
   .pl-collect .pl-cc>.pl-plate{position:relative;width:100%;height:auto;aspect-ratio:3/2;border-radius:0;margin:0;}
   .pl-collect .pl-plate img{width:100%;height:100%;object-fit:cover;display:block;}
+  .pl-collect .pl-mos{display:grid;grid:1fr 1fr/2fr 1fr;gap:2px;background:var(--surface-2);}
+  .pl-mos>img{min-height:0;}
+  .pl-mos>img:first-of-type,.pl-mos:not(:has(>img:nth-of-type(3)))>img{grid-row:span 2;}
+  .pl-mos:not(:has(>img:nth-of-type(2))){grid-template-columns:1fr;}
+  .pl-mfb{display:contents;}
+  .pl-mos:has(>img)>.pl-mfb,.pl-mos:not(:has(>img))>.pl-cred{display:none;}
+  .pl-mos:not(:has(>img)){display:block;}
+  .pl-mfb>.pl-plate{width:100%;height:100%;border-radius:0;margin:0;}
   .pl-collect .pl-noph{display:grid;place-items:center;align-content:center;gap:4px;background:var(--surface-2);color:var(--ink-2);}
   .pl-collect .pl-noph .ic{width:32px;height:32px;}
   .pl-collect .pl-noph small{font:600 13.5px/1.3 var(--pl-serif);}
@@ -39,7 +47,8 @@
 .pl-ok{margin-left:auto;font:600 12px var(--pl-sans);font-style:normal;color:var(--pl-good);}
 .pl-pi{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin:0 0 4px;padding:6px 10px 6px 6px;border:0;border-radius:12px;background:var(--surface);box-shadow:0 0 0 1px var(--line);
   text-align:left;font:600 13.5px/1.45 var(--pl-serif);color:var(--ink);cursor:grab;}
-.pl-tn{flex:none;width:32px;height:32px;border-radius:8px;object-fit:cover;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-2);}
+.pl-tn{flex:none;width:32px;height:32px;border-radius:8px;overflow:hidden;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-2);}
+.pl-tn img{width:100%;height:100%;object-fit:cover;display:block;}
 .pl-pg{margin:0 0 8px;padding:8px;border-radius:14px;box-shadow:inset 0 0 0 1.5px var(--ink);cursor:grab;}
 .pl-pg b{font:600 15px var(--pl-serif);} .pl-pg small{margin-left:6px;font:600 12px var(--pl-num);color:var(--muted);}
 .pl-pg .pl-pi{margin-top:4px;}

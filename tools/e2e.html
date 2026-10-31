@@ -176,6 +176,17 @@
     ok(!!c14 && qa('.pl-cal-vt thead th').length >= 2, '③ shows the month and at least two versions');
     if (c14) { c14.click(); await wait(400); }
     ok(view().dataset.stage === 'plan' && q('.pl-daybtn[data-day="3"]').getAttribute('aria-pressed') === 'true', 'a calendar day opens ② on that day');
+    /* the gallery: a picture that fails is dropped and the next shows; with none left, the fallback card */
+    const G = await view()._pl.gal(), gid = Object.keys(G)[0], g0 = G[gid];
+    ok(!!gid && !!q('link[href*="planner-gallery.css"]'), 'gallery.json and its chunk load on demand');
+    const bad = n => Object.assign({}, g0[0], {u: 'images/nz/e2e-missing-' + n + '.jpg'});
+    G[gid] = [bad(1), Object.assign({}, g0[0], {u: 'images/nz/arataki-1a10aefe-t.jpg'})];
+    view()._pl.open(gid);
+    const shown = await until(() => { const f = qa('.pl-gal .pl-gf'), im = f[0] && f[0].querySelector('img'); return f.length === 1 && im.complete && im.naturalWidth > 0 && /arataki/.test(im.src); }, 6000);
+    ok(!!shown && !qa('.pl-gdots i').length && getComputedStyle(q('.pl-gal .pl-gfb')).display === 'none', 'a broken gallery URL is dropped and the next picture shows');
+    G[gid] = [bad(2), bad(3)]; view()._pl.open(gid);
+    ok(await until(() => q('.pl-gal') && !q('.pl-gal .pl-gf') && getComputedStyle(q('.pl-gal .pl-gfb')).display !== 'none', 6000), 'with every gallery URL broken the photo or colour card shows');
+    G[gid] = g0; doc().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await wait(300);
     /* the phone never asked for the desktop chunk */
     ok(!fr.contentWindow.performance.getEntriesByType('resource').some(e => /planner-desk/.test(e.name)), 'a 393-wide planner never loads planner-desk');
     /* ---------- wide: 1440 then 1920, in a second frame ---------- */
@@ -203,7 +214,7 @@
     pe(src, 'pointerdown', sr.x + 8, sr.y + 8);
     for (let i = 1; i <= 8; i++) { pe(wf.contentWindow, 'pointermove', sr.x + 8 + (tl.x + 80 - sr.x) * i / 8, sr.y + 8 + (tl.bottom - 30 - sr.y) * i / 8); await wait(40); }
     await wait(120);
-    const gtxt = (wq('.pl-dgh') || {}).textContent || '', at = (/着 (\d\d:\d\d)/.exec(gtxt) || [])[1];
+    const gtxt = (wq('.pl-dgh') || {}).textContent || '', at = (/着 ((?:翌)?\d\d:\d\d)/.exec(gtxt) || [])[1];
     ok(!!at, 'the ghost shows the arrival before the drop: ' + gtxt.slice(0, 60));
     pe(wf.contentWindow, 'pointerup', tl.x + 80, tl.bottom - 30); await wait(400);
     const armed = !wq('.pl-armbar').hidden;
