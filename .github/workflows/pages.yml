@@ -1,0 +1,60 @@
+# Deploys the planner to GitHub Pages from an explicit file list (tools/dist.sh), after the parser
+# tests and the itinerary checker pass. https://huangwaylon.github.io/nz-planner/
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.ref) || 'pages' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      # Pinned like ../fitness: the e2e runner needs Node 22+ for its global WebSocket.
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+      - run: node tools/gmlist.test.js
+      - run: node tools/igsaved.test.js
+      - run: node tools/swap.test.js
+      # The app's simulation against check_plans.py, every preset day plus the trust edge cases.
+      - run: node tools/sim.test.js
+      # The page itself, headless: imports survive a reload, ⚠ day pills ask twice, the map tween ends.
+      # Needs Node 22+ (global WebSocket) and the runner image's Google Chrome.
+      - run: node tools/e2e-run.js
+      # Every version's days must still simulate cleanly against the shipped data.
+      - run: python3 tools/sun.py
+      - run: python3 tools/check_plans.py --gate
+      - run: sh tools/dist.sh
+        env:
+          DIST_DENY: ${{ secrets.DIST_DENY }}
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

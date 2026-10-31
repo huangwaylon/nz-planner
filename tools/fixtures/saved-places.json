@@ -1,0 +1,29 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature",
+     "geometry": {"type": "Point", "coordinates": [174.7621796, -36.8484982]},
+     "properties": {"date": "2026-10-01T09:00:00Z",
+       "google_maps_url": "http://maps.google.com/?cid=16793321589248570541",
+       "location": {"address": "72-78 Victoria Street West, Auckland CBD, Auckland 1010, New Zealand",
+                    "country_code": "NZ", "name": "Orbit 360° Dining"}}},
+    {"type": "Feature",
+     "geometry": {"type": "Point", "coordinates": [0, 0]},
+     "properties": {"date": "2026-10-02T09:00:00Z",
+       "google_maps_url": "http://maps.google.com/?q=-39.0556,174.0752",
+       "Comment": "No location information is available for this saved place"}},
+    {"type": "Feature",
+     "geometry": {"type": "Point", "coordinates": [0, 0]},
+     "properties": {"date": "2026-10-03T09:00:00Z",
+       "google_maps_url": "http://maps.google.com/?cid=3490847305707780824",
+       "Comment": "No location information is available for this saved place"}},
+    {"type": "Feature",
+     "geometry": {"type": "Point", "coordinates": [176.3696, -38.3577]},
+     "properties": {"Title": "Hot n Cold",
+       "Google Maps URL": "http://maps.google.com/?cid=3490847305707780824",
+       "Published": "2019-01-01T00:00:00Z",
+       "Location": {"Address": "201 Waiotapu Loop Road, Waiotapu 3073, New Zealand",
+                    "Business Name": "Hot n Cold", "Country Code": "NZ",
+                    "Geo Coordinates": {"Latitude": "-38.3577", "Longitude": "176.3696"}}}}
+  ]
+}

@@ -1,0 +1,6 @@
+# Kept local: the traveller profile, flight details, tester reports and screenshots.
+research/
+SPEC.md
+__pycache__/
+.DS_Store
+_site/

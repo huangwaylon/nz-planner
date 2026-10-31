@@ -1,0 +1,45 @@
+/* POC ONLY — the book's page chrome, so planner.css can be judged in its real surroundings.
+   None of this folds: the book already has all of it. */
+:root{
+  --font-sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-display:"New York","Iowan Old Style","Palatino Linotype",Palatino,Georgia,ui-serif,serif;
+  --font-jp:"Hiragino Mincho ProN","Hiragino Mincho Pro","Yu Mincho","YuMincho","Noto Serif JP",serif;
+  --tabh:0px;   /* no tab bar in the POC; the book's is 86px */ --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+}
+/* Copied verbatim from ../travel-plans/index.html. */
+  .t-nz{
+    --bg:#f5f4f8; --bg-2:#ebeaf1;
+    --surface:#ffffff; --surface-2:#f4f3f8; --surface-3:#eae8f1;
+    --line:rgba(27,29,51,.10); --line-2:rgba(27,29,51,.055); --line-strong:rgba(27,29,51,.17);
+    --ink:#1b1d33; --ink-2:#414565; --muted:#5e6382; --faint:#686d87;
+    --acc:#2f5d9e; --acc-d:#244a80; --acc-soft:rgba(47,93,158,.10); --acc-ring:rgba(47,93,158,.30);
+    --acc2:#c9832b; --acc2-soft:rgba(201,131,43,.12); --acc2-ring:rgba(201,131,43,.34);
+    --eyebrow:#ffd08a;
+    --tabbar:246,245,250;
+    --map-sea:#cbd9ea;
+    /* Six days drawn together need six colours that hold up over pale land and paler sea. */
+    --d1:#1f6fe0; --d2:#e0453f; --d3:#00996f; --d4:#e07c00; --d5:#8a3fd6; --d6:#0aa2bd;
+    --scrim:14,16,34;
+  }
+*,*::before,*::after{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;background:#f5f4f8;}
+body{margin:0;font-family:var(--font-sans);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+.guide{background:var(--bg);color:var(--ink);min-height:100vh;min-height:100dvh;}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+.js-tabs .view{display:none;}
+.js-tabs .v-plan{display:block;}   /* the book shows a view through its tab radios */
+
+.poc-top{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:calc(var(--safe-t) + 10px) 14px 8px;background:#f5f4f8;color:#1b1d33;}
+.poc-title{font:600 15px/1.2 var(--font-jp);}
+html[lang="en"] .poc-title{font-family:var(--font-display);}
+.poc-set{display:flex;gap:6px;}
+.poc-seg{display:flex;padding:3px;border-radius:999px;background:#eae8f1;}
+.poc-seg button{min-width:44px;height:44px;padding:0 10px;border:0;border-radius:999px;background:none;font:700 12.5px var(--font-sans);color:#5e6382;cursor:pointer;}
+.poc-seg button.active{background:#fff;color:#1b1d33;box-shadow:0 1px 3px rgba(27,29,51,.14);}
+
+.update-banner{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--safe-t) + 10px);z-index:80;display:flex;align-items:center;gap:12px;
+  padding:7px 7px 7px 18px;border-radius:999px;background:#1b1d33;color:#fff;box-shadow:0 8px 30px rgba(18,32,28,.25);font:600 13.5px var(--font-sans);white-space:nowrap;}
+.update-banner button{min-height:40px;padding:0 16px;border:0;border-radius:999px;background:#2f5d9e;color:#fff;font:700 13px var(--font-sans);}
+.update-banner button:disabled{opacity:.6;}
+.update-banner[hidden]{display:none;}

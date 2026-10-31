@@ -1,0 +1,129 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>planner e2e</title>
+<!-- End-to-end regression checks that need the real page (a DOM, storage, a reload). Not shipped.
+     Serve the repo root and open /tools/e2e.html, or headless in CI:
+       python3 -m http.server 8790 &
+       google-chrome --headless=new --no-sandbox --virtual-time-budget=60000 --dump-dom \
+         http://localhost:8790/tools/e2e.html | grep -q 'E2E PASS'
+     It overwrites plan:nz and plan-ui:nz for this origin, so use a throwaway profile. -->
+<pre id="out">E2E RUNNING</pre>
+<script>
+(async () => {
+  const lines = [], wait = ms => new Promise(r => setTimeout(r, ms));
+  let fails = 0;
+  const ok = (c, m) => { lines.push((c ? 'ok   ' : 'FAIL ') + m); if (!c) fails++; };
+  const until = async (f, ms = 10000) => { const t = Date.now(); while (Date.now() - t < ms) { try { const v = f(); if (v) return v; } catch (e) {} await wait(50); } return null; };
+  const done = () => { lines.push(fails ? 'E2E FAIL (' + fails + ')' : 'E2E PASS'); document.getElementById('out').textContent = lines.join('\n'); document.title = fails ? 'E2E FAIL' : 'E2E PASS'; };
+  try {
+    const plans = await (await fetch('../data/nz/plans.json')).json();
+    const base = plans.plans[0], D12 = '2027-02-12';
+    /* an imported place, placed on Day 12 of My plan: it must survive a reload (R3 QA P0-1) */
+    const IMP = {id: 'gm-e2e-beach', name: 'E2E Test Beach', src: 'gmaps', lat: -36.95, lon: 174.47, note: ''};
+    const days = JSON.parse(JSON.stringify(base.days)); days[D12] = (days[D12] || []).concat([IMP.id]);
+    localStorage.setItem('plan:nz', JSON.stringify({v: 1, active: 'my', my: {id: 'my', from: base.id, days, stay: {}, start: {}, notes: {}}, versions: [], imports: [IMP], booked: {}}));
+    localStorage.setItem('plan-ui:nz', JSON.stringify({v: 1, day: 1, map: 'peek', hideIntro: true, hideInstall: true}));
+    const fr = document.createElement('iframe'); fr.style.cssText = 'width:393px;height:852px;border:0';
+    document.body.appendChild(fr);
+    const errs = [];
+    const load = () => new Promise(res => { fr.onload = () => { const w = fr.contentWindow;
+      w.addEventListener('error', e => errs.push(String(e.message)));
+      w.addEventListener('unhandledrejection', e => errs.push(String(e.reason)));
+      const ce = w.console.error; w.console.error = (...a) => { errs.push(a.map(String).join(' ')); ce.apply(w.console, a); };
+      res(); }; fr.src = '../index.html?nosw&e2e=' + Date.now(); });
+    const doc = () => fr.contentDocument, q = s => doc().querySelector(s), qa = s => [...doc().querySelectorAll(s)];
+    const view = () => q('.v-plan'), rows = () => qa('main .pl-row');
+
+    await load();
+    ok(await until(() => rows().length), 'boots and renders the day');
+    ok(!!q('main .pl-row[data-id="' + IMP.id + '"]'), 'an imported place on the day renders after a reload');
+    const n0 = rows().length;
+
+    /* add a candidate to the same day through the picker: no throw, the day grows, the import stays */
+    q('.pl-browsebtn').click();
+    const add = await until(() => qa('.pl-clist .pl-addbtn')[0]);
+    ok(!!add, 'the candidate list opens');
+    add.click();
+    const pill = await until(() => q('.pl-dayq .pl-dq[data-day="1"]'));
+    ok(!!pill && /\d/.test(pill.textContent), 'the day pill shows its simulated cost');
+    pill.click(); if (pill.dataset.why && pill.isConnected) pill.click();
+    ok(await until(() => rows().length === n0 + 1, 3000), 'adding to a day that holds an import works');
+    ok(!!q('main .pl-row[data-id="' + IMP.id + '"]'), 'the import is still on the day after the add');
+
+    /* a far add on the flight day warns first and needs a second tap (R3 P0-1) */
+    const s = q('.pl-q'); s.value = 'パリトゥトゥ'; s.dispatchEvent(new Event('input', {bubbles: true}));
+    const far = await until(() => q('.pl-cand[data-id="paritutu-rock"] .pl-addbtn'));
+    if (far) {
+      far.click();
+      const p16 = await until(() => q('.pl-cand[data-id="paritutu-rock"] .pl-dq[data-day="5"]'));
+      const before = view()._pl.sim('my')[5].rows.length;
+      ok(!!p16 && /フライト|flight/i.test(p16.dataset.why || ''), 'Feb 16 pill names the flight before the tap');
+      p16.click();
+      ok(view()._pl.sim('my')[5].rows.length === before && /フライト|flight/i.test(q('.pl-cand[data-id="paritutu-rock"] .pl-dayqm').textContent), 'the first tap on a ⚠ day explains and does not add');
+    } else ok(false, 'search finds Paritutu');
+    q('.pl-sheet [data-act="close"], [data-act="close"]').click();
+
+    /* reload: the add persisted with the import */
+    const n1 = rows().length;
+    await load();
+    ok(await until(() => rows().length === n1), 'after a reload the day has the same stops');
+    ok(!!q('main .pl-row[data-id="' + IMP.id + '"]'), 'the import survives a second reload');
+
+    /* a day tap animates the map; afterwards nothing may think a gesture is still running, and the
+       full coastline must still arrive (R3 QA P1-2: M.tw was never cleared) */
+    q('.pl-daybtn[data-day="2"]').click();
+    await wait(900);
+    ok(view()._pl.busy() === false, 'no gesture or tween is left running after a day tap');
+    ok(await until(() => view()._pl.land() > 20, 12000), 'the full coastline replaces the light one after the tap');
+    q('.pl-daybtn[data-day="4"]').click(); await wait(900);
+    ok(view()._pl.busy() === false, 'still idle after a second animated move');
+
+    /* R4 P0: every committing action previews first. 日を移動 to the flight day says why on the day
+       button and needs a second tap; the toast after it names what broke */
+    const toastTxt = () => (q('.pl-toast span') || {}).textContent || '';
+    q('.pl-daybtn[data-day="3"]').click(); await wait(700);
+    const mv = await until(() => q('main .pl-row[data-id="three-sisters-elephant-rock"] [data-act="move"]'));
+    if (mv) {
+      const d16 = () => view()._pl.sim('my')[5].rows.map(r => r[2]).join();
+      const before16 = d16();
+      mv.click();
+      const p16 = await until(() => q('.pl-sbody [data-act="domove"][data-day="5"]'));
+      ok(!!p16 && /フライト/.test((p16.querySelector('.pl-dwhy') || {}).textContent || ''), '日を移動: the flight day shows ⚠ and why before the tap');
+      p16.click(); await wait(300);
+      ok(d16() === before16 && !!q('.pl-sbody [data-act="domove"]') && /⚠/.test(toastTxt()), '日を移動: the first tap explains and moves nothing');
+      q('.pl-sbody [data-act="domove"][data-day="5"]').click(); await wait(500);
+      ok(d16() !== before16 && /⚠/.test(toastTxt()), '日を移動: the second tap moves, and the toast names what broke');
+      q('.pl-toast .pl-tu').click(); await wait(500);
+      ok(d16() === before16, 'undo puts the stop back');
+    } else ok(false, 'Three Sisters has a move button on Feb 14');
+
+    /* a typed start time that breaks the day: the inline bar offers keep or undo */
+    q('.pl-daybtn[data-day="5"]').click(); await wait(700);
+    const tin = q('main .pl-timein');
+    if (tin) { const was = view()._pl.sim('my')[5].rows[0][0];
+      tin.value = '16:00'; tin.dispatchEvent(new Event('change', {bubbles: true}));
+      const bar = await until(() => q('main .pl-confirm'), 3000);
+      ok(!!bar && /この並びだと|With this order/.test(bar.textContent), 'a breaking start time shows the inline keep/undo bar');
+      if (bar) { bar.querySelector('[data-act="undoit"]').click(); await wait(500); }
+      ok(view()._pl.sim('my')[5].rows[0][0] === was, '元に戻す in the bar restores the start');
+    } else ok(false, 'the start time field exists');
+
+    /* stay ± on a place that is on two days changes that day only (stayDay) */
+    q('.pl-planbtn').click(); const hut = await until(() => q('.pl-planopt[data-id="hut"]'));
+    hut.click(); await wait(600); q('[data-act="close"]') && q('[data-act="close"]').click();
+    q('.pl-daybtn[data-day="3"]').click(); await wait(700);
+    const t13 = () => JSON.stringify(view()._pl.sim('hut')[2].rows.find(r => r[2] === 'pouakai-tarns'));
+    const myT13 = () => JSON.stringify((view()._pl.sim('my')[2].rows.find(r => r[2] === 'pouakai-tarns')));
+    const plus = q('main .pl-row[data-id="pouakai-tarns"] [data-act="stay"][data-d="15"]');
+    if (plus) { const b13 = t13();
+      plus.click(); await wait(400); if (/⚠/.test(toastTxt())) { q('main .pl-row[data-id="pouakai-tarns"] [data-act="stay"][data-d="15"]').click(); await wait(400); }
+      const saved = JSON.parse(localStorage.getItem('plan:nz')).my;
+      ok(saved && saved.stayDay && saved.stayDay['2027-02-14'] && saved.stayDay['2027-02-14']['pouakai-tarns'] > 0 && (saved.stay || {})['pouakai-tarns'] === ((plans.plans.find(x => x.id === 'hut').stay || {})['pouakai-tarns']), 'stay ± writes stayDay for a place on two days');
+      ok(myT13() === b13, 'the Feb 13 visit is unchanged');
+    } else ok(false, 'the tarns have a stay stepper on Feb 14');
+
+    ok(!errs.length, 'no errors' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
+  } catch (e) { ok(false, 'threw: ' + (e && e.stack || e)); }
+  done();
+})();
+</script>
