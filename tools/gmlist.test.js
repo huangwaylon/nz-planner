@@ -5,7 +5,7 @@ const fs=require('fs'), path=require('path'), vm=require('vm'), assert=require('
 const ROOT=path.join(__dirname,'..'), FX=f=>fs.readFileSync(path.join(ROOT,'tools','fixtures',f),'utf8');
 const ctx={BigInt}; vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'gmlist.js'),'utf8'),ctx,{filename:'gmlist.js'});
-const G=ctx.gmlist, TABLE=JSON.parse(fs.readFileSync(path.join(ROOT,'research','gm-regions.json'),'utf8'));
+const G=ctx.gmlist, TABLE=JSON.parse(fs.readFileSync(path.join(ROOT,'data','nz','gm-regions.json'),'utf8'));
 
 let pass=0, fail=0;
 function t(name,fn){ try{ fn(); pass++; console.log('ok   '+name); }catch(e){ fail++; console.log('FAIL '+name+'\n     '+(e.message||e)); } }
