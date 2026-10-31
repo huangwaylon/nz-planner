@@ -29,6 +29,7 @@ jobs:
       - run: node tools/gmlist.test.js
       - run: node tools/igsaved.test.js
       - run: node tools/swap.test.js
+      - run: node tools/strings.test.js
       # The app's simulation against check_plans.py, every preset day plus the trust edge cases.
       - run: node tools/sim.test.js
       # The page itself, headless: imports survive a reload, ⚠ day pills ask twice, the map tween ends.

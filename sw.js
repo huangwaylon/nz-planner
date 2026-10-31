@@ -2,9 +2,9 @@
    file). DATA holds data/nz/* under a name that changes with SHELL; it is fetched network-first
    with a 1.5 s fallback to the cache, so a data-only change reaches the next launch and offline
    still opens. MEDIA holds the photos under a fixed name: a changed photo gets a new filename. */
-const SHELL = 'nzp-shell-v7';
+const SHELL = 'nzp-shell-v8';
 /* The data cache is renamed with every SHELL bump, so a deploy never serves last build's plans.json. */
-const DATA = 'nzp-data-v7';
+const DATA = 'nzp-data-v8';
 const MEDIA = 'nzp-media';     // photos: a changed photo gets a new filename, so this name never changes
 const APP = ['./', './index.html', './poc.css', './planner.css', './host.js', './planner.js', './import.js', './planner-import.js', './planner-import.css', './planner-more.js', './manifest.webmanifest', './icon-180.png'];
 const FILES = ['./data/nz/places.json', './data/nz/plans.json', './data/nz/travel.json', './data/nz/land-lo.svg.html', './data/nz/land.svg.html', './data/nz/places-more.json', './data/nz/flags.json'];

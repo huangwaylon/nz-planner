@@ -12,6 +12,7 @@ var planner=(function(){
 
 /* ---------- strings: {key:{ja,en}}; {x} placeholders ---------- */
 const PT={
+  saveVer:{ja:'この案を保存',en:'Save this version'},
   plan:{ja:'プラン',en:'Plan'}, my:{ja:'マイプラン',en:'My plan'}, share:{ja:'共有',en:'Share'}, browse:{ja:'候補をさがす',en:'Browse places'},
   zoomIn:{ja:'拡大',en:'Zoom in'}, zoomOut:{ja:'縮小',en:'Zoom out'}, fit:{ja:'この日に合わせる',en:'Fit to day'},
   expand:{ja:'地図を大きく',en:'Enlarge map'}, shrink:{ja:'地図を小さく',en:'Shrink map'},
