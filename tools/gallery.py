@@ -81,13 +81,30 @@ def main():
         report(g, known)
         sys.exit(1 if log or again != g else 0)
     g = {}
+    fx = os.path.join(ROOT, 'research', 'gallery-fix.json')
+    alias = json.load(open(fx)).get('alias', {}) if os.path.exists(fx) else {}
     for f in SRC:
         if os.path.exists(f):
-            for pid, imgs in clean(json.load(open(f)), known, log).items():
+            raw = {}
+            for pid, imgs in json.load(open(f)).items():   # a dropped duplicate's images join its survivor
+                raw.setdefault(alias.get(pid, pid), []).extend(imgs or [])
+            for pid, imgs in clean(raw, known, log).items():
                 have = {x['u'] for x in g.get(pid, [])}
                 g[pid] = (g.get(pid, []) + [x for x in imgs if x['u'] not in have])[:MAX_PER_PLACE]
         else:
             log.append('missing ' + f)
+    # research/gallery-fix.json: reviewer corrections by URL, applied last so a re-merge keeps them.
+    fx = os.path.join(ROOT, 'research', 'gallery-fix.json')
+    if os.path.exists(fx):
+        fix = json.load(open(fx))
+        for pid, urls in fix.get('drop', {}).items():
+            if pid in g:
+                g[pid] = [x for x in g[pid] if x['u'] not in set(urls)]
+                if not g[pid]:
+                    del g[pid]
+        for pid in g:
+            for x in g[pid]:
+                x.update(fix.get('alt', {}).get(x['u'], {}))
     json.dump(g, open(OUT, 'w'), ensure_ascii=False, separators=(',', ':'), sort_keys=True)
     print('\n'.join(log[:60]) + ('\n… %d more' % (len(log) - 60) if len(log) > 60 else ''))
     report(g, known)

@@ -114,7 +114,6 @@
     "2027-02-14": [
      "mangorei-trailhead",
      "pouakai-tarns",
-     "mangorei-trailhead",
      "three-sisters-elephant-rock",
      "mokau",
      "te-kuiti",
@@ -759,7 +758,6 @@
     "2027-02-14": [
      "mangorei-trailhead",
      "pouakai-tarns",
-     "mangorei-trailhead",
      "three-sisters-elephant-rock",
      "mokau",
      "te-kuiti",
@@ -1098,8 +1096,7 @@
    "ids": [
     "len-lye-centre-facade",
     "wind-wand-coastal-walkway",
-    "te-rewa-rewa-bridge",
-    "np-coastal-walkway"
+    "te-rewa-rewa-bridge"
    ],
    "startAt": "16:02"
   },
