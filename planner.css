@@ -406,11 +406,36 @@ html.pl-failed .pl-skel{display:none;}
   color:var(--eyebrow,var(--surface));font-weight:700;font-size:13.5px;}
 .pl-toast:not(:has(button)){padding-right:18px;min-height:52px;}
 
-@container plan (min-width:700px){
-  .pl-mapbox{--pl-maph:min(38vh,360px);}
-  .pl-days,.pl-mapcard,.pl-bar,.pl-stages{max-width:640px;margin-left:auto;margin-right:auto;}
-  .pl-days{padding-left:0;padding-right:0;}
+/* ---------- wide layouts: the grid skeleton lives here, so a wide first paint never shifts. One map
+   node, placed by grid-area in every template; .pl-stick dissolves into the grid from 640. ---------- */
+.pl-palette,.pl-board{display:none;}
+@container plan (min-width:640px){
+  .pl-shell{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);column-gap:24px;align-items:start;max-width:2560px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left));
+    grid-template-areas:"bar bar" "stg stg" "days days" "note map" "main map" "col map" "rev rev";}
+  .pl-stick,.v-plan[data-stage="collect"] .pl-stick{display:contents;}
+  .pl-bar{grid-area:bar;padding-left:0;padding-right:0;}
+  .pl-stages{grid-area:stg;margin-left:0;margin-right:0;max-width:560px;}
+  .pl-days{grid-area:days;position:sticky;top:0;z-index:21;padding:10px 0;background:var(--bg);}
+  .pl-notice{grid-area:note;} .pl-main{grid-area:main;max-width:none;padding-left:0;padding-right:0;}
+  .pl-shell .pl-collect{grid-area:col;max-width:none;margin:0;padding-left:0;padding-right:0;} .pl-shell .pl-review{grid-area:rev;max-width:none;margin:0;padding-left:0;padding-right:0;}
+  .pl-mapcard{grid-area:map;position:sticky;top:96px;margin:10px 0 24px;}
+  .pl-mapcard .pl-mapbox,.pl-stick.pl-scrolled .pl-mapcard:not(.pl-full) .pl-mapbox{height:calc(100vh - 140px);height:calc(100dvh - 140px);}
+  .pl-maptoggle,.pl-fullbtn,.pl-sentinel{display:none;}
+  .v-plan[data-stage="collect"] .pl-days{display:none;}
+  .v-plan[data-stage="collect"] .pl-mapcard{top:24px;}
 }
+@container plan (min-width:1024px){
+  .pl-shell{grid-template-columns:280px minmax(360px,440px) minmax(0,1fr);grid-template-areas:"bar bar bar" "stg stg stg" "days days days" "pal note map" "pal main map" "col col map" "rev rev rev";}
+  .v-plan[data-stage="plan"] .pl-palette{display:block;grid-area:pal;position:sticky;top:96px;max-height:calc(100dvh - 120px);overflow:auto;}
+  .v-plan[data-stage="collect"] .pl-shell{grid-template-columns:minmax(0,1fr) 420px;grid-template-areas:"bar bar" "stg stg" "col map";}
+}
+/* the 6-day board (planner-desk.js sets .pl-6): six columns, the map docked narrow */
+@container plan (min-width:1440px){
+  .v-plan.pl-6[data-stage="plan"] .pl-shell{grid-template-columns:280px minmax(0,1fr) 360px;grid-template-areas:"bar bar bar" "stg stg stg" "days days days" "pal brd map";}
+  .v-plan.pl-6[data-stage="plan"] :is(.pl-main,.pl-notice){display:none;}
+  .v-plan.pl-6[data-stage="plan"] .pl-board{display:grid;grid-area:brd;}
+}
+@container plan (min-width:1600px){ .pl-shell{column-gap:32px;} }
 /* short screens (SE 1st gen): the zoom cluster goes sideways so it cannot meet the footer */
 @media (max-height:600px){ .pl-mapctl{flex-direction:row;} }
 /* 200% page zoom: icon-only map buttons, the numeral above the title */

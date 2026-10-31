@@ -555,7 +555,7 @@ planner.more=function(c){
       ${S.my?`<button type="button" class="pl-btn pl-danger" data-act="reset">${ic('trash','sm')}${pt('reset')}</button>`:''}`,'plans');
   }
   return {
-    codeNow:()=>pack(payload()),
+    codeNow:()=>pack(payload()), moveFn,
     openBrowse, renderList, patchCand, openPlace, openPlans, dayPick, armPill, openMove, openStory, applyAdd, groupSheet, nameSheet, renderReview,
     openOrder, openVerName, saveVersionNamed, openCompare, openSwap, shareLink, importCode, codeOf,
     nameState,

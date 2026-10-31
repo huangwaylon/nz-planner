@@ -438,14 +438,14 @@ const plannerFn=function planner(g){
     hideInstall:!!ui.hideInstall, hideIntro:!!ui.hideIntro, saveFail:false,
     sel:null, sc:null, f:{q:'',cat:null,area:null,saved:null,sort:'trend'}, hist:[], browsing:false, drafts:{}, noteOpen:null,
     dayEnd:okHM(ui.dayEnd)?toMin(ui.dayEnd):DEADLINE,
-    stage:['collect','plan','review'].indexOf(ui.stage)>=0?ui.stage:'plan', cf:ui.cf&&typeof ui.cf==='object'?ui.cf:{}
+    stage:['collect','plan','review'].indexOf(ui.stage)>=0?ui.stage:'plan', board:typeof ui.board==='boolean'?ui.board:null, cf:ui.cf&&typeof ui.cf==='object'?ui.cf:{}
   };
   /* road geometry cache, LRU, in plan-ui */
   const RC={map:ui.routes&&typeof ui.routes==='object'?ui.routes:{}, order:Array.isArray(ui.rorder)?ui.rorder.filter(k=>typeof k==='string'):[]};
   let DB=null, DRAG=null, PENDING=false;
 
   /* ---------- chrome: built once ---------- */
-  view.innerHTML=`
+  view.innerHTML=`<div class="pl-shell">
     <div class="pl-bar">
       <button class="pl-planbtn" type="button" aria-haspopup="dialog"><span class="pl-planbtn-k"></span><span class="pl-planbtn-v"></span>${ic('chevron-down','sm')}</button>
       <span class="pl-tools">
@@ -461,7 +461,7 @@ const plannerFn=function planner(g){
           <svg class="pl-map" viewBox="0 0 ${W} ${H}" role="img"><title></title>
             <rect class="pl-sea" x="-2000" y="-2000" width="4692" height="4824"/>
             <g class="pl-world">
-              <g class="pl-land"></g><g class="pl-others"></g><g class="pl-cands"></g>
+              <g class="pl-land"></g><g class="pl-alld"></g><g class="pl-others"></g><g class="pl-cands"></g>
               <g class="pl-legs"></g><g class="pl-stops"></g>
               <g class="pl-labg" visibility="hidden"><g class="pl-s"><text class="pl-lab" x="16" y="4.5"></text></g></g>
             </g>
@@ -485,7 +485,8 @@ const plannerFn=function planner(g){
     </div>
     <div class="pl-notice"></div>
     <div class="pl-main" aria-live="off"></div>
-    <section class="pl-collect"></section><section class="pl-review"></section>`;
+    <section class="pl-collect"></section><section class="pl-review"></section>
+    <aside class="pl-palette"></aside><section class="pl-board"></section></div>`;
   const layer=document.createElement('div');
   layer.innerHTML=`<div class="pl-layer pl-scrim" hidden></div>
     <div class="pl-layer pl-sheet" role="dialog" aria-modal="true" tabindex="-1" id="pl-sheet-${slug}" aria-labelledby="pl-sht-${slug}" hidden inert><div class="pl-grab" aria-hidden="true"></div><div class="pl-sbody"></div></div>
@@ -493,7 +494,8 @@ const plannerFn=function planner(g){
   [...layer.children].forEach(el=>g.appendChild(el));
   const q=s=>view.querySelector(s);
   const E={bar:q('.pl-planbtn'), days:q('.pl-days'), card:q('.pl-mapcard'), svg:q('.pl-map'), world:q('.pl-world'), main:q('.pl-main'),
-    notice:q('.pl-notice'), undo:q('.pl-undobtn'), stages:q('.pl-stages'), collect:q('.pl-collect'), review:q('.pl-review'), stick:q('.pl-stick'), toggle:q('.pl-maptoggle'), estnote:q('.pl-estnote'),
+    notice:q('.pl-notice'), undo:q('.pl-undobtn'), stages:q('.pl-stages'), collect:q('.pl-collect'), review:q('.pl-review'),
+    palette:q('.pl-palette'), board:q('.pl-board'), shell:q('.pl-shell'), stick:q('.pl-stick'), toggle:q('.pl-maptoggle'), estnote:q('.pl-estnote'),
     scrim:g.querySelector('.pl-scrim'), sheet:g.querySelector('.pl-sheet'), sbody:g.querySelector('.pl-sbody'), toast:g.querySelector('.pl-toast')};
   const svg=E.svg, main=E.main;
 
@@ -527,7 +529,7 @@ const plannerFn=function planner(g){
      replaced was copied to plan:<slug>:v1 before the first v2 write (loadState). */
   function save(){ const ok=LSJ.set(KP,{v:2,active:S.planId,trip:S.trip,my:S.my,versions:S.versions,imports:S.imports,booked:S.booked}); noteSave(ok); return ok; }
   let uiT=0; const saveUISoon=()=>{ clearTimeout(uiT); uiT=setTimeout(()=>idle(saveUI,2000),400); };
-  function saveUI(){ LSJ.set(KU,{v:1,stage:S.stage,cf:S.cf,day:S.day,map:S.map==='full'?'peek':S.map,dayEnd:S.dayEnd!==DEADLINE?hhmm(S.dayEnd):undefined,hideInstall:S.hideInstall,hideIntro:S.hideIntro,routes:RC.map,rorder:RC.order}); }
+  function saveUI(){ LSJ.set(KU,{v:1,stage:S.stage,cf:S.cf,board:S.board,day:S.day,map:S.map==='full'?'peek':S.map,dayEnd:S.dayEnd!==DEADLINE?hhmm(S.dayEnd):undefined,hideInstall:S.hideInstall,hideIntro:S.hideIntro,routes:RC.map,rorder:RC.order}); }
   function noteSave(ok){ if(ok===!S.saveFail) return; S.saveFail=!ok; renderNotice(); }
   const bodyOf=p=>JSON.stringify([p.days,p.stay||{},p.start||{},p.notes||{},p.stayDay||{}]);
   const nowHM=()=>{ const d=new Date(); return (d.getMonth()+1)+'/'+d.getDate()+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); };
@@ -686,6 +688,10 @@ const plannerFn=function planner(g){
     else if(st==='review') needMore().then(m=>m.renderReview(E.review));
     else { render(); loadLandLo(); }
     if(quiet==='key') view.querySelector(`.pl-stage[data-stage="${st}"]`).focus({preventScroll:true}); }
+  /* the wide layouts' code: only once the planner itself is ≥1024 wide, after first paint (a phone never asks) */
+  let DKP=null, DK=null;
+  function needDesk(){ if(DKP||view.clientWidth<1024) return; DKP=Promise.all([loadCss('pl-desk',view.dataset.deskCss||'planner-desk.css'),planner.desk?0:loadJs(view.dataset.deskSrc||'planner-desk.js')])
+    .then(()=>{ DK=planner.desk(ctx()); render(); }).catch(e=>{ console.error(e); DKP=null; }); }
   let COLP=null, CM=null;
   function needCollect(){ return COLP||(COLP=Promise.all([loadCss('pl-col',view.dataset.collectCss||'planner-collect.css'),planner.collect?0:loadJs(view.dataset.collectSrc||'planner-collect.js')])
     .then(()=>(CM=planner.collect(ctx())),e=>{ COLP=null; toast(pt('loadFail')); throw e; })); }
@@ -1064,7 +1070,7 @@ const plannerFn=function planner(g){
     if(!M.ready||S.map==='closed'||!S.sc){ M.needFit=true; return; }
     M.needFit=false;
     const xs=[], ys=[];
-    S.sc.rows.forEach(r=>{ const p=place(r.id), xy=prj(p.lat,p.lon); xs.push(xy[0]); ys.push(xy[1]); });
+    (view.classList.contains('pl-6')?DB.days.flatMap(d=>schedule(d).rows):S.sc.rows).forEach(r=>{ const p=place(r.id), xy=prj(p.lat,p.lon); xs.push(xy[0]); ys.push(xy[1]); });   /* the board fits every day */
     const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys), pw=M.pxw, ph=pw/M.A;
     const PL=24, PR=62, PT=26, PB=58;   /* clear of the zoom buttons (right) and the map footer (bottom) */
     const floor=x1-x0<1&&y1-y0<1?120:16;  /* one place only: a city-sized frame, not 43× on a roof */
@@ -1150,7 +1156,7 @@ const plannerFn=function planner(g){
     else { addEventListener('resize',()=>measure()); raf(()=>measure()); }
     E.toggle.addEventListener('click',()=>{ S.map=S.map==='closed'?'peek':'closed'; saveUI(); mapState(); if(S.map!=='closed') setTimeout(()=>fitDay(),380); });
     /* the sticky map shrinks to a strip once the list scrolls under it */
-    if(window.IntersectionObserver){ const sen=document.createElement('div'); sen.className='pl-sentinel'; view.insertBefore(sen,E.notice);
+    if(window.IntersectionObserver){ const sen=document.createElement('div'); sen.className='pl-sentinel'; E.notice.before(sen);
       new IntersectionObserver(es=>{ E.stick.classList.toggle('pl-scrolled',!es[0].isIntersecting&&es[0].boundingClientRect.top<0); }).observe(sen); }
   }
   function setFull(on){
@@ -1301,6 +1307,7 @@ const plannerFn=function planner(g){
     const fk=focusKey(), ta=document.activeElement&&document.activeElement.tagName==='TEXTAREA'?document.activeElement:null, sel=ta?[ta.selectionStart,ta.selectionEnd]:null;
     rebuildPlaces(); renderTop(); renderDays(); renderMain(anim); renderMap(); renderStages();
     if(S.stage==='collect'&&CM) CM.render(); else if(S.stage==='review'&&MM) MM.renderReview(E.review);
+    if(DK) DK.render();
     if(fk&&!main.contains(document.activeElement)){ const t=main.querySelector(fk); if(t) t.focus({preventScroll:true}); }
     if(ta&&S.noteOpen){ const t=main.querySelector(`#pl-ne-${slug}-${S.noteOpen} textarea`); if(t){ t.focus({preventScroll:true}); try{ t.setSelectionRange(sel[0],sel[1]); }catch(e){} } }
     const f=after; after=[]; f.forEach(x=>x());
@@ -1470,7 +1477,7 @@ const plannerFn=function planner(g){
   function ctx(){ return {S,DB,E,view,svg,slug,SRC,pt,esc,ic,head,doneBar,openSheet,closeSheet,toast,undo,pushHist,save,render,edit,plan,findPlan,planName,presetName,
     idsOf,schedule,dayStyle,dlabel,dayTitle,dur,hm,nm,nmLang,wbr,place,bodyOf,snapshot,renderTop,fitDay,isCand,plannedMap,FAMILY,thumb,tr,CAT,AREA,
     unverifiedHours,reorder,focusStop,afterRender,okHM,clone,switchToMe,hav,mapState,saveUI,select,unprj,ja,showCands,stopPlacing,impChanged,
-    savedTag,sigLine,warnText,breakText,guard,trial,breakLine,keepMy,armed,legSegments,geom,g,main,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:o=>Object.assign(PT,o)}; }
+    savedTag,sigLine,warnText,breakText,guard,trial,breakLine,keepMy,armed,legSegments,geom,arc,pathD,g,main,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:o=>Object.assign(PT,o)}; }
   const openOrder=id=>needMore().then(m=>m.openOrder(id));
   const openSwap=id=>needMore().then(m=>m.openSwap(id));
   const openCompare=(a,b)=>needMore().then(m=>m.openCompare(a,b));
@@ -1590,6 +1597,7 @@ const plannerFn=function planner(g){
     queueMicrotask(()=>{ wired=true; const t=pendingTap; pendingTap=null; if(t&&t.isConnected) t.click(); });
     E.days.addEventListener('click',e=>{ const b=e.target.closest('.pl-daybtn'); if(b) setDay(+b.dataset.day); });
     E.bar.addEventListener('click',openPlans);
+    let rz=0; if(window.ResizeObserver) new ResizeObserver(()=>{ if(!rz) rz=raf(()=>{ rz=0; needDesk(); if(DK) DK.render(); }); }).observe(view); else needDesk();
     E.stages.addEventListener('click',e=>{ const b=e.target.closest('.pl-stage'); if(b) setStage(b.dataset.stage); });
     /* [ and ] step between the stages (by e.code, so a JIS keyboard works); ① owns its own keys */
     document.addEventListener('keydown',e=>{ if(sheetKind||e.altKey||/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;

@@ -1,0 +1,43 @@
+.pl-dtog{display:none;}
+@container plan (min-width:1440px){ .v-plan[data-stage="plan"] .pl-dtog{display:flex;} }
+.pl-palette{padding:14px 0 24px;}
+.pl-ph3{display:flex;align-items:baseline;gap:6px;margin:18px 0 6px;font:600 15px/1.4 var(--pl-serif);}
+.pl-ph3 small{font:600 12px var(--pl-num);color:var(--muted);}
+.pl-pi{display:block;width:100%;min-height:36px;margin:0 0 4px;padding:6px 10px;border:0;border-radius:12px;background:var(--surface);box-shadow:0 0 0 1px var(--line);
+  text-align:left;font:500 13.5px/1.4 var(--pl-sans);color:var(--ink);cursor:grab;}
+.pl-pg{margin:0 0 8px;padding:8px;border-radius:14px;box-shadow:inset 0 0 0 1.5px var(--ink);cursor:grab;}
+.pl-pg b{font:600 14px var(--pl-serif);} .pl-pg small{margin-left:6px;font:600 12px var(--pl-num);color:var(--muted);}
+.pl-pg .pl-pi{margin-top:4px;}
+.pl-board{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;padding:10px 0 24px;align-items:start;}
+.pl-bc{min-width:0;padding:8px;border-radius:16px;background:var(--surface);box-shadow:0 0 0 1px var(--line),inset 0 3px 0 var(--c);}
+.pl-bc.pl-cur{box-shadow:0 0 0 2px var(--ci),inset 0 3px 0 var(--c);}
+.pl-bh{display:block;width:100%;min-height:40px;padding:4px 2px;border:0;background:none;text-align:left;font:600 13px/1.3 var(--pl-sans);color:var(--ci);}
+.pl-bh b{font:700 20px var(--pl-num);} .pl-bh i{font-style:normal;color:var(--pl-warn);}
+.pl-bt{margin:4px 2px;font:600 12px/1.4 var(--pl-num);color:var(--muted);}
+.pl-bs{padding:6px 6px;margin:0 0 3px;border-radius:10px;background:var(--surface-2);font:500 12.5px/1.35 var(--pl-sans);cursor:grab;overflow-wrap:anywhere;}
+.pl-bs span{display:block;font:600 11.5px var(--pl-num);color:var(--muted);}
+.pl-bs.pl-bad{box-shadow:inset 2px 0 0 var(--pl-warn);}
+.pl-dgh{position:fixed;z-index:80;left:0;top:0;pointer-events:none;max-width:280px;padding:8px 12px;border-radius:14px;background:var(--surface);
+  box-shadow:0 12px 32px -8px var(--pl-ink-a),0 0 0 1px var(--line);font:600 13px/1.45 var(--pl-sans);color:var(--ink);}
+.pl-dgh small{display:block;font:600 12px/1.4 var(--pl-num);color:var(--ink-2);} .pl-dgh .pl-gw{color:var(--pl-warn);}
+.pl-dragging,.pl-dragging *{cursor:grabbing!important;user-select:none;}
+.pl-lift{opacity:.45;}
+.pl-dzon{outline:2px dashed var(--ci,var(--ink));outline-offset:3px;}
+.pl-armbar{position:fixed;z-index:81;width:340px;padding:12px 14px;border-radius:16px;background:var(--surface);box-shadow:0 12px 32px -8px var(--pl-ink-a),0 0 0 2px var(--pl-warn);font:600 13.5px/1.5 var(--pl-sans);color:var(--pl-warn);}
+.pl-armbar p{margin:0 0 8px;} .pl-armbar div{display:flex;justify-content:flex-end;gap:8px;}
+.pl-row.pl-hot,.pl-bs.pl-hot,.pl-cc.pl-hot{box-shadow:0 0 0 2px var(--ci,var(--ink));}
+.pl-map .pl-pin.pl-hot .pl-mk{stroke:var(--ink);stroke-width:3px;}
+.pl-map.pl-all .pl-legs{display:none;}
+.pl-map .pl-alld path{fill:none;stroke:var(--c);stroke-linecap:round;stroke-width:calc(3px / var(--z));opacity:.85;}
+.pl-map .pl-alld .pl-leg-walk,.pl-map .pl-alld .pl-leg-ferry{stroke-dasharray:0 calc(6px / var(--z));}
+.pl-map .pl-alld .pl-dim{opacity:.15;}
+/* ① wide: the cards in a grid, the map beside them with pins weighted by tier */
+@container plan (min-width:1024px){
+  .pl-collect .pl-csl{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:8px;}
+  .pl-collect .pl-cc{margin:0;}
+}
+.pl-map .pl-cands [data-t="must"] .pl-mk{fill:var(--ink);stroke:var(--surface);}
+.pl-map .pl-cands [data-t="want"] .pl-mk{fill:color-mix(in srgb,var(--ink) 55%,var(--surface));}
+.pl-map .pl-cands [data-t="skip"]{opacity:.35;}
+.pl-dtog{margin-left:auto;}
+.v-plan.pl-6[data-stage="plan"] .pl-days{display:none;}

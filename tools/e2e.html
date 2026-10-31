@@ -172,6 +172,38 @@
     await load(); await until(() => q('.pl-collect .pl-cc'));
     ok(view()._pl.tier(gid0) === 'must' && JSON.parse(localStorage.getItem('plan:nz')).v === 2, 'the trip comes back from :broken, saved as v2 again');
 
+    /* the phone never asked for the desktop chunk */
+    ok(!fr.contentWindow.performance.getEntriesByType('resource').some(e => /planner-desk/.test(e.name)), 'a 393-wide planner never loads planner-desk');
+    /* ---------- wide: 1440 then 1920, in a second frame ---------- */
+    const wf = document.createElement('iframe'); wf.style.cssText = 'width:1440px;height:900px;border:0'; document.body.appendChild(wf);
+    localStorage.setItem('plan-ui:nz', JSON.stringify({v: 1, day: 0, stage: 'plan', hideIntro: true, hideInstall: true}));
+    await new Promise(r => { wf.onload = r; wf.src = '../index.html?nosw&w=' + Date.now(); });
+    const wd = () => wf.contentDocument, wq = s => wd().querySelector(s), wv = () => wq('.v-plan');
+    wf.contentWindow.addEventListener('error', e => errs.push('wide: ' + e.message));
+    ok(await until(() => wq('.pl-palette .pl-pi'), 12000), 'at 1440 the desk chunk loads and the palette fills');
+    const R = s => wq(s).getBoundingClientRect(), pal = R('.pl-palette'), mn = R('.pl-main'), mp = R('.pl-mapcard');
+    ok(pal.right <= mn.left + 1 && mn.right <= mp.left + 1 && wd().documentElement.scrollWidth <= wf.contentWindow.innerWidth, 'palette | day | map side by side, no sideways scroll');
+    const mapNode = wq('svg.pl-map');
+    /* drag a palette place onto the day; the ghost's arrival is the applied time */
+    const src = wq('.pl-palette .pl-pi'), sid = src.dataset.id, sr = src.getBoundingClientRect(), tl = wq('.pl-main .pl-tl').getBoundingClientRect();
+    const pe = (el, type, x, y) => el.dispatchEvent(new (wf.contentWindow.PointerEvent)(type, {bubbles: true, cancelable: true, pointerType: 'mouse', clientX: x, clientY: y, button: 0, pointerId: 1, isPrimary: true}));
+    pe(src, 'pointerdown', sr.x + 8, sr.y + 8);
+    for (let i = 1; i <= 8; i++) { pe(wf.contentWindow, 'pointermove', sr.x + 8 + (tl.x + 80 - sr.x) * i / 8, sr.y + 8 + (tl.bottom - 30 - sr.y) * i / 8); await wait(40); }
+    await wait(120);
+    const gtxt = (wq('.pl-dgh') || {}).textContent || '', at = (/着 (\d\d:\d\d)/.exec(gtxt) || [])[1];
+    ok(!!at, 'the ghost shows the arrival before the drop: ' + gtxt.slice(0, 60));
+    pe(wf.contentWindow, 'pointerup', tl.x + 80, tl.bottom - 30); await wait(400);
+    const armed = !wq('.pl-armbar').hidden;
+    if (armed) { ok(/⚠/.test(wq('.pl-armbar').textContent), 'a breaking drop lands armed with its reason'); wd().dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true})); await wait(400); }
+    const row = wv()._pl.sim('my')[0].rows.find(r => r[2] === sid);
+    ok(row && row[0] === at, 'the dropped place starts at the ghost\'s time: ' + (row && row[0]) + ' vs ' + at);
+    /* 1920: the 6-day board by default, every day on the map, the same map node */
+    wf.style.width = '1920px'; wf.style.height = '1080px';
+    ok(await until(() => wv().classList.contains('pl-6') && wd().querySelectorAll('.pl-bc').length === 6, 4000), 'at 1920 the 6-day board shows six columns');
+    ok(wq('svg.pl-map') === mapNode && wd().querySelectorAll('.pl-alld path').length > 0, 'the one map node draws every day');
+    ok(wd().documentElement.scrollWidth <= wf.contentWindow.innerWidth, 'no sideways scroll at 1920');
+    wf.remove();
+
     ok(!errs.length, 'no errors' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   } catch (e) { ok(false, 'threw: ' + (e && e.stack || e)); }
   done();
