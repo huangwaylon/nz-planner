@@ -269,6 +269,15 @@ def main():
                 hyg.append('U+FFFD in ' + f)
         hyg += ['%s: hours "always" on a %s' % (i, p['cat']) for i, p in s.places.items()
                 if p.get('cat') in ('cafe', 'food') and p.get('hours') == 'always']
+        # The clusters' words live in groups.json (tools/split_groups.py), so the first screen does
+        # not carry them; every cluster needs its entry there.
+        gp = os.path.join(D, 'groups.json')
+        gw = json.load(open(gp, encoding='utf-8')) if os.path.exists(gp) else {}
+        for c in s.plans.get('clusters', []):
+            if any(k in c for k in ('name', 'nameJa', 'blurb', 'blurbJa')):
+                hyg.append('cluster %s carries its words in plans.json (run tools/split_groups.py)' % c['id'])
+            elif not (gw.get(c['id']) or {}).get('nameJa'):
+                hyg.append('cluster %s has no name in groups.json' % c['id'])
         # Every place flag needs a label in flags.json ({flag: {ja, en, level}}), or the app drops it
         # silently (safety flags went missing that way once). A flag matches whole, or by the part
         # before ':' ("track-closed:lion-rock-summit"). level is safety | info | hidden.

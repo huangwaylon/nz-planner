@@ -944,89 +944,63 @@
  "clusters": [
   {
    "id": "piha-morning",
-   "name": "Piha morning",
-   "nameJa": "ピハの朝",
    "ids": [
     "kitekite-falls",
     "piha",
     "piha-cafe",
     "mercer-bay-loop"
    ],
-   "blurb": "Kitekite Falls first, Lion Rock and the beach, lunch at the Piha Cafe, the Mercer Bay cliff loop. Piha Cafe shuts Tuesdays.",
-   "blurbJa": "まずキテキテ滝、ライオンロックと浜、ピハ・カフェで昼食、マーサー湾の断崖ループ。ピハ・カフェは火曜休み。",
    "startAt": "08:28"
   },
   {
    "id": "karekare-whatipu",
-   "name": "Karekare and Whatipu",
-   "nameJa": "カレカレとファティプ",
    "ids": [
     "whatipu",
     "omanawanui",
     "karekare"
    ],
-   "blurb": "Whatipu caves and dunes at low water, the Omanawanui ridge above, Karekare from The Piano. Gravel road.",
-   "blurbJa": "干潮のファティプの洞窟と砂丘、上の尾根オマナワヌイ、『ピアノ・レッスン』のカレカレ。未舗装路あり。",
    "startAt": "08:48"
   },
   {
    "id": "bethells-wainamu",
-   "name": "Bethells, Wainamu and Kuataika",
-   "nameJa": "ベセルズ、ワイナム、クアタイカ",
    "ids": [
     "kuataika",
     "lake-wainamu",
     "bethells-beach"
    ],
-   "blurb": "Te Henga in one day: Kuataika trig (steep), Wainamu dunes and lake, Bethells at sunset near low water.",
-   "blurbJa": "テ・ヘンガで一日：クアタイカの三角点（急登）、ワイナムの砂丘と湖、干潮近くの夕日のベセルズ。",
    "startAt": "13:43"
   },
   {
    "id": "muriwai-sunset",
-   "name": "Muriwai into the evening",
-   "nameJa": "夕方のムリワイ",
    "ids": [
     "cascade-kauri",
     "te-henga-walkway",
     "muriwai-gannets"
    ],
-   "blurb": "A 1000-year-old kauri, the clifftop walkway from Constable Rd (south half closed), the gannet colony into the evening. Gannets Aug–Mar.",
-   "blurbJa": "樹齢1000年のカウリ、コンスタブル通りからの断崖遊歩道（南半分は閉鎖）、夕方までカツオドリの営巣地。カツオドリは8〜3月。",
    "startAt": "14:31"
   },
   {
    "id": "scenic-drive",
-   "name": "Scenic Drive and Titirangi",
-   "nameJa": "シーニック・ドライブとティティランギ",
    "ids": [
     "mt-atkinson-coffee",
     "arataki",
     "fairy-falls",
     "deco-titirangi"
    ],
-   "blurb": "Half day near the base: coffee, the Arataki deck and track desk, Fairy Falls, lunch in an art-deco house.",
-   "blurbJa": "滞在先近くで半日：コーヒー、アラタキの展望デッキ、フェアリー滝、アールデコの館でランチ。",
    "startAt": "08:32"
   },
   {
    "id": "kroad-matcha",
-   "name": "Karangahape Road and matcha",
-   "nameJa": "カランガハペ通りと抹茶",
    "ids": [
     "bestie-kroad",
     "karangahape-road",
     "daily-daily-kroad",
     "slow-koi"
    ],
-   "blurb": "Brunch at Bestie, K Road on foot, filter coffee at Daily Daily, a matcha in the 1900s Strand Arcade.",
-   "blurbJa": "ベスティでブランチ、徒歩でKロード、デイリー・デイリーのフィルター、1900年代のストランド・アーケードで抹茶。",
    "startAt": "08:17"
   },
   {
    "id": "newmarket-eden",
-   "name": "Mt Eden and Newmarket matcha",
-   "nameJa": "イーデン山とニューマーケットの抹茶",
    "ids": [
     "maungawhau-mt-eden",
     "mt-eden-village",
@@ -1034,14 +1008,10 @@
     "onda-newmarket",
     "marus-house"
    ],
-   "blurb": "Crater rim first, Mt Eden village, then two matcha bars a minute apart in Newmarket.",
-   "blurbJa": "まず火口の縁、イーデン・ビレッジ、ニューマーケットで1分違いの抹茶店2軒。",
    "startAt": "08:16"
   },
   {
    "id": "ponsonby",
-   "name": "Ponsonby and Grey Lynn",
-   "nameJa": "ポンソンビーとグレイ・リン",
    "ids": [
     "dizengoff-ponsonby",
     "florets-grey-lynn",
@@ -1050,14 +1020,10 @@
     "ponsonby-central",
     "yomi-ponsonby"
    ],
-   "blurb": "Bakeries and brunch in the villa suburbs; Ponsonby Central for lunch.",
-   "blurbJa": "ヴィラが並ぶ住宅街のベーカリーとブランチ。昼はポンソンビー・セントラル。",
    "startAt": "08:17"
   },
   {
    "id": "britomart",
-   "name": "Britomart and the Viaduct",
-   "nameJa": "ブリトマートとヴァイアダクト",
    "ids": [
     "atomic-albert-st",
     "rumours-coffee",
@@ -1067,40 +1033,28 @@
     "giapo",
     "amano-britomart"
    ],
-   "blurb": "Laneway coffee, the Britomart blocks, Commercial Bay, Giapo ice cream, dinner at Amano. All on foot.",
-   "blurbJa": "路地のコーヒー、ブリトマート街区、コマーシャル・ベイ、ジャーポのアイス、夕食はアマノ。すべて徒歩。",
    "startAt": "08:18"
   },
   {
    "id": "wynyard-evening",
-   "name": "Wynyard to the Sky Tower",
-   "nameJa": "ウィンヤードからスカイタワー",
    "ids": [
     "mibo-wynyard",
     "silo-park-wynyard",
     "sky-tower-skywalk"
    ],
-   "blurb": "Black-sesame croissants for lunch, the silo waterfront, the SkyWalk late afternoon (weather-dependent; NZ$215).",
-   "blurbJa": "昼に黒ごまクロワッサン、サイロの水辺、夕方前のスカイウォーク（天候次第、NZ$215）。",
    "startAt": "12:50"
   },
   {
    "id": "parnell-saturday",
-   "name": "Parnell Saturday",
-   "nameJa": "パーネルの土曜",
    "ids": [
     "parnell-farmers-market",
     "vaniye-parnell",
     "chocolate-boutique-parnell"
    ],
-   "blurb": "The farmers' market (Sat 08:00–12:00), a Parnell cafe, chocolate. Saturday only.",
-   "blurbJa": "ファーマーズマーケット（土08:00〜12:00）、パーネルのカフェ、チョコレート。土曜のみ。",
    "startAt": "08:00"
   },
   {
    "id": "devonport",
-   "name": "Devonport and Takapuna",
-   "nameJa": "デボンポートとタカプナ",
    "ids": [
     "dulcie-devonport",
     "devonport-mt-victoria",
@@ -1108,40 +1062,28 @@
     "takapuna-beach-cafe",
     "takapuna-fossil-forest"
    ],
-   "blurb": "Mt Victoria, North Head tunnels, dinner on Takapuna beach, the fossil forest at low water.",
-   "blurbJa": "ビクトリア山、ノースヘッドのトンネル、タカプナの浜で夕食、干潮の化石の森。",
    "startAt": "11:12"
   },
   {
    "id": "rangitoto",
-   "name": "Rangitoto",
-   "nameJa": "ランギトト島",
    "ids": [
     "rangitoto-summit",
     "hello-beasty"
    ],
-   "blurb": "Weekday ferry 09:30, back 15:30 (one return since Apr 2026). Lava fields, summit, lava caves; no shops or water. Dinner on the Viaduct after.",
-   "blurbJa": "平日フェリー09:30発・15:30帰（2026年4月から往復1便）。溶岩原、山頂、溶岩洞窟。売店・水なし。帰着後ヴァイアダクトで夕食。",
    "startAt": "09:55"
   },
   {
    "id": "waiheke",
-   "name": "Waiheke",
-   "nameJa": "ワイヘキ島",
    "ids": [
     "waiheke-te-ara-hura",
     "wai-kitchen-waiheke",
     "onetangi",
     "island-gelato-waiheke"
    ],
-   "blurb": "Coastal track from Mātiatia, lunch in Oneroa, Onetangi swim, gelato. Passenger ferry; car stays in the city.",
-   "blurbJa": "マティアティアから海沿いの道、オネロアで昼食、オネタンギで泳ぐ、ジェラート。旅客フェリー、車は市内。",
    "startAt": "09:52"
   },
   {
    "id": "waitomo-three",
-   "name": "Waitomo three",
-   "nameJa": "ワイトモの3か所",
    "ids": [
     "waitomo-glowworm-caves",
     "ruakuri-bush-walk",
@@ -1149,80 +1091,56 @@
     "mangapohue-natural-bridge",
     "marokopa-falls"
    ],
-   "blurb": "Glowworm boat ride (no photos), the free Ruakuri walk, lunch, the limestone arch and Marokopa Falls on Te Anga Rd.",
-   "blurbJa": "土ボタルのボート（撮影禁止）、無料のルアクリ・ウォーク、昼食、テ・アンガ通りの石灰岩の天然橋とマロコパ滝。",
    "startAt": "09:00"
   },
   {
    "id": "np-walkway",
-   "name": "New Plymouth walkway at sunset",
-   "nameJa": "ニュープリマス海岸遊歩道の夕日",
    "ids": [
     "len-lye-centre-facade",
     "wind-wand-coastal-walkway",
     "te-rewa-rewa-bridge",
     "np-coastal-walkway"
    ],
-   "blurb": "Len Lye's steel facade and Wind Wand, the whale-rib bridge, the walkway back into the sunset.",
-   "blurbJa": "レン・ライのステンレス外壁とウィンド・ワンド、鯨の骨のような橋、夕日へ戻る遊歩道。",
    "startAt": "16:02"
   },
   {
    "id": "paritutu",
-   "name": "Paritutu and the port beaches",
-   "nameJa": "パリトゥトゥと港のビーチ",
    "ids": [
     "federal-store-np",
     "paritutu-rock",
     "ngamotu-beach",
     "back-beach"
    ],
-   "blurb": "Brunch, a chain scramble up Paritutu (156 m), a swim at Ngāmotu, Back Beach and the Sugar Loaf islands at sunset.",
-   "blurbJa": "ブランチ、鎖をつかんで登るパリトゥトゥ（156 m）、ンガーモツで泳ぐ、夕日のバックビーチとシュガーローフ諸島。",
    "startAt": "14:33"
   },
   {
    "id": "pouakai",
-   "name": "Pouākai Tarns",
-   "nameJa": "ポウアカイ・ターンズ",
    "ids": [
     "mangorei-trailhead",
     "pouakai-tarns"
    ],
-   "blurb": "Mangorei Track 2 h 30 to the hut, tarns just past it. Leave New Plymouth 03:00 for a 06:49 sunrise, or sleep in the hut.",
-   "blurbJa": "マンゴレイ・トラックで小屋まで2時間30分、湖沼はその先。06:49の日の出にはニュープリマス03:00発、または小屋泊。",
    "startAt": "03:18"
   },
   {
    "id": "taranaki-south",
-   "name": "Dawson Falls and Wilkies Pools",
-   "nameJa": "ドーソン滝とウィルキーズ・プール",
    "ids": [
     "volcano-view-egmont-village",
     "dawson-falls",
     "wilkies-pools",
     "stratford-plateau"
    ],
-   "blurb": "The south and east faces: an 18 m fall, lava-carved pools, the Stratford Plateau lookout.",
-   "blurbJa": "山の南と東：18 mの滝、溶岩が削ったプール、ストラトフォード・プラトーの展望。",
    "startAt": "08:13"
   },
   {
    "id": "sh3-coast",
-   "name": "Three Sisters and Mokau",
-   "nameJa": "スリーシスターズとモカウ",
    "ids": [
     "three-sisters-elephant-rock",
     "mokau"
    ],
-   "blurb": "On SH3 between New Plymouth and Waitomo. Three Sisters only within about 1.5 h of low water.",
-   "blurbJa": "ニュープリマスとワイトモの間の国道3号沿い。スリーシスターズは干潮の前後約1時間30分のみ。",
    "startAt": "09:58"
   },
   {
    "id": "raglan",
-   "name": "Raglan",
-   "nameJa": "ラグラン",
    "ids": [
     "raglan-roast",
     "bridal-veil-falls-raglan",
@@ -1230,41 +1148,29 @@
     "ngarunui-beach",
     "manu-bay"
    ],
-   "blurb": "Surf town: coffee, the 55 m Waireinga falls, brunch, Ngarunui beach, the Manu Bay point break.",
-   "blurbJa": "サーフタウン：コーヒー、55 mのワイレインガ滝、ブランチ、ンガルヌイ・ビーチ、マヌ・ベイのポイントブレイク。",
    "startAt": "09:32"
   },
   {
    "id": "hobbiton-spring",
-   "name": "Hobbiton and Blue Spring",
-   "nameJa": "ホビット村とブルースプリング",
    "ids": [
     "hobbiton",
     "blue-spring-te-waihou",
     "tirau-corrugated-dog"
    ],
-   "blurb": "Film set by tour only, the clear Te Waihou spring (no swimming), the corrugated-iron dog in Tīrau.",
-   "blurbJa": "ツアー限定の映画セット、透明なテ・ワイホウの泉（遊泳禁止）、ティラウのトタンの犬。",
    "startAt": "10:24"
   },
   {
    "id": "hamilton",
-   "name": "Hamilton Gardens and Cambridge",
-   "nameJa": "ハミルトン・ガーデンズとケンブリッジ",
    "ids": [
     "punnet-tamahere",
     "hamilton-gardens",
     "hayes-common",
     "paddock-cambridge"
    ],
-   "blurb": "Berry-farm cafe, the themed enclosed gardens (paid for visitors), two Waikato cafes. Just off SH1.",
-   "blurbJa": "ベリー農園のカフェ、テーマ別の庭園（旅行者は有料）、ワイカトのカフェ2軒。国道1号のすぐ脇。",
    "startAt": "08:14"
   },
   {
    "id": "rotorua",
-   "name": "Rotorua",
-   "nameJa": "ロトルア",
    "ids": [
     "wai-o-tapu",
     "kerosene-creek",
@@ -1272,22 +1178,16 @@
     "redwoods-treewalk",
     "polynesian-spa"
    ],
-   "blurb": "Wai-O-Tapu colours (last entry 15:00), a free hot stream, Blue Lake, the redwood canopy walk, the lake spa.",
-   "blurbJa": "ワイオタプの色彩（最終入場15:00）、無料の温泉の川、ブルーレイク、レッドウッドの樹上遊歩道、湖畔のスパ。",
    "startAt": "08:58"
   },
   {
    "id": "taupo",
-   "name": "Taupō",
-   "nameJa": "タウポ",
    "ids": [
     "orakei-korako",
     "craters-of-the-moon",
     "huka-falls",
     "spa-park-hot-stream"
    ],
-   "blurb": "Orakei Korako by boat, Craters of the Moon, Huka Falls, and a hot stream into the cold Waikato river.",
-   "blurbJa": "船で渡るオラケイコラコ、クレーターズ・オブ・ザ・ムーン、フカ滝、冷たいワイカト川に注ぐ温泉の川。",
    "startAt": "08:29"
   }
  ],

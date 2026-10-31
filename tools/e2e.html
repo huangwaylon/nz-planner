@@ -68,7 +68,8 @@
       const p16 = await until(() => q('.pl-cand[data-id="paritutu-rock"] .pl-dq[data-day="5"]'));
       const before = view()._pl.sim('my')[5].rows.length;
       ok(!!p16 && /フライト|flight/i.test(p16.dataset.why || ''), 'Feb 16 pill names the flight before the tap');
-      p16.click();
+      /* the list may have re-ranked since (keywords arriving): tap the pill as it is now */
+      q('.pl-cand[data-id="paritutu-rock"] .pl-dq[data-day="5"]').click();
       ok(view()._pl.sim('my')[5].rows.length === before && /フライト|flight/i.test(q('.pl-cand[data-id="paritutu-rock"] .pl-dayqm').textContent), 'the first tap on a ⚠ day explains and does not add');
     } else ok(false, 'search finds Paritutu');
     q('.pl-sheet [data-act="close"], [data-act="close"]').click();

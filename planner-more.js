@@ -324,7 +324,7 @@ planner.more=function(c){
     if(rest.length) groups.push({c:{id:'',name:pt('others'),nameJa:pt('others')},m:rest});
     groups.forEach(x=>{ x.m.sort((a,b)=>bySaved(a,b)||score.get(a)-score.get(b)); x.s=score.get(x.m[0]); x.sv=!!place(x.m[0]).saved; });
     groups.sort((a,b)=>(!!b.c.first)-(!!a.c.first)||(!a.c.id)-(!b.c.id)||b.sv-a.sv||a.s-b.s);
-    fill(box,groups.map(x=>{ const free=x.m.filter(id=>!planned.has(id)).length, cn=ja()?x.c.nameJa:x.c.name;
+    fill(box,groups.map(x=>{ const free=x.m.filter(id=>!planned.has(id)).length, cn=(ja()?x.c.nameJa:x.c.name)||x.c.name||x.c.id;
       return `<section class="pl-clus"><div class="pl-clus-h"><h3>${esc(cn)}<small>${pt('count',{n:x.m.length})}</small></h3>
         ${x.c.id&&free>1?`<button type="button" class="pl-addall" data-act="addall" data-id="${x.c.id}" aria-expanded="false">${ic('plus','xs')}<span aria-hidden="true">${pt('addAll')}</span><span class="sr">${esc(pt('addAllN',{name:cn}))}</span></button>`:''}</div>
         ${x.c.id&&x.c.id!=='_imp'?`<p class="pl-clsum">${clusterSum(x.m)}${x.c.startAt?`　${pt('startAt',{t:x.c.startAt})}`:''}</p>`:''}
@@ -333,8 +333,16 @@ planner.more=function(c){
   /* The first screenful goes in now, the rest after the frame: the sheet opens without parsing
      ~170 rows in the tap. A newer list call cancels a pending tail. */
   let fillT=0;
+  /* A re-rank (new minutes, keywords, a filter) keeps an open day picker open on its row, freshly simulated. */
   function fill(box,parts){
     clearTimeout(fillT);
+    const q=box.querySelector('.pl-cand .pl-dayq'), open=q&&q.closest('.pl-cand').dataset.id;
+    const reopen=()=>{ const r=open&&box.querySelector(`.pl-cand[data-id="${open}"]`), b=r&&r.querySelector('.pl-addbtn'); if(!b||r.querySelector('.pl-dayq')) return;
+      r.insertAdjacentHTML('beforeend',dayPick(open)); b.setAttribute('aria-expanded','true');
+      const a=PICKARM&&PICKARM.id===open&&r.querySelector(`.pl-dq[data-day="${PICKARM.day}"]`); if(a) armPill(a); };
+    fill2(box,parts); reopen(); if(open) setTimeout(reopen,70);
+  }
+  function fill2(box,parts){
     const html=parts.join(''), cut=html.indexOf('<div class="pl-cand"',(()=>{ let i=0, n=0; while(n<14&&(i=html.indexOf('<div class="pl-cand"',i+1))>0) n++; return i>0?i:html.length; })());
     if(cut<0||cut>=html.length-1){ box.innerHTML=html; return; }
     /* split at a row boundary inside a section: close it and reopen the rest in a continuation */
@@ -355,6 +363,19 @@ planner.more=function(c){
   }
 
 
+  /* ---------- 日を移動 ---------- */
+  /* 日を移動: out of this day, into the other day's cheapest open slot */
+  const moveFn=(id,date,to)=>m=>{ const a=m.days[date], k=a.indexOf(id); if(k<0) throw new Error('gone'); a.splice(k,1);
+    const l=(m.days[to.date]=m.days[to.date]||[]); l.splice(c.sim().bestPos(to,l,id,m,{deadline:S.dayEnd}).pos,0,id); };
+  /* each day is simulated first, like the add picker: that day's end, and ⚠ with the reason */
+  function openMove(id){
+    const p=plan(), date=DB.days[S.day].date;
+    openSheet(head(pt('moveT'),pt('moveS'))+`<div class="pl-dpick">${DB.days.map((d,k)=>{ if(k===S.day) return `<button type="button" class="pl-daybtn" style="${dayStyle(k)}" disabled><span class="pl-dn">${+d.date.slice(8)}</span><span class="pl-dw">${wdName(d.date)}</span></button>`;
+      const fn=moveFn(id,date,d), bs=c.trial(fn)||[], m=clone({id:'t',days:p.days,stay:p.stay||{},start:p.start||{},stayDay:p.stayDay||{},anchors:p.anchors||{}}); fn(m);
+      const end=c.sim().schedule(d,null,m,{deadline:S.dayEnd}).end, why=bs.length?c.breakLine(bs,d):'';
+      return `<button type="button" class="pl-daybtn${bs.length?' pl-nofit':''}" style="${dayStyle(k)}" data-act="domove" data-day="${k}"><span class="pl-dn">${+d.date.slice(8)}</span>
+        <span class="pl-dw">${wdName(d.date)}　${pt('stops',{n:(p.days[d.date]||[]).length})}　${esc(pt('endsAt',{t:hm(end)}))}</span>${why?`<span class="pl-dwhy">⚠ ${esc(why)}</span>`:''}</button>`; }).join('')}</div>`,'move',{id,date});
+  }
   /* ---------- the place sheet and the plans sheet ---------- */
   const {hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,addIds,clusterOf,closure,wdName,breakText}=c, SIMc=()=>c.sim();
   const preview=(k,ids,c)=>SIMc().insertPlan(DB.days[k],idsOf(DB.days[k].date),ids,plan(),{deadline:S.dayEnd},c);
@@ -374,7 +395,9 @@ planner.more=function(c){
       <span class="pl-dayqb">${pills}</span><span class="pl-dayqm" role="status" aria-live="polite"></span></div>`;
   }
   /* first tap on a ⚠ day says why; the second adds */
+  let PICKARM=null;
   function armPill(b){ const q=b.closest('.pl-dayq'); if(!b.dataset.why||b.classList.contains('pl-armed')) return false;
+    PICKARM={id:b.dataset.id,day:b.dataset.day};
     q.querySelectorAll('.pl-armed').forEach(x=>x.classList.remove('pl-armed')); b.classList.add('pl-armed');
     q.querySelector('.pl-dayqm').textContent='⚠ '+b.dataset.why+' — '+pt('tapAgain'); return true; }
 
@@ -446,12 +469,51 @@ planner.more=function(c){
       ${S.my?`<button type="button" class="pl-btn pl-danger" data-act="reset">${ic('trash','sm')}${pt('reset')}</button>`:''}`,'plans');
   }
   return {
-    openBrowse, renderList, patchCand, openPlace, openPlans, dayPick, armPill,
+    openBrowse, renderList, patchCand, openPlace, openPlans, dayPick, armPill, openMove,
     openOrder, openVerName, saveVersionNamed, openCompare, openSwap, shareLink, importCode, codeOf,
     nameState,
     click(act,b,kind,arg){
-      const date=DB.days[S.day].date;
+      const day=DB.days[S.day], date=day.date;
       switch(act){
+        case 'back': openBrowse(); break;
+        case 'plan': S.planId=b.dataset.id; save(); render(true); openPlans(); requestAnimationFrame(()=>fitDay()); break;
+        case 'reset': { const from=S.my.from; pushHist(); c.keepMy();
+          S.my=null; S.planId=findPlan(from)?from:DB.presets[0].id; save(); render(); openPlans(); toast(pt('resetDone',{name:presetName(S.planId)}),undo); break; }
+        case 'verdel': { const v=findPlan(b.dataset.id); if(!v) break; pushHist();
+          S.versions=S.versions.filter(x=>x!==v); if(S.planId===v.id) S.planId=S.my?'my':DB.presets[0].id;
+          save(); render(); openPlans(); toast(pt('verDeleted',{name:planName(v)}),undo); break; }
+        case 'savever': openVerName(null); break;
+        case 'vername': openVerName(b.dataset.id); break;
+        case 'compare': openCompare(plan().id); break;
+        case 'share': shareLink(); break;
+        case 'domove': { if(kind!=='move'||arg.date!==date) break; const id=arg.id, to=DB.days[+b.dataset.day], i=idsOf(date).indexOf(id); if(i<0) break;
+          if(c.guard(b,'mv'+id+to.date,moveFn(id,date,to),pt('movedTo',{d:dlabel(to)}),{focus:i})) closeSheet(); break; }
+        case 'open': openPlace(b.dataset.id,kind==='browse'); break;
+        case 'pick': { const row=b.closest('.pl-cand'), ex=row.querySelector('.pl-dayq');
+          E.sbody.querySelectorAll('.pl-cand .pl-dayq').forEach(x=>{ if(x!==ex){ x.remove(); } });
+          E.sbody.querySelectorAll('.pl-addbtn[aria-expanded="true"]').forEach(x=>x.setAttribute('aria-expanded','false'));
+          if(ex){ ex.remove(); break; }
+          row.insertAdjacentHTML('beforeend',dayPick(b.dataset.id)); b.setAttribute('aria-expanded','true');
+          const c=row.querySelector('.pl-dq.pl-cur'); if(c) c.focus(); break; }
+        case 'addday': { const id=b.dataset.id, k=+b.dataset.day; if(armPill(b)||!c.applyAdd(k,[id],null)) break;
+          if(kind==='place') openPlace(id,arg.back); else patchCand(id); break; }
+        case 'unplan': { const id=b.dataset.id, back=arg.back; if(c.guard(b,'un'+id,m=>{ const l=m.days[date], k=l.indexOf(id); if(k>=0) l.splice(k,1); },pt('removed',{name:nm(place(id))}))) openPlace(id,back); break; }
+        case 'movehere': { const id=b.dataset.id, back=arg.back, on=plannedMap().get(id); if(on==null) break; const from=DB.days[on].date;
+          if(c.guard(b,'mh'+id+date,m=>{ const a=m.days[from]; a.splice(a.indexOf(id),1); const l=(m.days[date]=m.days[date]||[]); l.splice(c.sim().bestPos(day,l,id,m,{deadline:S.dayEnd}).pos,0,id); },pt('movedTo',{d:dlabel(day)}))) openPlace(id,back); break; }
+        case 'addall': { const sec=b.closest('.pl-clus'), ex=sec.querySelector(':scope > .pl-dayq');
+          if(ex){ ex.remove(); b.setAttribute('aria-expanded','false'); break; }
+          b.closest('.pl-clus-h').insertAdjacentHTML('afterend',dayPick(b.dataset.id,'pl-dayq-clus',clusterOf(b.dataset.id))); b.setAttribute('aria-expanded','true');
+          const cur=sec.querySelector('.pl-dq.pl-cur'); if(cur) cur.focus(); break; }
+        case 'addallday': { const c=clusterOf(b.dataset.id); if(!c) break;
+          const add=addIds(c); if(!add.length){ toast(pt('nothingAdded')); break; }
+          if(armPill(b)||!c.applyAdd(+b.dataset.day,add,c)) break;
+          add.forEach(patchCand); const q=b.closest('.pl-dayq'); if(q) q.remove(); break; }
+        case 'clearf': S.f={q:'',cat:null,area:null,saved:null,sort:S.f.sort}; openBrowse(); break;
+        case 'dayend': break;
+        case 'copyc': { const v=b.dataset.v; (navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast(pt('copiedC')),()=>toast(v)); break; }
+        case 'f': { const k=b.dataset.k, v=b.dataset.v; S.f[k]=S.f[k]===v||!v?null:v;
+          b.parentNode.querySelectorAll('.pl-chip').forEach(c=>c.setAttribute('aria-pressed',(S.f[c.dataset.k]||'')===c.dataset.v)); renderList(); break; }
+        case 'sort': S.f.sort=b.dataset.v; b.parentNode.querySelectorAll('button').forEach(c=>c.setAttribute('aria-pressed',c===b)); renderList(); break;
         case 'ord': if(kind==='order'&&reorder(arg.id,+b.dataset.d,false,null,b)!==false) afterRender(()=>openOrder(arg.id,b.dataset.d)); break;
         case 'ordto': if(kind==='order'){ const to=+b.dataset.to; if(reorder(arg.id,0,false,to,b)===false) break; closeSheet(); afterRender(()=>focusStop(to)); } break;
         case 'doswap': { if(kind!=='swap'||arg.date!==date||!LASTSWAP) break; const old=arg.id, p=place(b.dataset.id), i=idsOf(date).indexOf(old); if(i<0) break;

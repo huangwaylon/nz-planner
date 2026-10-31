@@ -4,7 +4,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 rm -rf _site && mkdir -p _site/data/nz _site/images
-for f in index.html host.js planner.js planner.css poc.css planner-import.js planner-import.css planner-more.js import.js story.js \
+for f in index.html host.js planner.js planner.css poc.css planner-import.js planner-import.css planner-more.js planner-more.css import.js story.js \
          sw.js manifest.webmanifest icon-180.png icon-512.png; do
   cp "$f" _site/
 done
