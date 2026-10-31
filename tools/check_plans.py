@@ -303,6 +303,12 @@ def main():
                      if a != b and s.leg(a, b, 600, '2027-02-12', [])[1] == 'drive'}
         hyg += ['no road shape for %s>%s (run tools/fetch.js startRoutes + tools/routes.py)' % l
                 for l in sorted(legs) if '%s>%s' % l not in have]
+        # Every place a version or cluster schedules needs a real matrix row; an estimate (≈) is
+        # for user-added places, never for shipped plans (a new piha-store once slipped through).
+        used = {x for plan in s.plans['plans'] for v in plan['days'].values() for x in v}
+        used |= {x for c in s.plans.get('clusters', []) for x in c['ids']}
+        hyg += ['no drive-time row for %s (run tools/fetch.js startMatrix)' % x
+                for x in sorted(used) if x not in s.idx]
         for h in hyg:
             print('FAIL data', h)
         # CI: any closed/ferry/late/dark/tide problem fails the deploy. Long driving days are
