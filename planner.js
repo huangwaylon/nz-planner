@@ -12,7 +12,8 @@ var planner=(function(){
 
 /* ---------- strings: {key:{ja,en}}; {x} placeholders ---------- */
 const PT={
-  saveVer:{ja:'この案を保存',en:'Save this version'},
+  saveVer:{ja:'この案を保存',en:'Save this version'}, st_collect:{ja:'集める',en:'Collect'}, st_plan:{ja:'組み立てる',en:'Plan'}, st_review:{ja:'見直す',en:'Review'},
+  inboxN:{ja:'未仕分け {n}',en:'{n} to sort'}, todoK:{ja:'絶対・未配置 {n}',en:'Must, not placed: {n}'}, mustN:{ja:'絶対 {n}/{of}',en:'Must {n}/{of}'}, stagesL:{ja:'作業の段階',en:'Stages'}, otherTab:{ja:'別のタブの変更を読み込みました',en:'Loaded the changes from another tab'},
   plan:{ja:'プラン',en:'Plan'}, my:{ja:'マイプラン',en:'My plan'}, share:{ja:'共有',en:'Share'}, browse:{ja:'候補をさがす',en:'Browse places'},
   zoomIn:{ja:'拡大',en:'Zoom in'}, zoomOut:{ja:'縮小',en:'Zoom out'}, fit:{ja:'この日に合わせる',en:'Fit to day'},
   expand:{ja:'地図を大きく',en:'Enlarge map'}, shrink:{ja:'地図を小さく',en:'Shrink map'},
@@ -374,22 +375,55 @@ const ST={
     if(p.titles&&typeof p.titles==='object') out.titles=p.titles;
     return out;
   },
-  read(raw,env){
-    const r={my:null,versions:[],imports:[],booked:{},active:null,broken:false,loaded:false};
+  /* the trip, shared by every version: tiers (must|want|maybe|skip; '' = back to the inbox, no key =
+     not sorted yet, which for her saved places reads as want), groups (one outing each, a place in
+     at most one) and notes about places */
+  trip(t){ const o=ST.obj(t), tier={}, groups=[], notes={}, seen=new Set(), gid=new Set();
+    Object.entries(ST.obj(o.tier)).forEach(([k,v])=>{ if(v===''||TIERS.indexOf(v)>=0) tier[k]=v; });
+    (Array.isArray(o.groups)?o.groups:[]).forEach(g=>{ if(!g||typeof g.id!=='string'||gid.has(g.id)) return; gid.add(g.id);
+      const x={id:g.id,name:typeof g.name==='string'?g.name.slice(0,40):'',ids:(Array.isArray(g.ids)?g.ids:[]).filter(i=>typeof i==='string'&&!seen.has(i)&&seen.add(i))};
+      if(typeof g.from==='string') x.from=g.from; groups.push(x); });
+    Object.entries(ST.obj(o.notes)).forEach(([k,v])=>{ if(typeof v==='string'&&v.trim()) notes[k]=v.slice(0,300); });
+    return {tier,groups,notes}; },
+  /* v1 -> v2: notes move up to the trip, from My plan first, then the newest version that has them */
+  lift(r){ const notes={}, add=o=>Object.keys(o||{}).forEach(k=>{ if(notes[k]==null) notes[k]=o[k]; });
+    if(r.my){ add(r.my.notes); r.my.notes={}; }
+    r.versions.slice().sort((a,b)=>(b.at||0)-(a.at||0)).forEach(v=>add(v.notes));
+    r.trip={tier:{},groups:[],notes}; },
+  /* An old cached app reads a v2 save as broken, keeps it in plan:<slug>:broken and writes v1 over
+     it. The new app takes back what that cost: the trip, My plan if the old app had none, every
+     version, import and booking. */
+  merge(r,b){ const t=b.trip;
+    Object.keys(t.tier).forEach(k=>{ if(r.trip.tier[k]==null) r.trip.tier[k]=t.tier[k]; });
+    const have=new Set(r.trip.groups.flatMap(g=>g.ids));
+    t.groups.forEach(g=>{ if(!r.trip.groups.some(x=>x.id===g.id)) r.trip.groups.push(Object.assign({},g,{ids:g.ids.filter(i=>!have.has(i))})); });
+    Object.keys(t.notes).forEach(k=>{ if(r.trip.notes[k]==null) r.trip.notes[k]=t.notes[k]; });
+    if(!r.my&&b.my) r.my=b.my; else if(b.my&&r.my&&JSON.stringify(b.my.days)!==JSON.stringify(r.my.days)) r.versions.unshift(Object.assign({},b.my,{id:'v-k'+Date.now().toString(36),kind:'auto',at:Date.now()}));
+    b.versions.forEach(v=>{ if(!r.versions.some(x=>x.id===v.id)) r.versions.push(v); });
+    b.imports.forEach(m=>{ if(!r.imports.some(x=>x.id===m.id)) r.imports.push(m); });
+    Object.assign(r.booked,b.booked); r.merged=true; },
+  read(raw,env,broken){
+    const r={my:null,versions:[],imports:[],booked:{},active:null,broken:false,loaded:false,trip:{tier:{},groups:[],notes:{}},v:0};
     let saved=null;
     if(raw!=null){ try{ saved=JSON.parse(raw); }catch(e){ r.broken=true; } }
-    if(saved&&(typeof saved!=='object'||saved.v!==1)){ r.broken=true; saved=null; }
-    if(!saved) return r;
-    r.loaded=true;
+    if(saved&&(typeof saved!=='object'||(saved.v!==1&&saved.v!==2))){ r.broken=true; saved=null; }
+    if(saved) ST.fill(r,saved,env);
+    if(broken!=null&&(!saved||saved.v===1)){ let b=null; try{ b=JSON.parse(broken); }catch(e){}
+      if(b&&b.v===2){ const x={my:null,versions:[],imports:[],booked:{},trip:null}; ST.fill(x,b,env); ST.merge(r,x); r.loaded=true; } }
+    return r;
+  },
+  fill(r,saved,env){
+    r.loaded=true; r.v=saved.v;
     if(saved.my!=null){ r.my=ST.plan(saved.my,'my',env); if(!r.my) r.broken=true; }
     r.versions=(Array.isArray(saved.versions)?saved.versions:[]).map(v=>v&&typeof v.id==='string'&&v.id.startsWith('v-')?ST.plan(v,v.id,env):null).filter(Boolean);
     if(Array.isArray(saved.versions)&&r.versions.length<saved.versions.length) r.broken=true;
     r.imports=Array.isArray(saved.imports)?saved.imports.filter(m=>m&&typeof m.id==='string'&&typeof m.name==='string'&&(m.lat==null?m.lon==null:isFinite(m.lat)&&isFinite(m.lon))):[];
     Object.keys(ST.obj(saved.booked)).forEach(k=>{ if(saved.booked[k]===true) r.booked[k]=true; });
     r.active=typeof saved.active==='string'?saved.active:null;
-    return r;
+    if(saved.v===2) r.trip=ST.trip(saved.trip); else { ST.lift(r); r.migrated=true; }
   }
 };
+const TIERS=['must','want','maybe','skip'];
 
 const plannerFn=function planner(g){
   const view=g.querySelector('.v-plan'); if(!view) return;
@@ -398,12 +432,13 @@ const plannerFn=function planner(g){
   const UI=LSJ.get(KU,null);
   const ui=UI&&typeof UI==='object'?UI:{};
   const S={
-    raw:LSJ.raw(KP), planId:null, my:null, versions:[], imports:[], booked:{},
+    raw:LSJ.raw(KP), planId:null, my:null, versions:[], imports:[], booked:{}, trip:{tier:{},groups:[],notes:{}},
     impVer:1, placing:null, ip:null,
     day:Number.isInteger(+ui.day)?+ui.day:0, map:ui.map==='closed'||ui.map===false?'closed':'peek',
     hideInstall:!!ui.hideInstall, hideIntro:!!ui.hideIntro, saveFail:false,
     sel:null, sc:null, f:{q:'',cat:null,area:null,saved:null,sort:'trend'}, hist:[], browsing:false, drafts:{}, noteOpen:null,
-    dayEnd:okHM(ui.dayEnd)?toMin(ui.dayEnd):DEADLINE
+    dayEnd:okHM(ui.dayEnd)?toMin(ui.dayEnd):DEADLINE,
+    stage:['collect','plan','review'].indexOf(ui.stage)>=0?ui.stage:'plan', cf:ui.cf&&typeof ui.cf==='object'?ui.cf:{}
   };
   /* road geometry cache, LRU, in plan-ui */
   const RC={map:ui.routes&&typeof ui.routes==='object'?ui.routes:{}, order:Array.isArray(ui.rorder)?ui.rorder.filter(k=>typeof k==='string'):[]};
@@ -418,6 +453,7 @@ const plannerFn=function planner(g){
         <button class="pl-iconbtn pl-sharebtn" type="button">${ic('share')}<span class="sr" data-pt="share"></span></button>
       </span>
     </div>
+    <nav class="pl-stages">${['collect','plan','review'].map((k,i)=>`<button type="button" class="pl-stage" data-stage="${k}"><b aria-hidden="true">${'①②③'[i]}</b><span data-pt="st_${k}"></span><i class="pl-stc"></i></button>`).join('')}</nav>
     <div class="pl-stick">
       <nav class="pl-days"></nav>
       <section class="pl-mapcard">
@@ -448,7 +484,8 @@ const plannerFn=function planner(g){
       </section>
     </div>
     <div class="pl-notice"></div>
-    <div class="pl-main" aria-live="off"></div>`;
+    <div class="pl-main" aria-live="off"></div>
+    <section class="pl-collect"></section><section class="pl-review"></section>`;
   const layer=document.createElement('div');
   layer.innerHTML=`<div class="pl-layer pl-scrim" hidden></div>
     <div class="pl-layer pl-sheet" role="dialog" aria-modal="true" tabindex="-1" id="pl-sheet-${slug}" aria-labelledby="pl-sht-${slug}" hidden inert><div class="pl-grab" aria-hidden="true"></div><div class="pl-sbody"></div></div>
@@ -456,7 +493,7 @@ const plannerFn=function planner(g){
   [...layer.children].forEach(el=>g.appendChild(el));
   const q=s=>view.querySelector(s);
   const E={bar:q('.pl-planbtn'), days:q('.pl-days'), card:q('.pl-mapcard'), svg:q('.pl-map'), world:q('.pl-world'), main:q('.pl-main'),
-    notice:q('.pl-notice'), undo:q('.pl-undobtn'), stick:q('.pl-stick'), toggle:q('.pl-maptoggle'), estnote:q('.pl-estnote'),
+    notice:q('.pl-notice'), undo:q('.pl-undobtn'), stages:q('.pl-stages'), collect:q('.pl-collect'), review:q('.pl-review'), stick:q('.pl-stick'), toggle:q('.pl-maptoggle'), estnote:q('.pl-estnote'),
     scrim:g.querySelector('.pl-scrim'), sheet:g.querySelector('.pl-sheet'), sbody:g.querySelector('.pl-sbody'), toast:g.querySelector('.pl-toast')};
   const svg=E.svg, main=E.main;
 
@@ -480,14 +517,17 @@ const plannerFn=function planner(g){
   /* plan.titles[date] {ja,en} names a version's day before the default day label */
   const dayTitle=(day,P)=>{ const t=(P||plan()).titles&&(P||plan()).titles[day.date]; return t&&(t[lang()]||t.ja||t.en)||(ja()?day.labelJa:day.label); };
   /* notes in plans.json are "JA / EN"; the travellers' own are one language */
-  const noteText=(P,id)=>{ const n=P.notes&&P.notes[id]; if(!n) return ''; const k=n.indexOf(' / '); return k<0?n:(ja()?n.slice(0,k):n.slice(k+3)); };
+  /* her note on a place is the trip's (every version shows it); a preset's own "JA / EN" note otherwise */
+  const noteText=(P,id)=>{ const n=S.trip.notes[id]||P.notes&&P.notes[id]; if(!n) return ''; const k=n.indexOf(' / '); return k<0?n:(ja()?n.slice(0,k):n.slice(k+3)); };
   const presetName=id=>{ const p=findPlan(id); return p?planName(p):''; };
   const idsOf=(date,P)=>SIM.idsOf(date,P||plan());
   const stayOf=(id,P,date)=>SIM.stayOf(id,P||plan(),date||DB.days[S.day].date);
   function plannedMap(P){ const m=new Map(); P=P||plan(); DB.days.forEach((d,i)=>(P.days[d.date]||[]).forEach(id=>{ if(!m.has(id)) m.set(id,i); })); return m; }
-  function save(){ const ok=LSJ.set(KP,{v:1,active:S.planId,my:S.my,versions:S.versions,imports:S.imports,booked:S.booked}); noteSave(ok); return ok; }
+  /* v2: {v:2, active, trip:{tier, groups, notes}, my, versions, imports, booked}. The v1 string it
+     replaced was copied to plan:<slug>:v1 before the first v2 write (loadState). */
+  function save(){ const ok=LSJ.set(KP,{v:2,active:S.planId,trip:S.trip,my:S.my,versions:S.versions,imports:S.imports,booked:S.booked}); noteSave(ok); return ok; }
   let uiT=0; const saveUISoon=()=>{ clearTimeout(uiT); uiT=setTimeout(()=>idle(saveUI,2000),400); };
-  function saveUI(){ LSJ.set(KU,{v:1,day:S.day,map:S.map==='full'?'peek':S.map,dayEnd:S.dayEnd!==DEADLINE?hhmm(S.dayEnd):undefined,hideInstall:S.hideInstall,hideIntro:S.hideIntro,routes:RC.map,rorder:RC.order}); }
+  function saveUI(){ LSJ.set(KU,{v:1,stage:S.stage,cf:S.cf,day:S.day,map:S.map==='full'?'peek':S.map,dayEnd:S.dayEnd!==DEADLINE?hhmm(S.dayEnd):undefined,hideInstall:S.hideInstall,hideIntro:S.hideIntro,routes:RC.map,rorder:RC.order}); }
   function noteSave(ok){ if(ok===!S.saveFail) return; S.saveFail=!ok; renderNotice(); }
   const bodyOf=p=>JSON.stringify([p.days,p.stay||{},p.start||{},p.notes||{},p.stayDay||{}]);
   const nowHM=()=>{ const d=new Date(); return (d.getMonth()+1)+'/'+d.getDate()+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); };
@@ -504,7 +544,12 @@ const plannerFn=function planner(g){
     S.versions=list; return v;
   }
   function keepMy(){ if(S.my&&!S.versions.some(v=>bodyOf(v)===bodyOf(S.my))) return snapshot(S.my,'','auto'); return null; }
-  const state=()=>({planId:S.planId,my:S.my?clone(S.my):null,versions:S.versions,imports:S.imports,booked:S.booked});
+  const state=()=>({planId:S.planId,my:S.my?clone(S.my):null,versions:S.versions,imports:S.imports,booked:S.booked,trip:S.trip});
+  /* Trip edits (tiers, groups, notes) share the one undo stack and never fork a preset into My plan.
+     S.trip is replaced, never mutated, so a history entry can keep the old one. */
+  function editTrip(fn,msg){ const before=state(), t=clone(S.trip);
+    try{ fn(t); }catch(e){ console.error(e); return false; }
+    S.trip=t; S.hist.push(before); if(S.hist.length>100) S.hist.shift(); save(); renderSoon(); if(msg) toast(msg,undo); return true; }
   function pushHist(){ S.hist.push(state()); if(S.hist.length>100) S.hist.shift(); }
   const emptyPlanBits=()=>({stay:{},start:{},notes:{}});
   /* Every edit goes through here. A drag in progress is cancelled first, and history is pushed only
@@ -530,6 +575,8 @@ const plannerFn=function planner(g){
     d.innerHTML=`<p>${ic('alert','sm')}<span>${esc(pt('thisOrder',{w:breakLine(bs)}))}</span></p><div><button type="button" class="pl-btn pl-sec" data-act="keep">${pt('keepIt')}</button><button type="button" class="pl-btn pl-pri" data-act="undoit">${pt('undo')}</button></div>`;
     main.querySelectorAll('.pl-confirm').forEach(x=>x.remove()); l.before(d); }); }
   let ARM=null;
+  /* the first call arms key and says no; a second within 15 s says yes */
+  const armed=key=>{ if(ARM&&ARM.key===key&&Date.now()-ARM.t<15000){ ARM=null; return true; } ARM={key,t:Date.now()}; return false; };
   function guard(el,key,fn,msg,opt){
     const bs=trial(fn);
     if(bs&&bs.length&&!(ARM&&ARM.key===key&&Date.now()-ARM.t<15000)){
@@ -566,7 +613,7 @@ const plannerFn=function planner(g){
     if(DRAG) DRAG.cancel();
     const s=S.hist.pop(); if(!s){ toast(pt('noUndo')); return; }
     const fk=focusKey();
-    S.planId=s.planId; S.my=s.my; S.versions=s.versions; S.imports=s.imports; S.booked=s.booked; S.impVer++;
+    S.planId=s.planId; S.my=s.my; S.versions=s.versions; S.imports=s.imports; S.booked=s.booked; S.trip=s.trip; S.impVer++;
     save(); render(); refreshSheet(); toast(pt('undone'));
     /* back to the same control if it still exists, else the undo button, else the first stop */
     if(!sheetKind){ const t=fk&&main.querySelector(fk); if(t) t.focus({preventScroll:true}); else if(!E.undo.disabled) E.undo.focus({preventScroll:true}); else focusStop(0); }
@@ -576,10 +623,13 @@ const plannerFn=function planner(g){
      is kept under plan:<slug>:broken so nothing is lost silently. */
   const ENV=()=>({days:DB.days,presets:DB.presets});
   function loadState(){
-    const r=ST.read(S.raw,ENV());
-    S.my=r.my; S.versions=r.versions; S.imports=r.imports; S.booked=r.booked; S.planId=r.active;
+    const r=ST.read(S.raw,ENV(),LS.get(KB));
+    S.my=r.my; S.versions=r.versions; S.imports=r.imports; S.booked=r.booked; S.planId=r.active; S.trip=r.trip;
     if(r.loaded) S.impVer++;
+    /* never lose the v1 string: it is copied aside once, before anything writes v2 over it */
+    if(r.migrated&&S.raw!=null&&LS.get(KP+':v1')==null) LS.set(KP+':v1',S.raw);
     if(r.broken&&S.raw!=null){ LS.set(KB,S.raw); }
+    if(r.merged) S.mergedBack=true;
     if(S.planId==='my'&&!S.my) S.planId=null;
     if(!findPlan(S.planId)) S.planId=DB.presets[0].id;
     if(!(S.day>=0&&S.day<DB.days.length)) S.day=0;
@@ -614,6 +664,31 @@ const plannerFn=function planner(g){
   /* best is a comma list ("sunrise,sunset"); each part with its own time at this place */
   const bestText=(p,date)=>String(p.best).split(',').map(b=>tr(BEST,b)+(b==='sunrise'?' '+hm(sunriseOf(p,date)):b==='sunset'?' '+hm(sunsetOf(p,date)):'')).join('・');
   function bookedCount(sc){ let a=0, b=0; const seen=new Set(); sc.rows.forEach(r=>{ const p=place(r.id); if(!p||!p.book||seen.has(r.id)) return; seen.add(r.id); b++; if(S.booked[r.id]) a++; }); return {a,b}; }
+
+  /* ---------- tiers (the trip's, shared by every version): must want maybe skip; no tier = the inbox,
+     except her own saved places, which start as want (「保存済みから」). Nothing else is guessed. ---------- */
+  const tierOf=id=>{ const t=S.trip.tier[id]; if(t!=null) return t; const p=place(id); return p&&p.saved?'want':''; };
+  const seeded=id=>S.trip.tier[id]==null&&!!(place(id)||{}).saved;
+  const skipSet=()=>new Set(Object.keys(S.trip.tier).filter(k=>S.trip.tier[k]==='skip'));
+  /* how many musts a version places: 「絶対 7/9」; an unplaced must is a to-do, never a block */
+  function cover(P){ const m=plannedMap(P), all=DB.list.filter(p=>isCand(p)&&tierOf(p.id)==='must'); return {n:all.filter(p=>m.has(p.id)).length,of:all.length,open:all.filter(p=>!m.has(p.id))}; }
+  let WK=null;
+  function warnCount(P){ const k=bodyOf(P)+S.dayEnd+(lazy.travel?1:0); if(WK&&WK.k===k) return WK.n;
+    const n=DB.days.reduce((t,d)=>t+schedule(d,null,P).warns,0); WK={k,n}; return n; }
+  /* ---------- stages: ① collect ② plan ③ review. A stepper, not a wizard: every stage is always
+     reachable; each shows one live count. ---------- */
+  function renderStages(){ const P=plan(), cv=cover(P), inbox=DB.list.filter(p=>isCand(p)&&tierOf(p.id)==='').length, w=warnCount(P);
+    const txt={collect:pt('inboxN',{n:inbox}),plan:cv.of?pt('mustN',{n:cv.n,of:cv.of}):'',review:w?'⚠ '+w:'✓'};
+    E.stages.querySelectorAll('.pl-stage').forEach(b=>{ const k=b.dataset.stage; b.setAttribute('aria-current',k===S.stage?'step':'false'); b.querySelector('.pl-stc').textContent=txt[k]; }); }
+  function setStage(st,quiet){ if(st===S.stage) return; S.stage=st; view.dataset.stage=st; saveUISoon(); if(sheetKind) closeSheet(); scrollTo(0,0);
+    renderStages();
+    if(st==='collect') needCollect().then(c=>c.render(),()=>{});
+    else if(st==='review') needMore().then(m=>m.renderReview(E.review));
+    else { render(); loadLandLo(); }
+    if(quiet==='key') view.querySelector(`.pl-stage[data-stage="${st}"]`).focus({preventScroll:true}); }
+  let COLP=null, CM=null;
+  function needCollect(){ return COLP||(COLP=Promise.all([loadCss('pl-col',view.dataset.collectCss||'planner-collect.css'),planner.collect?0:loadJs(view.dataset.collectSrc||'planner-collect.js')])
+    .then(()=>(CM=planner.collect(ctx())),e=>{ COLP=null; toast(pt('loadFail')); throw e; })); }
 
   /* ---------- render: toolbar, day strip ---------- */
   function renderTop(){
@@ -751,6 +826,9 @@ const plannerFn=function planner(g){
     return `<div class="pl-ax">${pt('landed')} ${hm(s.arr)} → ${nt} ${dur(s.an.buffer)} → ${pt('depart')} <b>${hm(s.dep)}</b></div>`;
   }
   const anchorBook=r=>{ const p=place(r.id); return p&&p.book?bookBtn(p,esc(nm(p))):''; };
+  /* the musts this version has not placed yet: a to-do line, one tap from the day picker */
+  function todoHTML(P){ const o=cover(P).open; if(!o.length) return '';
+    return `<div class="pl-todo"><span class="pl-todok">${pt('todoK',{n:o.length})}</span>${o.slice(0,4).map(p=>`<button type="button" class="pl-todob" data-act="open" data-id="${p.id}"${nmLang(p)}>${esc(nm(p))}</button>`).join('')}${o.length>4?`<span class="pl-todok">+${o.length-4}</span>`:''}</div>`; }
   function renderMain(anim){
     const day=DB.days[S.day], sc=schedule(day), rows=sc.rows, n=rows.length-2, P=plan();
     S.sc=sc;
@@ -765,7 +843,7 @@ const plannerFn=function planner(g){
           <h2 class="pl-dh-title">${wbr(dayTitle(day,P))}</h2>
         </div></div>
         <p class="pl-dh-stats">${statsHTML(sc,n,e)}</p>
-        <div class="pl-warns pl-hw">${headWarns(sc,e,day)}</div>
+        <div class="pl-warns pl-hw">${headWarns(sc,e,day)}</div>${todoHTML(P)}
       </header>`;
     const start=`<div class="pl-anchor pl-start">
         <div class="pl-aic">${ic(glyphOf(sp))}</div>
@@ -1030,7 +1108,7 @@ const plannerFn=function planner(g){
     return false;
   }
   function gEnd(){ if(gest){ gest=null; settle(); afterUI(); } }
-  function afterUI(){ if(busyUI()) return; if(RQ.redraw){ RQ.redraw=false; renderLegs(); } if(LANDQ) putLand(LANDQ); setTimeout(pumpRoutes,300); }
+  function afterUI(){ if(busyUI()) return; if(RQ.redraw){ RQ.redraw=false; renderLegs(); } if(LANDQ) putLand(LANDQ[0],LANDQ[1]); setTimeout(pumpRoutes,300); }
   function wireMap(){
     const arr=e=>Array.prototype.slice.call(e.touches);
     svg.addEventListener('touchstart',e=>{ dragged=false; gest=null; gStart(arr(e)); },{passive:true});
@@ -1178,7 +1256,7 @@ const plannerFn=function planner(g){
         case 'focus': select(id,'stop'); if(S.map==='closed'){ S.map='peek'; saveUI(); mapState(); } break;
         case 'browse': openBrowse(); break;
         case 'day': setDay(+b.dataset.day); break;
-        case 'story': openStory(); break;
+        case 'story': needMore().then(x=>x.openStory()); break;
         case 'booked': toggleBooked(id,b); break;
         case 'note': { const ed=b.closest('.pl-stop').querySelector('.pl-noteed'), open=ed.hidden; ed.hidden=!open; b.setAttribute('aria-expanded',open);
           S.noteOpen=open?id:null; if(open) ed.querySelector('textarea').focus(); break; }
@@ -1199,7 +1277,7 @@ const plannerFn=function planner(g){
     S.noteOpen=null; delete S.drafts[id];
     const done=()=>{ const ed=main.querySelector(`#pl-ne-${slug}-${id}`); if(ed) ed.hidden=true; const nb=main.querySelector(`.pl-notebtn[data-id="${id}"]`); if(nb){ nb.setAttribute('aria-expanded','false'); nb.focus({preventScroll:true}); } };
     if(v===cur||v===raw){ done(); return; }
-    edit(m=>{ if(v) m.notes[id]=v; else delete m.notes[id]; },pt('note')+' ✓',{quick:true});
+    editTrip(t=>{ if(v) t.notes[id]=v; else delete t.notes[id]; },pt('note')+' ✓');
     done();
   }
   function toggleBooked(id,btn){
@@ -1221,7 +1299,8 @@ const plannerFn=function planner(g){
     if(DRAG){ PENDING=true; return; }          /* a drag in progress keeps its DOM */
     PENDING=false; cancelAnimationFrame(soon); soon=0;
     const fk=focusKey(), ta=document.activeElement&&document.activeElement.tagName==='TEXTAREA'?document.activeElement:null, sel=ta?[ta.selectionStart,ta.selectionEnd]:null;
-    rebuildPlaces(); renderTop(); renderDays(); renderMain(anim); renderMap();
+    rebuildPlaces(); renderTop(); renderDays(); renderMain(anim); renderMap(); renderStages();
+    if(S.stage==='collect'&&CM) CM.render(); else if(S.stage==='review'&&MM) MM.renderReview(E.review);
     if(fk&&!main.contains(document.activeElement)){ const t=main.querySelector(fk); if(t) t.focus({preventScroll:true}); }
     if(ta&&S.noteOpen){ const t=main.querySelector(`#pl-ne-${slug}-${S.noteOpen} textarea`); if(t){ t.focus({preventScroll:true}); try{ t.setSelectionRange(sel[0],sel[1]); }catch(e){} } }
     const f=after; after=[]; f.forEach(x=>x());
@@ -1269,26 +1348,9 @@ const plannerFn=function planner(g){
   const closure=p=>(p.flags||[]).some(f=>/^(track-closed|partial-closure|partial-track-closures|loop-closed)/.test(f));
   /* An add, simulated first (SIM.insertPlan); c is a grouping or null. */
   const addIds=(c,id)=>{ const planned=plannedMap(); return (c?c.ids:[id]).filter(x=>DB.places.has(x)&&!planned.has(x)); };
-  const clusterOf=id=>id==='_imp'?{id,ids:DB.list.filter(p=>p.imp).map(p=>p.id)}:DB.clusters.find(x=>x.id===id);
+  const clusterOf=id=>id==='_imp'?{id,ids:DB.list.filter(p=>p.imp).map(p=>p.id)}:id==='_sel'?S.selc:id.startsWith('g-')?S.trip.groups.find(x=>x.id===id):DB.clusters.find(x=>x.id===id);
   /* a break in words: whose, and what */
   function breakText(b,day){ const who=b.kind==='stop'?nm(place(b.id))+'：':''; return who+warnText(b.w,day); }
-  /* Apply an add; then name any earlier stop it broke, with a one-tap move to that stop's open slot. */
-  function applyAdd(k,ids,c){
-    const day=DB.days[k]; let pv=null;
-    const ok=edit(m=>{ const l=(m.days[day.date]=m.days[day.date]||[]); pv=SIM.insertPlan(day,l,ids,m,{deadline:S.dayEnd},c); if(!pv) throw new Error('nothing');
-      m.days[day.date]=pv.list.concat(l.filter(x=>!DB.places.has(x))); if(pv.start){ m.start=m.start||{}; m.start[day.date]=pv.start; } },
-      ids.length>1?pt('addedN',{n:ids.length,d:dlabel(day)}):pt('added',{d:dlabel(day)})+'：'+nm(place(ids[0])));
-    if(!ok||!pv) return false;
-    const hurt=pv.breaks.find(b=>b.kind==='stop'&&ids.indexOf(b.id)<0&&(b.w.k==='closed'||b.w.k==='closedAt'));
-    if(hurt){ const fix=SIM.bestPos(day,idsOf(day.date).filter(x=>x!==hurt.id),hurt.id,plan(),{deadline:S.dayEnd});
-      /* 朝に移す is checked like any change: if it breaks another stop, it says so and asks again */
-      const fixFn=m=>{ const l=m.days[day.date], j=l.indexOf(hurt.id); if(j<0) return; l.splice(j,1); l.splice(SIM.bestPos(day,l,hurt.id,m,{deadline:S.dayEnd}).pos,0,hurt.id); };
-      const key='fix'+hurt.id+day.date, doFix=()=>{ const bs=trial(fixFn);
-        if(bs&&bs.length&&!(ARM&&ARM.key===key)){ ARM={key,t:Date.now()}; toast('⚠ '+breakLine(bs)+' — '+pt('tapAgainDo'),undo,{label:pt('moveOpen'),fn:doFix}); return; }
-        ARM=null; edit(fixFn,pt('movedOpen',{name:nm(place(hurt.id))})); };
-      toast(pt('broke',{name:nm(place(hurt.id)),w:warnText(hurt.w,day)}),undo,fix.fits?{label:pt('moveOpen'),fn:doFix}:null); }
-    return true;
-  }
   /* Candidates: header once per open, the list on every filter change (so the search keeps focus),
      and adding patches one row instead of rebuilding them all. */
   /* saved:true = the traveller saved it in her own Google Maps list, the strongest signal we have */
@@ -1408,7 +1470,7 @@ const plannerFn=function planner(g){
   function ctx(){ return {S,DB,E,view,svg,slug,SRC,pt,esc,ic,head,doneBar,openSheet,closeSheet,toast,undo,pushHist,save,render,edit,plan,findPlan,planName,presetName,
     idsOf,schedule,dayStyle,dlabel,dayTitle,dur,hm,nm,nmLang,wbr,place,bodyOf,snapshot,renderTop,fitDay,isCand,plannedMap,FAMILY,thumb,tr,CAT,AREA,
     unverifiedHours,reorder,focusStop,afterRender,okHM,clone,switchToMe,hav,mapState,saveUI,select,unprj,ja,showCands,stopPlacing,impChanged,
-    savedTag,sigLine,warnText,breakText,guard,trial,breakLine,keepMy,applyAdd,toggleBooked,setDay,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:o=>Object.assign(PT,o)}; }
+    savedTag,sigLine,warnText,breakText,guard,trial,breakLine,keepMy,armed,legSegments,geom,g,main,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:o=>Object.assign(PT,o)}; }
   const openOrder=id=>needMore().then(m=>m.openOrder(id));
   const openSwap=id=>needMore().then(m=>m.openSwap(id));
   const openCompare=(a,b)=>needMore().then(m=>m.openCompare(a,b));
@@ -1441,28 +1503,6 @@ const plannerFn=function planner(g){
     E.notice.innerHTML=h;
   }
 
-  /* ---------- the story image: story.js (plstory.open(dayModel)) loads only when asked ---------- */
-  /* The model story.js documents: {date, dayNo, title, titleJa, color, lang, stops:[{time, name,
-     nameJa, cat, photo, lat, lon}], stats, tags}, plus the leg shapes in map units. */
-  function dayModel(){
-    const day=DB.days[S.day], sc=S.sc, cs=getComputedStyle(main);
-    const P=plan(), tt=P.titles&&P.titles[day.date];
-    return {slug, guide:g, lang:lang(), date:day.date, dayNo:S.day+1, title:tt&&tt.en||day.label, titleJa:tt&&tt.ja||day.labelJa,
-      color:cs.getPropertyValue('--c').trim(), ink:cs.getPropertyValue('--ci').trim(),
-      stops:sc.rows.filter(r=>r.kind==='stop').map(r=>{ const p=place(r.id); return {id:p.id,time:hm(r.begin),end:hm(r.dep),name:p.name,nameJa:p.nameJa||p.name,cat:p.cat,best:p.best||'',
-        sun:(r.infos.find(x=>x.k==='sunrise'||x.k==='sunsetAt')||{}).t!=null?hm(r.infos.find(x=>x.k==='sunrise'||x.k==='sunsetAt').t):'',
-        lat:p.lat,lon:p.lon,photo:DB.photos&&DB.photos[p.id]||null}; }),
-      stats:pt('drive',{d:dur(sc.drive)})+' · '+Math.round(sc.km)+' km · '+pt('stops',{n:sc.rows.length-2}),
-      tags:[...new Set(sc.rows.map(r=>place(r.id).igTag).filter(Boolean))].slice(0,3),
-      legs:legSegments(sc).map(s=>({kind:s.kind,pts:(s.kind==='drive'&&geom(s.a,s.b)||{pts:[s.p0,s.p1]}).pts}))};
-  }
-  let STORY=null;
-  function openStory(){
-    if(!STORY) STORY=window.plstory?Promise.resolve(window.plstory):new Promise((res,rej)=>{ const s=document.createElement('script');
-      s.src=view.dataset.storySrc||'story.js'; s.onload=()=>window.plstory?res(window.plstory):rej(); s.onerror=rej; document.head.appendChild(s); });
-    Promise.all([STORY,loadMore()]).then(([st])=>st.open(dayModel(),g),()=>{ STORY=null; toast(pt('storySoon')); });
-  }
-
   /* ---------- boot ---------- */
   function labels(){
     view.querySelectorAll('[data-pt]').forEach(el=>{ el.textContent=pt(el.dataset.pt); });
@@ -1485,7 +1525,11 @@ const plannerFn=function planner(g){
   const lazy={travel:false,routes:false,photos:false};
   /* the coastline is written only between gestures: a write that lands mid-pan waits for afterUI() */
   let LANDQ=null;
-  function putLand(t){ if(!t) return; if(busyUI()){ LANDQ=t; return; } LANDQ=null; svg.querySelector('.pl-land').innerHTML=t; }
+  /* the light coast never replaces the full one, whichever arrives first */
+  let LANDLV=0, LANDLO=false;
+  function putLand(t,lv){ lv=lv||2; if(!t||lv<LANDLV) return; if(busyUI()){ LANDQ=[t,lv]; return; } LANDQ=null; LANDLV=lv; svg.querySelector('.pl-land').innerHTML=t; }
+  /* the light coast is for a visible map: on a phone's ① the map is hidden, so it waits */
+  function loadLandLo(){ if(LANDLO) return; LANDLO=true; fetch(SRC+'land-lo.svg.html').then(r=>r.ok?r.text():'').then(t=>putLand(t,1)).catch(()=>{ LANDLO=false; }); }
   /* new minutes: the candidates list re-ranks, but an open day picker keeps its place and only re-simulates */
   function refreshPicks(){ if(sheetKind==='browse') renderList(); }
   function loadLazy(){
@@ -1532,7 +1576,9 @@ const plannerFn=function planner(g){
     view.addEventListener('click',early,true);
     labels(); rebuildPlaces(); renderTop(); renderDays();
     try{ renderMain(); }catch(e){ console.error(e); LS.set(KB,S.raw||''); S.my=null; S.versions=[]; S.planId=DB.presets[0].id; save(); renderTop(); renderDays(); renderMain(); }
-    if(broken) save();
+    if(broken||S.mergedBack) save();
+    view.dataset.stage=S.stage; renderStages();
+    if(S.stage==='collect') needCollect().then(c=>c.render(),()=>{}); else if(S.stage==='review') needMore(true).then(m=>m.renderReview(E.review));
     setTimeout(()=>{ renderMap(); setTimeout(wire,0); },0);
     loadPhotos();
     /* flag labels (5 KB gz) follow the first paint; the day re-renders once with them */
@@ -1544,6 +1590,14 @@ const plannerFn=function planner(g){
     queueMicrotask(()=>{ wired=true; const t=pendingTap; pendingTap=null; if(t&&t.isConnected) t.click(); });
     E.days.addEventListener('click',e=>{ const b=e.target.closest('.pl-daybtn'); if(b) setDay(+b.dataset.day); });
     E.bar.addEventListener('click',openPlans);
+    E.stages.addEventListener('click',e=>{ const b=e.target.closest('.pl-stage'); if(b) setStage(b.dataset.stage); });
+    /* [ and ] step between the stages (by e.code, so a JIS keyboard works); ① owns its own keys */
+    document.addEventListener('keydown',e=>{ if(sheetKind||e.altKey||/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+      const st=['collect','plan','review'], i=st.indexOf(S.stage), mod=e.metaKey||e.ctrlKey;
+      if(mod&&e.code==='KeyZ'&&!e.shiftKey){ e.preventDefault(); undo(); }
+      else if(!mod&&e.code==='BracketLeft'&&i>0){ e.preventDefault(); setStage(st[i-1],'key'); }
+      else if(!mod&&e.code==='BracketRight'&&i<2){ e.preventDefault(); setStage(st[i+1],'key'); }
+      else if(S.stage==='collect'&&CM) CM.key(e); });
     view.querySelector('.pl-sharebtn').addEventListener('click',shareLink);
     view.querySelector('.pl-browsebtn').addEventListener('click',()=>openBrowse());
     E.undo.addEventListener('click',undo);
@@ -1554,6 +1608,9 @@ const plannerFn=function planner(g){
       if(b.dataset.act==='purge'){ S.versions=S.versions.filter(v=>v.kind!=='auto'); S.hist=[]; if(save()) toast(pt('purged')); renderTop(); } });
     document.addEventListener('langchange',()=>{ labels(); DB.list.forEach(p=>{ delete p._s; }); render(); renderNotice(); select(null); if(!DRAG) refreshSheet(); });
     addEventListener('hashchange',importHash);
+    /* another tab saved: take its state rather than overwrite it on our next save */
+    addEventListener('storage',e=>{ if(e.key!==KP||e.newValue==null||e.newValue===JSON.stringify({v:2,active:S.planId,trip:S.trip,my:S.my,versions:S.versions,imports:S.imports,booked:S.booked})) return;
+      S.raw=e.newValue; loadState(); S.hist=[]; render(); if(sheetKind) refreshSheet(); toast(pt('otherTab')); });
     addEventListener('popstate',()=>{ if(S.map==='full'){ S.map='peek'; mapState(); setTimeout(()=>fitDay(),380); } });
     addEventListener('online',()=>{ loadLazy(); pumpRoutes(); });
     document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ loadLazy(); pumpRoutes(); } });
@@ -1568,12 +1625,13 @@ const plannerFn=function planner(g){
       return {date:d.date,drive:Math.round(sc.drive),end:hm(sc.end),rows:sc.rows.slice(1).map(r=>[r.kind==='end'?hm(r.arr):hm(r.begin),r.kind==='end'?'':hm(r.dep),r.id,Math.round(r.leg.min)]),
         warns:sc.rows.flatMap(r=>r.warns.map(w=>w.k)).concat(sc.long?['long']:[])}; }), ready:()=>lazy.travel,
       /* tools/e2e.html: is a gesture or tween still thought to be running; how much coastline is drawn */
-      busy:()=>busyUI(), land:()=>svg.querySelectorAll('.pl-land path').length, places:()=>DB.places.size}});
+      busy:()=>busyUI(), land:()=>svg.querySelectorAll('.pl-land path').length, places:()=>DB.places.size,
+      code:()=>needMore(true).then(m=>m.codeNow()), tier:id=>tierOf(id), trip:()=>S.trip}});
     if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{});
   }
   const get=u=>fetch(u).then(r=>{ if(!r.ok) throw new Error(u+' '+r.status); return r.json(); });
   /* A light coastline (5 KB gz) paints first; the full one replaces it when the page is idle. */
-  fetch(SRC+'land-lo.svg.html').then(r=>r.ok?r.text():'').then(putLand).catch(()=>{});
+  if(S.stage!=='collect'||view.clientWidth>=640) loadLandLo();
   Promise.all([get(SRC+'places.json'),get(SRC+'plans.json')]).then(init)
     .catch(err=>{ main.innerHTML=`<p class="pl-none">${pt('loadFail')}</p>`; console.error(err); });
 };

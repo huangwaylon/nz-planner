@@ -133,6 +133,45 @@
       ok(myT13() === b13, 'the Feb 13 visit is unchanged');
     } else ok(false, 'the tarns have a stay stepper on Feb 14');
 
+    /* ---------- the workflow (docs/WORKFLOW.md): state v2, tiers, groups ---------- */
+    const seedV1 = JSON.stringify({v: 1, active: 'my', my: {id: 'my', from: base.id, days, stay: {}, start: {}, notes: {piha: 'タオル'}}, versions: [], imports: [IMP], booked: {}});
+    localStorage.removeItem('plan:nz:v1'); localStorage.removeItem('plan:nz:broken');
+    localStorage.setItem('plan:nz', seedV1);
+    localStorage.setItem('plan-ui:nz', JSON.stringify({v: 1, day: 1, stage: 'collect', hideIntro: true, hideInstall: true}));
+    await load();
+    ok(await until(() => q('.pl-collect .pl-cc')), '① opens from plan-ui and shows cards');
+    ok(localStorage.getItem('plan:nz:v1') === seedV1, 'v1 -> v2: the v1 string is copied to plan:nz:v1 first');
+    ok(view()._pl.trip().notes.piha === 'タオル', 'v1 -> v2: notes move up to the trip');
+    /* key 2 tiers the focused card; it survives a reload and an undo */
+    const tc = q('.pl-cs[data-k=""] .pl-cc'), tid = tc.dataset.id; tc.click(); tc.focus();
+    doc().dispatchEvent(new KeyboardEvent('keydown', {code: 'Digit2', key: '2', bubbles: true}));
+    ok(view()._pl.tier(tid) === 'want' && JSON.parse(localStorage.getItem('plan:nz')).v === 2, 'key 2 sets 行きたい and saves v2');
+    await load(); await until(() => q('.pl-collect .pl-cc'));
+    ok(view()._pl.tier(tid) === 'want', 'the tier survives a reload');
+    q('.pl-cs[data-k="want"] .pl-cc[data-id="'+tid+'"] [data-t="want"]').click();
+    ok(view()._pl.tier(tid) === '', 'tapping the lit tier again puts it back in the inbox');
+    doc().dispatchEvent(new KeyboardEvent('keydown', {code: 'KeyZ', key: 'z', metaKey: true, bubbles: true})); await wait(200);
+    ok(view()._pl.tier(tid) === 'want', '⌘Z undoes a tier change');
+    /* group by the sheet, then carry tiers and the group's ids through a v3 link */
+    const gc = q('.pl-cs[data-k=""] .pl-cc'), gid0 = gc.dataset.id; gc.click(); gc.focus();
+    doc().dispatchEvent(new KeyboardEvent('keydown', {code: 'Digit1', key: '1', bubbles: true}));
+    doc().dispatchEvent(new KeyboardEvent('keydown', {code: 'KeyG', key: 'g', bubbles: true}));
+    const gname = await until(() => q('.pl-cgname'));
+    if (gname) { gname.value = 'テスト外出'; q('[data-act="cgnew"]').click(); }
+    ok(view()._pl.trip().groups.some(g => g.name === 'テスト外出' && g.ids.indexOf(gid0) >= 0), 'G makes a group from the focused card');
+    const code = await view()._pl.code();
+    localStorage.setItem('plan:nz', JSON.stringify({v: 2, active: 'classic', trip: {tier: {}, groups: [], notes: {}}, my: null, versions: [], imports: [], booked: {}}));
+    await load(); await until(() => q('.pl-collect .pl-cc'));
+    fr.contentWindow.location.hash = '#plan-nz=' + code;
+    ok(await until(() => view()._pl.tier(gid0) === 'must', 5000), 'a v3 link fills her unset tiers');
+    ok(view()._pl.trip().groups.some(g => g.ids.indexOf(gid0) >= 0 && g.name !== 'テスト外出'), 'its group arrives with the ids, never the name');
+    /* the old-app guard: a stale v1 app moved our v2 to :broken and wrote v1 over it */
+    const v2now = localStorage.getItem('plan:nz');
+    localStorage.setItem('plan:nz:broken', v2now);
+    localStorage.setItem('plan:nz', JSON.stringify({v: 1, active: 'classic', my: null, versions: [], imports: [], booked: {}}));
+    await load(); await until(() => q('.pl-collect .pl-cc'));
+    ok(view()._pl.tier(gid0) === 'must' && JSON.parse(localStorage.getItem('plan:nz')).v === 2, 'the trip comes back from :broken, saved as v2 again');
+
     ok(!errs.length, 'no errors' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   } catch (e) { ok(false, 'threw: ' + (e && e.stack || e)); }
   done();

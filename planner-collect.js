@@ -1,0 +1,139 @@
+/* ① 集める (docs/WORKFLOW.md): candidates as cards, sorted into tiers and grouped into outings.
+   planner.collect(ctx); state is the planner's (S.trip, S.cf). Trip edits use ctx.editTrip: one undo
+   stack, never a fork. Keys by e.code (JIS-safe): J K, 1 2 3 0, ⌫, X, ⌘A, G, Enter. */
+(function(){
+'use strict';
+if(typeof planner!=='function'||planner.collect) return;
+const T=['must','want','maybe','skip'];
+const PTC={
+  t_must:{ja:'絶対行く',en:'Must go'}, t_want:{ja:'行きたい',en:'Want'}, t_maybe:{ja:'時間があれば',en:'If time'}, t_skip:{ja:'見送り',en:'Skip'}, t_:{ja:'未仕分け',en:'To sort'},
+  s_must:{ja:'絶対',en:'Must'}, s_want:{ja:'行きたい',en:'Want'}, s_maybe:{ja:'時間あれば',en:'If time'}, s_skip:{ja:'見送り',en:'Skip'},
+  cT:{ja:'集める',en:'Collect'}, cS:{ja:'1・2・3・0 で仕分け、⌫ で戻す',en:'Sort with 1 2 3 0, ⌫ to unsort'},
+  byTier:{ja:'ティア',en:'Tier'}, byGroup:{ja:'グループ',en:'Group'}, byArea:{ja:'エリア',en:'Area'}, sortBy2:{ja:'並べ方',en:'Arrange by'},
+  fromSaved:{ja:'保存済みから',en:'from your saves'}, tierOf:{ja:'{name} の行きたさ',en:'How much for {name}'},
+  sel:{ja:'選択',en:'Select'}, selN:{ja:'{n}件選択',en:'{n} selected'}, selDone:{ja:'選択をやめる',en:'Stop selecting'},
+  toGroup:{ja:'グループへ',en:'To a group'}, toDays:{ja:'日程へ',en:'To the days'}, handoff:{ja:'日程に組む →',en:'Plan the days →'},
+    make:{ja:'作る',en:'Create'}, rename2:{ja:'名前を変える',en:'Rename'}, drop:{ja:'グループを解く',en:'Ungroup'},
+  noGroup:{ja:'グループなし',en:'Not in a group'}, picks:{ja:'おすすめ',en:'Suggested'}, use:{ja:'使う',en:'Use'},
+  bestDay:{ja:'最適 {d}',en:'Best {d}'}, placedN:{ja:'{n}/{of} 配置',en:'{n}/{of} placed'}, noDay:{ja:'⚠ どの日も崩れます',en:'⚠ breaks every day'}, grpSum:{ja:'約{d}・運転{m}',en:'about {d}, {m} driving'},
+  inGroup:{ja:'→ {g}',en:'→ {g}'}, inDay2:{ja:'{d}に配置',en:'on {d}'}, tiered:{ja:'{n}件を「{t}」に',en:'{n} set to “{t}”'},   ungrouped:{ja:'「{g}」を解きました',en:'Ungrouped “{g}”'}, made:{ja:'「{g}」を作りました',en:'Made “{g}”'}, nothingSel:{ja:'カードを選んでください',en:'Select some cards first'},
+  allPlaced:{ja:'絶対行く場所はすべて日程に入っています',en:'Every must is on a day'}, nextMust:{ja:'まず {name}：{d} が空いています',en:'Start with {name}: {d} has room'},
+  none2:{ja:'当てはまる場所はありません',en:'No places match'}, cSearch:{ja:'名前・キーワードで絞る',en:'Filter by name or keyword'}, };
+planner.collect=function(c){
+  const {S,DB,E,pt,esc,ic,head,doneBar,openSheet,closeSheet,toast,editTrip,tierOf,seeded,place,nm,nmLang,wbr,thumb,tr,CAT,AREA,
+    plannedMap,dlabel,dur,ja,fold,isCand,cover,setStage,setDay,openPlace,saveUI,clone}=c;
+  c.addStrings(PTC);
+  const el=E.collect;
+  let focus=null, selMode=false, KEY='', skip=false;
+  const sel=S.csel||(S.csel=new Set());
+  const cf=S.cf; cf.mode=cf.mode||'tier';
+  const groupOf=id=>S.trip.groups.find(g=>g.ids.indexOf(id)>=0);
+  const sText=p=>p._c||(p._c=fold([p.name,p.nameJa,tr(AREA,p.area),(Array.isArray(p.kw)?p.kw:[]).join(' '),CAT[p.cat]?CAT[p.cat].ja+' '+CAT[p.cat].en:''].join(' ')));
+  function pool(){ const q=fold((cf.q||'').trim());
+    return DB.list.filter(p=>isCand(p)&&(!cf.cat||p.cat===cf.cat)&&(!cf.saved||p.saved)&&(!q||sText(p).indexOf(q)>=0))
+      .sort((a,b)=>(!!b.saved)-(!!a.saved)||(b.trend||0)*10+(b.aesthetic||0)-(a.trend||0)*10-(a.aesthetic||0)); }
+  /* one card: the place, where it already is, and the four tier buttons (44 px each, the word always shown) */
+  function card(p,pm){ const t=tierOf(p.id), g=groupOf(p.id), on=pm.get(p.id), N=esc(nm(p));
+    return `<article class="pl-cc${sel.has(p.id)?' pl-csel':''}" data-id="${p.id}" data-tier="${t}" tabindex="${focus===p.id?0:-1}">${thumb(p)}
+      <div class="pl-ccb"><button type="button" class="pl-ccn" data-ca="open" data-id="${p.id}"${nmLang(p)}>${wbr(nm(p))}</button>
+      <small><span>${tr(CAT,p.cat)}</span><span>${tr(AREA,p.area)}</span>${on!=null?`<span class="pl-ccd">${pt('inDay2',{d:dlabel(DB.days[on])})}</span>`:''}${g?`<span>${esc(pt('inGroup',{g:g.name}))}</span>`:''}${seeded(p.id)?`<span class="pl-ccs">${pt('fromSaved')}</span>`:''}${sel.has(p.id)?`<span class="sr">${pt('selN',{n:''})}</span>`:''}</small></div>
+      <div class="pl-tseg" role="group" aria-label="${esc(pt('tierOf',{name:nm(p)}))}">${T.map(k=>`<button type="button" data-ca="tier" data-t="${k}" data-id="${p.id}" aria-pressed="${t===k}">${pt('s_'+k)}</button>`).join('')}</div></article>`; }
+  const sec=(k,title,n,body,extra,shut)=>`<section class="pl-cs" data-k="${esc(k)}">${shut?'<details>':''}<${shut?'summary':'div'} class="pl-csh"><h3>${title}<small>${n}</small></h3>${extra||''}</${shut?'summary':'div'}><div class="pl-csl">${body}</div>${shut?'</details>':''}</section>`;
+  /* a group's outing, simulated: its time on foot and road, and the cheapest day it fits cleanly */
+  const BD=new Map();
+  function bestDay(g){ const P=c.plan(), k=JSON.stringify([g.ids,P.days,S.dayEnd]); if(BD.has(k)) return BD.get(k);
+    const pm=plannedMap(P), ids=g.ids.filter(i=>!pm.has(i)&&DB.places.has(i)); let best=null;
+    if(ids.length) DB.days.forEach((d,i)=>{ const pv=c.sim().insertPlan(d,c.idsOf(d.date,P),ids,P,{deadline:S.dayEnd},g); if(pv&&!pv.breaks.length&&(!best||pv.dDrive<best.v)) best={i,v:pv.dDrive}; });
+    const r=!ids.length?'':best?pt('bestDay',{d:dlabel(DB.days[best.i])}):pt('noDay'); BD.set(k,r); return r; }
+  function gsum(ids){ let m=0, d=0; ids.forEach((id,k)=>{ const p=place(id); m+=p.dur||60; if(k){ const x=c.sim().legAt(ids[k-1],id,600,DB.days[0].date,[]); m+=x.min; d+=x.drove; } });
+    return pt('grpSum',{d:dur(m),m:dur(d)}); }
+  function sections(list,pm){ const by=f=>{ const o=new Map(); list.forEach(p=>{ const k=f(p); if(!o.has(k)) o.set(k,[]); o.get(k).push(p); }); return o; };
+    const cards=a=>a.map(p=>card(p,pm)).join('')||`<p class="pl-cn">—</p>`;
+    if(cf.mode==='area'){ const o=by(p=>p.area); return [...o.keys()].map(k=>sec(k,esc(tr(AREA,k)),o.get(k).length,cards(o.get(k)))).join(''); }
+    if(cf.mode==='group'){ const o=by(p=>(groupOf(p.id)||{}).id||''), used=new Set(S.trip.groups.map(g=>g.from).filter(Boolean));
+      const gs=S.trip.groups.map(g=>sec(g.id,esc(g.name),g.ids.length,cards(o.get(g.id)||[]),`<span class="pl-csm">${pt('placedN',{n:g.ids.filter(i=>pm.has(i)).length,of:g.ids.length})}　${gsum(g.ids)}　${bestDay(g)}</span><button type="button" class="pl-cbtn" data-ca="gname" data-id="${g.id}">${pt('rename2')}</button><button type="button" class="pl-cbtn" data-ca="gdrop" data-id="${g.id}">${pt('drop')}</button>`)).join('');
+      const picks=DB.clusters.filter(x=>!used.has(x.id)&&x.ids.some(i=>!groupOf(i))).map(x=>`<li><b>${esc((ja()?x.nameJa:x.name)||x.id)}</b><small>${esc(x.ids.map(i=>nm(place(i))+(groupOf(i)?' '+pt('inGroup',{g:groupOf(i).name}):'')).join('・'))}</small><button type="button" class="pl-cbtn" data-ca="guse" data-id="${x.id}">${pt('use')}</button></li>`).join('');
+      return gs+(picks?`<section class="pl-cs pl-picks"><details><summary class="pl-csh"><h3>${pt('picks')}<small>${DB.clusters.filter(x=>!used.has(x.id)).length}</small></h3></summary><ul>${picks}</ul></details></section>`:'')+sec('',pt('noGroup'),(o.get('')||[]).length,cards(o.get('')||[])); }
+    const o=by(p=>tierOf(p.id));
+    return ['must','want','maybe',''].map(k=>sec(k,pt('t_'+k),(o.get(k)||[]).length,cards(o.get(k)||[]))).join('')+sec('skip',pt('t_skip'),(o.get('skip')||[]).length,cards(o.get('skip')||[]),'',true); }
+  function chips(){ const cats=Object.keys(CAT).filter(k=>DB.list.some(p=>isCand(p)&&p.cat===k));
+    const ch=(k,v,l,on)=>`<button type="button" class="pl-chip" data-ca="f" data-k="${k}" data-v="${v}" aria-pressed="${on}">${l}</button>`;
+    return `<div class="pl-seg" role="group" aria-label="${esc(pt('sortBy2'))}">${['tier','group','area'].map(m=>`<button type="button" data-ca="mode" data-v="${m}" aria-pressed="${cf.mode===m}">${pt('by'+m[0].toUpperCase()+m.slice(1))}</button>`).join('')}</div>
+      <div class="pl-chips">${ch('saved','1',pt('saved'),!!cf.saved)}${cats.map(k=>ch('cat',k,tr(CAT,k),cf.cat===k)).join('')}</div>`; }
+  function bar(){ const n=sel.size;
+    return n||selMode?`<div class="pl-cbar" role="toolbar" aria-label="${esc(pt('selN',{n}))}"><span>${pt('selN',{n})}</span>${T.map((k,i)=>`<button type="button" data-ca="bulk" data-t="${k}"><b>${'1230'[i]}</b> ${pt('s_'+k)}</button>`).join('')}
+      <button type="button" data-ca="group">${pt('toGroup')}</button><button type="button" data-ca="days">${pt('toDays')}</button><button type="button" data-ca="selx" aria-label="${esc(pt('selDone'))}">${ic('x','sm')}</button></div>`
+      :`<div class="pl-cbar pl-chand"><button type="button" class="pl-btn pl-pri" data-ca="handoff">${pt('handoff')}</button></div>`; }
+  function render(force){
+    const P=c.plan(), k=JSON.stringify([cf,S.trip,P.days,sel.size,selMode,ja(),S.hist.length>0]);
+    if(skip&&!force){ skip=false; KEY=k; return; }
+    if(k===KEY&&!force) return; KEY=k;
+    const pm=plannedMap(P), list=pool(), y=el.querySelector('.pl-clist')?scrollY:null;
+    el.innerHTML=`<div class="pl-ctop2"><div><h2 class="pl-cl-t">${pt('cT')}</h2><p class="pl-hint">${pt('cS')}</p></div>
+        <span><button type="button" class="pl-cbtn" data-ca="undo"${S.hist.length?'':' disabled'}>${ic('undo','sm')}<span class="sr">${pt('undo')}</span></button> <button type="button" class="pl-cbtn${selMode?' pl-on':''}" data-ca="selmode" aria-pressed="${selMode}">${pt('sel')}</button></span></div>
+      <label class="pl-search">${ic('search','sm')}<span class="sr">${pt('cSearch')}</span><input class="pl-cq" type="search" value="${esc(cf.q||'')}" placeholder="${esc(pt('cSearch'))}" autocomplete="off" enterkeyhint="search"></label>
+      ${chips()}<div class="pl-clist">${list.length?sections(list,pm):`<p class="pl-cn">${pt('none2')}</p>`}</div>${bar()}`;
+    if(y!=null) scrollTo(0,y);
+    if(focus){ const f=el.querySelector(`.pl-cc[data-id="${focus}"]`); if(f&&document.activeElement===document.body) f.focus({preventScroll:true}); }
+  }
+  /* a tier tap moves the one card, and the next render only recounts */
+  function setTier(ids,t,msg){ if(!ids.length) return;
+    editTrip(x=>{ ids.forEach(id=>{ x.tier[id]=t; }); },msg||null); BD.clear();
+    if(cf.mode!=='tier'){ return; }
+    skip=true; const u=el.querySelector('[data-ca="undo"]'); if(u) u.disabled=false; ids.forEach(id=>{ const a=el.querySelector(`.pl-cc[data-id="${id}"]`), to=el.querySelector(`.pl-cs[data-k="${t}"] .pl-csl`); if(!a) return;
+      a.dataset.tier=t; a.querySelectorAll('[data-ca="tier"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t)); a.querySelector('.pl-ccs')&&a.querySelector('.pl-ccs').remove();
+      if(to&&a.parentNode!==to){ to.prepend(a); const e=to.querySelector('.pl-cn'); if(e) e.remove(); } });
+    el.querySelectorAll('.pl-cs').forEach(s=>{ const n=s.querySelectorAll('.pl-cc').length, m=s.querySelector('h3 small'); if(m) m.textContent=n; }); }
+  const targets=()=>sel.size?[...sel]:focus?[focus]:[];
+  /* 日程に組む →: ② on the day where the first unplaced must fits most cheaply, its picker open */
+  function handoff(){ const o=cover(c.plan()).open; setStage('plan');
+    if(!o.length){ toast(pt('allPlaced')); return; }
+    const P=c.plan(); let best=null;
+    DB.days.forEach((d,i)=>{ const pv=c.sim().insertPlan(d,c.idsOf(d.date,P),[o[0].id],P,{deadline:S.dayEnd},null); if(pv&&(!best||(pv.breaks.length-best.b||pv.dDrive-best.v)<0)) best={i,b:pv.breaks.length,v:pv.dDrive}; });
+    if(best){ setDay(best.i); toast(pt('nextMust',{name:nm(o[0]),d:dlabel(DB.days[best.i])})); }
+    openPlace(o[0].id); }
+  function cards(){ return [...el.querySelectorAll('.pl-cc')].filter(x=>x.offsetParent!==null); }
+  function moveFocus(d){ const a=cards(); if(!a.length) return; let i=a.findIndex(x=>x.dataset.id===focus); i=i<0?0:Math.max(0,Math.min(a.length-1,i+d));
+    a.forEach(x=>x.tabIndex=-1); focus=a[i].dataset.id; a[i].tabIndex=0; a[i].focus(); }
+  function toggle(id){ if(sel.has(id)) sel.delete(id); else sel.add(id); render(true); }
+  el.addEventListener('click',e=>{ const b=e.target.closest('[data-ca]'), cc=e.target.closest('.pl-cc');
+    if(cc) focus=cc.dataset.id;
+    if(!b){ if(cc&&(selMode||e.shiftKey||e.metaKey||e.ctrlKey)) toggle(cc.dataset.id); return; }
+    const id=b.dataset.id;
+    switch(b.dataset.ca){
+      case 'tier': { const t=b.dataset.t, now=tierOf(id); setTier([id],now===t?'':t); break; }
+      case 'open': if(selMode||e.shiftKey){ toggle(id); break; } openPlace(id); break;
+      case 'mode': cf.mode=b.dataset.v; saveUI(); render(true); break;
+      case 'f': { const k=b.dataset.k, v=b.dataset.v; cf[k]=cf[k]===v||(k==='saved'&&cf[k])?null:v; saveUI(); render(true); break; }
+      case 'selmode': selMode=!selMode; if(!selMode) sel.clear(); render(true); break;
+      case 'selx': selMode=false; sel.clear(); render(true); break;
+      case 'bulk': { const ids=[...sel]; setTier(ids,b.dataset.t,pt('tiered',{n:ids.length,t:pt('t_'+b.dataset.t)})); break; }
+      case 'group': { const ids=targets(); if(!ids.length){ toast(pt('nothingSel')); break; } c.needMore().then(m=>m.groupSheet(ids)); break; }
+      case 'days': { const ids=[...sel].filter(i=>!plannedMap(c.plan()).has(i)); if(!ids.length){ toast(pt('nothingSel')); break; }
+        S.selc={id:'_sel',ids,name:pt('selN',{n:ids.length}),nameJa:pt('selN',{n:ids.length})};
+        c.needMore().then(m=>openSheet(head(pt('toDays'),pt('selN',{n:ids.length}))+m.dayPick('_sel','pl-dayq-big',S.selc)+doneBar(),'cdays')); break; }
+      case 'handoff': handoff(); break;
+      case 'undo': c.undo(); break;
+      case 'gname': { const g=S.trip.groups.find(x=>x.id===id); if(g) c.needMore().then(m=>m.nameSheet(g)); break; }
+      case 'gdrop': { const g=S.trip.groups.find(x=>x.id===id); if(g) editTrip(x=>{ x.groups=x.groups.filter(o=>o.id!==id); },pt('ungrouped',{g:g.name})); break; }
+      case 'guse': { const x=DB.clusters.find(o=>o.id===id); if(!x) break; const nmx=(ja()?x.nameJa:x.name)||x.id, ids=x.ids.filter(i=>!groupOf(i)&&DB.places.has(i));
+        editTrip(t=>{ t.groups.push({id:'g-'+Date.now().toString(36),name:nmx,ids,from:x.id}); },pt('made',{g:nmx})); BD.clear(); break; }
+    }
+  });
+  let qf=0;
+  el.addEventListener('input',e=>{ if(!e.target.classList.contains('pl-cq')) return; cf.q=e.target.value; clearTimeout(qf);
+    qf=setTimeout(()=>{ const pos=e.target.selectionStart; render(true); const i=el.querySelector('.pl-cq'); if(i){ i.focus(); try{ i.setSelectionRange(pos,pos); }catch(x){} } },120); });
+  return {
+    render,
+    key(e){ if((e.metaKey||e.ctrlKey)&&e.code!=='KeyA') return; const k=e.code, t={Digit1:'must',Numpad1:'must',Digit2:'want',Numpad2:'want',Digit3:'maybe',Numpad3:'maybe',Digit0:'skip',Numpad0:'skip'}[k];
+      if(k==='KeyJ'||k==='ArrowDown'){ e.preventDefault(); moveFocus(1); }
+      else if(k==='KeyK'||k==='ArrowUp'){ e.preventDefault(); moveFocus(-1); }
+      else if(t||k==='Backspace'||k==='Delete'){ const ids=targets(); if(!ids.length) return; e.preventDefault(); setTier(ids,t||'',ids.length>1?pt('tiered',{n:ids.length,t:pt('t_'+(t||''))}):null); }
+      else if(k==='KeyX'&&focus){ e.preventDefault(); toggle(focus); }
+      else if(k==='KeyA'&&(e.metaKey||e.ctrlKey)){ e.preventDefault(); cards().forEach(x=>sel.add(x.dataset.id)); render(true); }
+      else if(k==='KeyG'){ e.preventDefault(); const ids=targets(); if(ids.length) c.needMore().then(m=>m.groupSheet(ids)); }
+      else if(k==='Enter'&&focus&&e.target.classList.contains('pl-cc')){ e.preventDefault(); openPlace(focus); }
+      else if(k==='Escape'&&sel.size){ sel.clear(); selMode=false; render(true); } }
+  };
+};
+})();

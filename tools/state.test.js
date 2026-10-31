@@ -34,7 +34,8 @@ const good = {v: 1, active: 'my', booked: {'waitomo-glowworm-caves': true, bad: 
   ok(env.days.every(d => Array.isArray(r.my.days[d.date])), 'every trip day exists');
   ok(J(r.my.stay) === J({piha: 30}), 'stay keeps minutes only');
   ok(J(r.my.start) === J({[D12]: '08:15'}), 'start keeps valid HH:MM only');
-  ok(J(r.my.notes) === J({piha: 'bring towels'}), 'blank notes dropped');
+  ok(J(r.my.notes) === J({}) && J(r.trip.notes) === J({piha: 'bring towels'}), 'v1 -> v2: My plan\'s notes move up to the trip, blanks dropped');
+  ok(r.migrated && r.v === 1 && J(r.trip.tier) === J({}) && J(r.trip.groups) === J([]), 'v1 -> v2: tiers start from the seed (nothing stored), groups empty');
   ok(J(r.my.stayDay) === J({[D14]: {'pouakai-tarns': 60}}), 'stayDay keeps numbers only: ' + J(r.my.stayDay));
   ok(r.my.name.length === 40, 'a name is capped at 40');
   ok(J(r.booked) === J({'waitomo-glowworm-caves': true}), 'booked keeps true only');
@@ -43,6 +44,32 @@ const good = {v: 1, active: 'my', booked: {'waitomo-glowworm-caves': true, bad: 
   ok(r.broken, 'a dropped version flags broken so the raw string is kept'); }
 /* a v1 with nothing wrong is not broken */
 { const r = ST.read(J({v: 1, active: 'classic', my: null, versions: [], imports: [], booked: {}}), env); ok(r.loaded && !r.broken && r.my === null, 'a clean v1 is not broken'); }
+
+/* ---------- v2 ---------- */
+const v2 = {v: 2, active: 'my', trip: {tier: {piha: 'must', karekare: 'skip', x: 'nope', y: ''}, notes: {piha: 'towels', z: ' '},
+    groups: [{id: 'g-a', name: 'West', ids: ['piha', 'karekare', 'piha']}, {id: 'g-b', name: 'Dup', ids: ['piha', 'kitekite-falls']}, {id: 'g-a', ids: []}, {name: 'no id'}]},
+  my: {id: 'my', days: {[D12]: ['piha']}}, versions: [], imports: [], booked: {}};
+{ const r = ST.read(J(v2), env);
+  ok(r.loaded && r.v === 2 && !r.migrated && !r.broken, 'v2 loads as is');
+  ok(J(r.trip.tier) === J({piha: 'must', karekare: 'skip', y: ''}), 'tiers: must want maybe skip, or "" for back to the inbox: ' + J(r.trip.tier));
+  ok(J(r.trip.groups.map(g => [g.id, g.ids])) === J([['g-a', ['piha', 'karekare']], ['g-b', ['kitekite-falls']]]), 'groups: unique ids, a place in one group only: ' + J(r.trip.groups));
+  ok(J(r.trip.notes) === J({piha: 'towels'}), 'trip notes keep text only'); }
+/* migration: notes from My plan first, then the newest version that has them */
+{ const r = ST.read(J({v: 1, my: {days: {}, notes: {a: 'mine'}}, versions: [{id: 'v-1', at: 1, days: {}, notes: {a: 'old', b: 'old b'}}, {id: 'v-2', at: 9, days: {}, notes: {b: 'new b', c: 'c'}}]}), env);
+  ok(J(r.trip.notes) === J({a: 'mine', b: 'new b', c: 'c'}), 'notes: My plan, then the newest version: ' + J(r.trip.notes)); }
+/* the old-app guard: a stale v1 app moved our v2 to :broken and wrote an empty v1 over it */
+{ const old = J({v: 1, active: 'classic', my: null, versions: [{id: 'v-old', days: {}}], imports: [], booked: {x: true}});
+  const r = ST.read(old, env, J(Object.assign({}, v2, {versions: [{id: 'v-keep', days: {}, name: 'Keep'}], imports: [{id: 'gm-9', name: 'Nine', lat: -36.9, lon: 174.5}], booked: {y: true}})));
+  ok(r.merged, 'a v2 in :broken under a v1 is merged back');
+  ok(r.trip.tier.piha === 'must' && r.trip.groups.length === 2 && r.trip.notes.piha === 'towels', 'the trip comes back');
+  ok(r.my && J(r.my.days[D12]) === J(['piha']), 'My plan comes back when the old app had none');
+  ok(J(r.versions.map(v => v.id).sort()) === J(['v-keep', 'v-old']), 'versions from both survive');
+  ok(r.imports.length === 1 && r.booked.x && r.booked.y, 'imports and bookings from both survive'); }
+{ const r = ST.read(J(v2), env, J(Object.assign({}, v2, {trip: {tier: {karekare: 'want'}}})));
+  ok(!r.merged && r.trip.tier.karekare === 'skip', 'a v2 save is never overwritten from :broken'); }
+/* the old app edited My plan meanwhile: its days win, ours is kept as an autosave */
+{ const r = ST.read(J({v: 1, my: {id: 'my', days: {[D14]: ['three-sisters-elephant-rock']}}, versions: []}), env, J(v2));
+  ok(J(r.my.days[D14]) === J(['three-sisters-elephant-rock']) && r.versions.some(v => v.kind === 'auto' && J(v.days[D12]) === J(['piha'])), 'both My plans survive'); }
 
 console.log(fails ? `${fails} of ${n} state checks failed` : `${n} state checks passed`);
 process.exit(fails ? 1 : 0);

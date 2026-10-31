@@ -7,6 +7,9 @@
 'use strict';
 if(typeof planner!=='function'||planner.more) return;
 const PTM={
+  rvS:{ja:'案ごとの運転・⚠・絶対の数。カレンダーはこのあと',en:'Each version’s driving, ⚠ and musts. The calendar comes next'}, useThis:{ja:'この案にする',en:'Use this version'},
+  groupName:{ja:'グループの名前',en:'Group name'}, newGroup:{ja:'新しいグループ',en:'New group'}, cSave:{ja:'保存',en:'Save'}, groupN:{ja:'グループ {n}',en:'Group {n}'}, grouped:{ja:'{n}件を「{g}」に',en:'{n} into “{g}”'},
+  sharedGroup:{ja:'共有されたグループ {n}',en:'Shared group {n}'},
   warnsN:{ja:'注意 {n}',en:'{n} alerts'}, tapAgain:{ja:'もう一度タップで追加',en:'tap again to add'}, pillKey:{ja:'運転の増減・帰着',en:'added driving · day ends'}, addDrive:{ja:'運転 {d}',en:'driving {d}'}, closureAsk:{ja:'一部閉鎖があります。それでも追加しますか？',en:'Part of it is closed. Add anyway?'}, dayEnd:{ja:'1日の終わりの目安',en:'End-of-day guide'}, pasteT:{ja:'リンクを貼り付け',en:'Paste a link'}, pasteS:{ja:'ホーム画面のアプリでは、共有されたリンクをここに貼ります',en:'In the Home Screen app, paste a shared link here'}, pasteGo:{ja:'読み込む',en:'Open'}, pasteClip:{ja:'クリップボードから',en:'From clipboard'}, whichDay:{ja:'どの日に入れる？',en:'Which day?'}, addNTo:{ja:'{name} を {d} に追加',en:'Add {name} to {d}'}, planT:{ja:'プランを選ぶ',en:'Choose a plan'}, planS:{ja:'編集すると「マイプラン」に保存されます',en:'Edits are saved to My plan'}, presets:{ja:'用意したプラン',en:'Presets'}, basedOn:{ja:'「{name}」をもとに編集',en:'Edited from “{name}”'}, shareLink:{ja:'リンクで共有',en:'Share as link'}, inDay:{ja:'{d} に予定',en:'Planned on {d}'}, moveHere:{ja:'{d} に移す',en:'Move to {d}'}, removeFrom:{ja:'{d} から外す',en:'Remove from {d}'}, hoursDay:{ja:'この日の営業',en:'Hours that day'}, cost:{ja:'料金',en:'Cost'}, dur:{ja:'滞在目安',en:'Typical stay'}, booking:{ja:'予約',en:'Booking'}, noBook:{ja:'不要',en:'Not needed'}, best:{ja:'時間帯',en:'Best time'}, aesthetic:{ja:'写真映え',en:'Photogenic'}, of5:{ja:'5段階中{n}',en:'{n} of 5'}, why:{ja:'なぜ話題？',en:'Why it’s talked about'}, whyJa:{ja:'{n}件の記事・投稿で紹介されています（出典は下）',en:'{n} mentions'}, tagSearch:{ja:'#{t}',en:'#{t}'}, coords:{ja:'座標',en:'Coordinates'}, copy:{ja:'コピー',en:'Copy'}, backList:{ja:'候補一覧へ',en:'All places'}, versions:{ja:'保存した案',en:'Saved versions'}, renameN:{ja:'名前を変える：{name}',en:'Rename {name}'}, verDel:{ja:'「{name}」を削除',en:'Delete “{name}”'}, fromGm:{ja:'Googleマップから取り込み',en:'Imported from Google Maps'}, fromIg:{ja:'Instagramから取り込み',en:'Imported from Instagram'}, impGroup:{ja:'取り込んだ場所',en:'Imported places'},
   browseT:{ja:'候補',en:'Places'}, browseS:{ja:'{d} を表示中',en:'Showing {d}'}, searchPh:{ja:'名前・キーワードでさがす',en:'Search names and keywords'}, sortTrend:{ja:'話題順',en:'Trending'}, sortAes:{ja:'写真映え順',en:'Most photogenic'}, sortNear:{ja:'近い順',en:'Nearest'}, sortBy:{ja:'並び順',en:'Sort'}, clearFilters:{ja:'絞り込みを解除',en:'Clear filters'}, others:{ja:'そのほか',en:'Other'}, addAll:{ja:'まとめて追加',en:'Add all'}, addAllN:{ja:'{name} をまとめて追加',en:'Add all of {name}'}, clusterSum:{ja:'合計 {d}・{km}',en:'{d} in all, {km}'}, startAt:{ja:'{t}ごろ出発が目安',en:'start around {t}'},
   orderT:{ja:'順番を変える',en:'Change the order'}, orderS:{ja:'{name} を何番目にしますか',en:'Where should {name} go?'},
@@ -79,7 +82,7 @@ planner.swapRank=function(sim,DB,P,day,id,opt){
   const hv=(a,b)=>{ const r=Math.PI/180, x=(b.lon-a.lon)*r*Math.cos((a.lat+b.lat)/2*r); return Math.hypot(x,(b.lat-a.lat)*r); };
   /* an island stop is swapped for the same island only: the day's sailings were planned around it */
   const isle=p=>DB.ferries.find(f=>(f.ids||[]).indexOf(p.id)>=0||(p.area&&(f.areas||[]).indexOf(p.area)>=0))||null, home=isle(cur);
-  const pool=DB.list.filter(p=>!DB.bases.has(p.id)&&p.cat!=='ferry'&&!planned.has(p.id)&&isle(p)===home).map(p=>[p,Math.min(hv(prev,p),hv(next,p))]).sort((a,b)=>a[1]-b[1]).slice(0,70).map(x=>x[0]);
+  const pool=DB.list.filter(p=>!DB.bases.has(p.id)&&p.cat!=='ferry'&&!planned.has(p.id)&&isle(p)===home&&!(opt&&opt.skip&&opt.skip.has(p.id))).map(p=>[p,Math.min(hv(prev,p),hv(next,p))]).sort((a,b)=>a[1]-b[1]).slice(0,70).map(x=>x[0]);
   const out=[];
   pool.forEach(p=>{ let l=list.slice(); l[i]=p.id; const s1=seq(l);
     const drop=l.filter((x,j)=>j!==i&&roadEnd.has(x)&&touches(s0,j)&&!touches(s1,j));
@@ -174,7 +177,7 @@ planner.more=function(c){
     if(c.guard(btn,'use'+pid+date,m=>{
       DB.days.forEach(x=>{ if(x.date!==date&&m.days[x.date]) m.days[x.date]=m.days[x.date].filter(id=>ids.indexOf(id)<0); });
       m.days[date]=ids.slice();
-      ids.forEach(id=>{ if(P.stay&&P.stay[id]!=null) m.stay[id]=P.stay[id]; if(P.notes&&P.notes[id]) m.notes[id]=P.notes[id]; });
+      ids.forEach(id=>{ if(P.stay&&P.stay[id]!=null) m.stay[id]=P.stay[id]; });
       if(P.start&&P.start[date]) m.start[date]=P.start[date]; else delete m.start[date];
     },pt('usedDayIn',{name:planName(P),d:dlabel(d),into:planName(S.my||{id:'my'})}))){
       /* the day went into the active plan (forked into My plan when that was a preset or a
@@ -187,7 +190,7 @@ planner.more=function(c){
   }
 
   /* ---------- quick swap ---------- */
-  const swapCands=id=>planner.swapRank(c.sim(),DB,plan(),DB.days[S.day],id,{deadline:S.dayEnd});
+  const swapCands=id=>planner.swapRank(c.sim(),DB,plan(),DB.days[S.day],id,{deadline:S.dayEnd,skip:c.skipSet()});
   const signed=d=>(d>0.5?'+':d<-0.5?'−':'±')+dur(d);
   /* the right-hand number is the travel change; the day's length shows only when it moves; what the
      swap breaks elsewhere, and a trailhead that leaves with the walk, are said on the row */
@@ -218,12 +221,18 @@ planner.more=function(c){
     const p=plan(), ids=new Set(DB.days.flatMap(d=>idsOf(d.date,p))), booked={}, notes={};
     Object.keys(S.booked).forEach(k=>{ if(ids.has(k)) booked[k]=true; });
     Object.keys(p.notes||{}).forEach(k=>{ if(ids.has(k)) notes[k]=p.notes[k]; });
+    Object.keys(S.trip.notes).forEach(k=>{ if(ids.has(k)) notes[k]=S.trip.notes[k]; });
     const imp=S.imports.filter(m=>ids.has(m.id)&&m.lat!=null).map(m=>({id:m.id,src:m.src,name:m.name,lat:m.lat,lon:m.lon,url:m.url||''}));
     const o={v:2,from:p.from||p.id,name:planName(p),days:p.days,stay:p.stay||{},start:p.start||{},notes,booked};
     if(p.anchors) o.anchors=p.anchors;
     if(p.stayDay) o.stayDay=p.stayDay;
     if(p.titles) o.titles=p.titles;
     if(imp.length) o.imp=imp;
+    /* v3: her tiers, and her groups as ids only (a group's name stays on her phone) */
+    const t={}; Object.keys(S.trip.tier).forEach(k=>{ if(S.trip.tier[k]) t[k]=S.trip.tier[k]; });
+    if(Object.keys(t).length) o.t=t;
+    if(S.trip.groups.length) o.g=S.trip.groups.map(g=>({id:g.id,ids:g.ids}));
+    o.v=3;
     return o;
   }
   async function shareLink(){
@@ -249,7 +258,7 @@ planner.more=function(c){
         if(okHM(o.start&&o.start[d.date])) start[d.date]=o.start[d.date]; });
       Object.keys(o.stay&&typeof o.stay==='object'?o.stay:{}).forEach(id=>{ const v=o.stay[id]; if(seen.has(id)&&typeof v==='number'&&v>0&&v<1440) stay[id]=Math.round(v); });
       Object.keys(o.notes&&typeof o.notes==='object'?o.notes:{}).forEach(id=>{ const v=o.notes[id]; if(seen.has(id)&&typeof v==='string') notes[id]=v.slice(0,300); });
-      const sh=hash(canon({days,stay,start,notes}));
+      const sh=hash(canon({days,stay,start,notes,sd:o.stayDay||0,ti:o.titles||0,an:o.anchors||0,nm:o.name||''}));
       const dup=S.versions.find(v=>v.sh===sh);
       if(dup){ S.planId=dup.id; save(); render(true); fitDay(); switchToMe(); toast(pt('dupLink')); return true; }
       if(!nimp) pushHist();
@@ -257,6 +266,15 @@ planner.more=function(c){
       const extra={}; if(o.stayDay&&typeof o.stayDay==='object') extra.stayDay=o.stayDay; if(o.titles&&typeof o.titles==='object') extra.titles=o.titles; if(o.anchors&&typeof o.anchors==='object') extra.anchors=o.anchors;
       const v=snapshot(Object.assign({from:findPlan(o.from)&&!String(o.from).startsWith('v-')?o.from:DB.presets[0].id,days,stay,start,notes},extra),name,'shared');
       v.sh=sh; S.versions=S.versions.slice();
+      /* v3: tiers fill only what she has not set; groups she does not have arrive unnamed; notes fill gaps */
+      const T=clone(S.trip); let tn=0;
+      Object.keys(o.t&&typeof o.t==='object'?o.t:{}).forEach(k=>{ if(DB.places.has(k)&&T.tier[k]==null&&['must','want','maybe','skip'].indexOf(o.t[k])>=0){ T.tier[k]=o.t[k]; tn++; } });
+      const grouped=new Set(T.groups.flatMap(g=>g.ids));
+      (Array.isArray(o.g)?o.g:[]).forEach(g=>{ if(!g||typeof g.id!=='string'||T.groups.some(x=>x.id===g.id)) return;
+        const ids=(Array.isArray(g.ids)?g.ids:[]).filter(i=>typeof i==='string'&&DB.places.has(i)&&!grouped.has(i)); if(!ids.length) return;
+        ids.forEach(i=>grouped.add(i)); T.groups.push({id:g.id,name:pt('sharedGroup',{n:T.groups.length+1}),ids}); });
+      Object.keys(notes).forEach(k=>{ if(!T.notes[k]) T.notes[k]=notes[k]; });
+      S.trip=T;
       if(o.booked&&typeof o.booked==='object'){ const nb=Object.assign({},S.booked); Object.keys(o.booked).forEach(k=>{ if(o.booked[k]===true&&seen.has(k)) nb[k]=true; }); S.booked=nb; }
       S.planId=v.id; save(); render(true); fitDay(); switchToMe();
       toast(pt('imported',{name:planName(v)})+(nimp?pt('importedSkip',{n:nimp}):''),undo);
@@ -307,7 +325,8 @@ planner.more=function(c){
     const day=DB.days[S.day], planned=plannedMap(), qy=fold(S.f.q.trim()), pts=S.sc.rows.map(r=>place(r.id));
     const near=p=>Math.min(...pts.map(x=>hav(x,p)));
     const raw=S.f.q.trim().normalize('NFKC'), terms=raw?raw.split(/[\s　、,・]+|(?<=[^\sの])[のとでを](?=[^\s])/).map(w=>fold(w.replace(/^[のとでを]+|[のとでを]+$/g,''))).filter(Boolean):[];
-    const ok=DB.list.filter(p=>isCand(p)&&(!S.f.cat||p.cat===S.f.cat)&&(!S.f.area||p.area===S.f.area)&&(!S.f.saved||p.saved)&&terms.every(w=>searchText(p).indexOf(w)>=0));
+    /* 見送り (skip) places stay out of the pool, but never leave a day they are on */
+    const ok=DB.list.filter(p=>isCand(p)&&c.tierOf(p.id)!=='skip'&&(!S.f.cat||p.cat===S.f.cat)&&(!S.f.area||p.area===S.f.area)&&(!S.f.saved||p.saved)&&terms.every(w=>searchText(p).indexOf(w)>=0));
     E.sbody.querySelector('.pl-ccount').textContent=pt('count',{n:ok.length});
     if(!ok.length){ box.innerHTML=`<div class="pl-none"><p>${pt('noMatch')}</p><button type="button" class="pl-btn pl-sec" data-act="clearf">${pt('clearFilters')}</button></div>`; return; }
     if(S.f.sort!=='trend'){       /* flat: nearest really is nearest */
@@ -362,6 +381,71 @@ planner.more=function(c){
     btn.replaceWith(s);
   }
 
+
+  /* ---------- ③ 見直す, until the calendar lands: every version with its driving, ⚠ and must coverage ---------- */
+  function renderReview(el){
+    const cur=plan(), all=[S.my].filter(Boolean).concat(S.versions,DB.presets);
+    const row=P=>{ const cv=c.cover(P), drive=DB.days.reduce((t,d)=>t+schedule(d,null,P).drive,0), w=c.warnCount(P);
+      return `<li class="pl-rv${P.id===cur.id?' pl-on':''}"><div><b>${esc(planName(P))}</b><small>${pt('drive',{d:dur(drive)})}　${w?'⚠ '+w:'✓'}${cv.of?'　'+pt('mustN',{n:cv.n,of:cv.of}):''}</small></div>
+        ${P.id===cur.id?`<span class="pl-cmpact">${pt('isActive')}</span>`:`<button type="button" class="pl-btn pl-sec" data-rv="use" data-id="${P.id}">${pt('useThis')}</button>`}</li>`; };
+    el.innerHTML=`<h2 class="pl-cl-t">${pt('st_review')}</h2><p class="pl-hint">${pt('rvS')}</p><ul class="pl-rvl">${all.map(row).join('')}</ul>
+      <div class="pl-sheet-acts"><button type="button" class="pl-btn pl-sec" data-rv="cmp">${ic('compare','sm')}${pt('compare')}</button><button type="button" class="pl-btn pl-sec" data-rv="share">${ic('share','sm')}${pt('shareLink')}</button></div>`;
+    if(!el._rv){ el._rv=1; el.addEventListener('click',e=>{ const b=e.target.closest('[data-rv]'); if(!b) return;
+      if(b.dataset.rv==='use'){ pushHist(); S.planId=b.dataset.id; save(); render(true); }
+      else if(b.dataset.rv==='cmp') openCompare(plan().id); else shareLink(); }); }
+  }
+  /* ---------- ①'s group sheets: into a group, or a new one; renaming ---------- */
+  /* groups: one outing each; a place leaves its old group when it joins another */
+  function intoGroup(ids,gid,name){ let g;
+    c.editTrip(x=>{ x.groups.forEach(o=>{ o.ids=o.ids.filter(i=>ids.indexOf(i)<0); });
+      g=gid&&x.groups.find(o=>o.id===gid); if(!g){ g={id:'g-'+Date.now().toString(36),name:name||pt('groupN',{n:x.groups.length+1}),ids:[]}; x.groups.push(g); }
+      g.ids=g.ids.concat(ids); x.groups=x.groups.filter(o=>o.ids.length||o===g); },pt('grouped',{n:ids.length,g:name||(gid&&(S.trip.groups.find(o=>o.id===gid)||{}).name)||pt('groupN',{n:S.trip.groups.length+1})}));
+    }
+  function groupSheet(ids){
+    openSheet(head(pt('toGroup'),pt('selN',{n:ids.length}))+`<div class="pl-plans">${S.trip.groups.map(g=>`<button type="button" class="pl-planopt" data-act="cgto" data-id="${g.id}"><b>${esc(g.name)}</b><span>${g.ids.length}</span></button>`).join('')}</div>
+      <label class="pl-search pl-namef"><span class="sr">${pt('groupName')}</span><input class="pl-cgname" type="text" maxlength="40" placeholder="${esc(pt('groupN',{n:S.trip.groups.length+1}))}" enterkeyhint="done"></label>
+      <div class="pl-sheet-acts pl-one"><button type="button" class="pl-btn pl-pri" data-act="cgnew">${ic('plus','sm')}${pt('newGroup')}</button></div>${doneBar()}`,'cgroup',{ids}); }
+  function nameSheet(g){ openSheet(head(pt('rename2'),'')+`<label class="pl-search pl-namef"><span class="sr">${pt('groupName')}</span><input class="pl-cgname" type="text" maxlength="40" value="${esc(g.name)}" enterkeyhint="done"></label>
+      <div class="pl-sheet-acts pl-one"><button type="button" class="pl-btn pl-pri" data-act="cgren" data-id="${g.id}">${pt('cSave')}</button></div>${doneBar()}`,'cgname',{id:g.id}); }
+  /* ---------- adding ---------- */
+  /* Apply an add; then name any earlier stop it broke, with a one-tap move to that stop's open slot. */
+  function applyAdd(k,ids,grp){
+    const day=DB.days[k]; let pv=null;
+    const ok=edit(m=>{ const l=(m.days[day.date]=m.days[day.date]||[]); pv=c.sim().insertPlan(day,l,ids,m,{deadline:S.dayEnd},grp); if(!pv) throw new Error('nothing');
+      m.days[day.date]=pv.list.concat(l.filter(x=>!DB.places.has(x))); if(pv.start){ m.start=m.start||{}; m.start[day.date]=pv.start; } },
+      ids.length>1?pt('addedN',{n:ids.length,d:dlabel(day)}):pt('added',{d:dlabel(day)})+'：'+nm(place(ids[0])));
+    if(!ok||!pv) return false;
+    const hurt=pv.breaks.find(b=>b.kind==='stop'&&ids.indexOf(b.id)<0&&(b.w.k==='closed'||b.w.k==='closedAt'));
+    if(hurt){ const fix=c.sim().bestPos(day,idsOf(day.date).filter(x=>x!==hurt.id),hurt.id,plan(),{deadline:S.dayEnd});
+      /* 朝に移す is checked like any change: if it breaks another stop, it says so and asks again */
+      const fixFn=m=>{ const l=m.days[day.date], j=l.indexOf(hurt.id); if(j<0) return; l.splice(j,1); l.splice(c.sim().bestPos(day,l,hurt.id,m,{deadline:S.dayEnd}).pos,0,hurt.id); };
+      const key='fix'+hurt.id+day.date, doFix=()=>{ const bs=c.trial(fixFn);
+        if(bs&&bs.length&&!c.armed(key)){ toast('⚠ '+c.breakLine(bs)+' — '+pt('tapAgainDo'),undo,{label:pt('moveOpen'),fn:doFix}); return; }
+        edit(fixFn,pt('movedOpen',{name:nm(place(hurt.id))})); };
+      toast(pt('broke',{name:nm(place(hurt.id)),w:c.warnText(hurt.w,day)}),undo,fix.fits?{label:pt('moveOpen'),fn:doFix}:null); }
+    return true;
+  }
+  /* ---------- the story image: story.js (plstory.open(dayModel)) loads only when asked ---------- */
+  /* The model story.js documents: {date, dayNo, title, titleJa, color, lang, stops:[{time, name,
+     nameJa, cat, photo, lat, lon}], stats, tags}, plus the leg shapes in map units. */
+  function dayModel(){
+    const day=DB.days[S.day], sc=S.sc, cs=getComputedStyle(c.main);
+    const P=plan(), tt=P.titles&&P.titles[day.date];
+    return {slug, guide:c.g, lang:lang(), date:day.date, dayNo:S.day+1, title:tt&&tt.en||day.label, titleJa:tt&&tt.ja||day.labelJa,
+      color:cs.getPropertyValue('--c').trim(), ink:cs.getPropertyValue('--ci').trim(),
+      stops:sc.rows.filter(r=>r.kind==='stop').map(r=>{ const p=place(r.id); return {id:p.id,time:hm(r.begin),end:hm(r.dep),name:p.name,nameJa:p.nameJa||p.name,cat:p.cat,best:p.best||'',
+        sun:(r.infos.find(x=>x.k==='sunrise'||x.k==='sunsetAt')||{}).t!=null?hm(r.infos.find(x=>x.k==='sunrise'||x.k==='sunsetAt').t):'',
+        lat:p.lat,lon:p.lon,photo:DB.photos&&DB.photos[p.id]||null}; }),
+      stats:pt('drive',{d:dur(sc.drive)})+' · '+Math.round(sc.km)+' km · '+pt('stops',{n:sc.rows.length-2}),
+      tags:[...new Set(sc.rows.map(r=>place(r.id).igTag).filter(Boolean))].slice(0,3),
+      legs:c.legSegments(sc).map(s=>({kind:s.kind,pts:(s.kind==='drive'&&c.geom(s.a,s.b)||{pts:[s.p0,s.p1]}).pts}))};
+  }
+  let STORY=null;
+  function openStory(){
+    if(!STORY) STORY=window.plstory?Promise.resolve(window.plstory):new Promise((res,rej)=>{ const s=document.createElement('script');
+      s.src=c.view.dataset.storySrc||'story.js'; s.onload=()=>window.plstory?res(window.plstory):rej(); s.onerror=rej; document.head.appendChild(s); });
+    Promise.all([STORY,loadMore()]).then(([st])=>st.open(dayModel(),c.g),()=>{ STORY=null; toast(pt('storySoon')); });
+  }
 
   /* ---------- 日を移動 ---------- */
   /* 日を移動: out of this day, into the other day's cheapest open slot */
@@ -448,7 +532,9 @@ planner.more=function(c){
 
   function openPlans(){
     const cur=plan(), when=t=>{ const d=new Date(t); return (d.getMonth()+1)+'/'+d.getDate()+' '+pad(d.getHours())+':'+pad(d.getMinutes()); };
-    const opt=(id,name,sub)=>`<button type="button" class="pl-planopt" data-act="plan" data-id="${id}" aria-pressed="${cur.id===id}"><b>${esc(name)}</b><span>${esc(sub)}</span><i class="pl-chk"></i></button>`;
+    /* each version says how many musts it places */
+    const cv=id=>{ const P=findPlan(id), x=P&&c.cover(P); return x&&x.of?pt('mustN',{n:x.n,of:x.of})+'　':''; };
+    const opt=(id,name,sub)=>`<button type="button" class="pl-planopt" data-act="plan" data-id="${id}" aria-pressed="${cur.id===id}"><b>${esc(name)}</b><span>${esc(cv(id)+sub)}</span><i class="pl-chk"></i></button>`;
     openSheet(head(pt('planT'),pt('planS'))+`<div class="pl-plans">
         ${S.my?opt('my',planName(S.my),pt('basedOn',{name:presetName(S.my.from)})):''}
         ${S.versions.length?`<div class="pl-plansep">${pt('versions')}</div>`+S.versions.map(v=>`<div class="pl-verrow">${opt(v.id,planName(v),(v.at?when(v.at)+'　':'')+pt('basedOn',{name:presetName(v.from)}))}
@@ -469,12 +555,16 @@ planner.more=function(c){
       ${S.my?`<button type="button" class="pl-btn pl-danger" data-act="reset">${ic('trash','sm')}${pt('reset')}</button>`:''}`,'plans');
   }
   return {
-    openBrowse, renderList, patchCand, openPlace, openPlans, dayPick, armPill, openMove,
+    codeNow:()=>pack(payload()),
+    openBrowse, renderList, patchCand, openPlace, openPlans, dayPick, armPill, openMove, openStory, applyAdd, groupSheet, nameSheet, renderReview,
     openOrder, openVerName, saveVersionNamed, openCompare, openSwap, shareLink, importCode, codeOf,
     nameState,
     click(act,b,kind,arg){
       const day=DB.days[S.day], date=day.date;
       switch(act){
+        case 'cgto': intoGroup(arg.ids,b.dataset.id); closeSheet(); break;
+        case 'cgnew': intoGroup(arg.ids,null,((E.sbody.querySelector('.pl-cgname')||{}).value||'').trim()); closeSheet(); break;
+        case 'cgren': { const v=((E.sbody.querySelector('.pl-cgname')||{}).value||'').trim(); if(v) c.editTrip(x=>{ const g=x.groups.find(o=>o.id===arg.id); if(g) g.name=v.slice(0,40); },null); closeSheet(); break; }
         case 'back': openBrowse(); break;
         case 'plan': S.planId=b.dataset.id; save(); render(true); openPlans(); requestAnimationFrame(()=>fitDay()); break;
         case 'reset': { const from=S.my.from; pushHist(); c.keepMy();
@@ -495,7 +585,7 @@ planner.more=function(c){
           if(ex){ ex.remove(); break; }
           row.insertAdjacentHTML('beforeend',dayPick(b.dataset.id)); b.setAttribute('aria-expanded','true');
           const c=row.querySelector('.pl-dq.pl-cur'); if(c) c.focus(); break; }
-        case 'addday': { const id=b.dataset.id, k=+b.dataset.day; if(armPill(b)||!c.applyAdd(k,[id],null)) break;
+        case 'addday': { const id=b.dataset.id, k=+b.dataset.day; if(armPill(b)||!applyAdd(k,[id],null)) break;
           if(kind==='place') openPlace(id,arg.back); else patchCand(id); break; }
         case 'unplan': { const id=b.dataset.id, back=arg.back; if(c.guard(b,'un'+id,m=>{ const l=m.days[date], k=l.indexOf(id); if(k>=0) l.splice(k,1); },pt('removed',{name:nm(place(id))}))) openPlace(id,back); break; }
         case 'movehere': { const id=b.dataset.id, back=arg.back, on=plannedMap().get(id); if(on==null) break; const from=DB.days[on].date;
@@ -506,7 +596,7 @@ planner.more=function(c){
           const cur=sec.querySelector('.pl-dq.pl-cur'); if(cur) cur.focus(); break; }
         case 'addallday': { const c=clusterOf(b.dataset.id); if(!c) break;
           const add=addIds(c); if(!add.length){ toast(pt('nothingAdded')); break; }
-          if(armPill(b)||!c.applyAdd(+b.dataset.day,add,c)) break;
+          if(armPill(b)||!applyAdd(+b.dataset.day,add,c)) break;
           add.forEach(patchCand); const q=b.closest('.pl-dayq'); if(q) q.remove(); break; }
         case 'clearf': S.f={q:'',cat:null,area:null,saved:null,sort:S.f.sort}; openBrowse(); break;
         case 'dayend': break;

@@ -88,6 +88,7 @@ no new globals beyond `planner` (with `planner.sim`, `planner.more`, `planner.sw
 |---|---|---|
 | `planner.js` | with the book | `planner(g)`, the day simulation (`planner.sim`) |
 | `planner.css` | with the book | every rule under `.v-plan` / `pl-`; layout by `@container plan` (`.v-plan{container:plan/inline-size}`), never by the window |
+| `planner-collect.js` + `planner-collect.css` | ① opens (or the last stage was ①) | `planner.collect(ctx)`: tiers, groups, the bulk bar; ≤7.5 KB gz |
 | `planner-more.js` + `planner-more.css` + `data/nz/groups.json` | the first touch (prefetched), or any sheet | `planner.more(ctx)`: candidates, place, plans, move, order, swap, compare, version name, share and paste |
 | `import.js` + `planner-import.js` + `planner-import.css` | the 取り込む sheet | parsers (`plimport.gm/ig`), the sheet (`plimport.ui`) and its styles |
 | `story.js` | 「ストーリー画像」 | `plstory.open(model, g)`; the model carries `guide` and `slug` |
