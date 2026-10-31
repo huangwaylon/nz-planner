@@ -48,7 +48,7 @@
       lines.push('  diag ' + JSON.stringify({errs, more: !!(w.planner && w.planner.more),
         moreScript: [...d.scripts].map(x => x.src).filter(x => /more/.test(x)),
         browse: !!d.querySelector('.pl-browse'), clist: !!d.querySelector('.pl-clist'),
-        rows: d.querySelectorAll('.pl-clist > *').length, sheet: (d.querySelector('[role=dialog]') || {}).className || null,
+        rows: d.querySelectorAll('.pl-clist > *').length, sheet: (d.querySelector('[role=dialog]') || {}).className || null, sheetText: ((d.querySelector('[role=dialog]') || {}).textContent || '').replace(/\s+/g, ' ').slice(0, 160), tz: Intl.DateTimeFormat().resolvedOptions().timeZone, now: new Date().toISOString(),
         online: w.navigator.onLine}));
       throw new Error('stop: no candidate list');
     }
