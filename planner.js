@@ -1554,6 +1554,11 @@ const plannerFn=function planner(g){
     if(ti>=0) S.day=ti;          /* during the trip, open on today */
     /* Boot in two tasks so neither runs long: the day list first, the map's pins next. A render
        error from bad saved state drops to the preset rather than bricking the app. */
+    /* Listeners attach in the third boot task (wire), so a tap on a slow phone can land on a
+       rendered but deaf page. Hold the first such tap and replay it once wired. */
+    const early=e=>{ if(wired) return; const t=e.target.closest('button,a,[data-act]'); if(!t) return;
+      e.preventDefault(); e.stopPropagation(); pendingTap=t; };
+    view.addEventListener('click',early,true);
     labels(); rebuildPlaces(); renderTop(); renderDays();
     try{ renderMain(); }catch(e){ console.error(e); LS.set(KB,S.raw||''); S.my=null; S.versions=[]; S.planId=DB.presets[0].id; save(); renderTop(); renderDays(); renderMain(); }
     if(broken) save();
@@ -1563,7 +1568,9 @@ const plannerFn=function planner(g){
     fetch(SRC+'flags.json').then(r=>r.ok?r.json():null).then(o=>{ if(!o) return; setFlags(o); DB.list.forEach(p=>{ delete p._s; }); if(!DRAG) renderSoon(); if(sheetKind==='place') refreshSheet(); }).catch(()=>{});
   }
   /* third boot task: listeners, notices, share links, then the lazy loads on idle */
+  let wired=false, pendingTap=null;
   function wire(){
+    queueMicrotask(()=>{ wired=true; const t=pendingTap; pendingTap=null; if(t&&t.isConnected) t.click(); });
     E.days.addEventListener('click',e=>{ const b=e.target.closest('.pl-daybtn'); if(b) setDay(+b.dataset.day); });
     E.bar.addEventListener('click',openPlans);
     view.querySelector('.pl-sharebtn').addEventListener('click',shareLink);
