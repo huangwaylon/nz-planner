@@ -41,6 +41,7 @@ jobs:
       # Needs Node 22+ (global WebSocket) and the runner image's Google Chrome.
       - run: node tools/e2e-run.js
       # Every version's days must still simulate cleanly against the shipped data.
+      - run: python3 tools/gallery.py --check
       - run: python3 tools/sun.py
       - run: python3 tools/check_plans.py --gate
       - run: sh tools/dist.sh
