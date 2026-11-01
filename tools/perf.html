@@ -29,11 +29,13 @@
      25 ms case cannot fail on which frame a lazy load lands in). The drag's p95 is a frame interval, bound to vsync rather
      than CPU speed, so it is guarded in plain ms (1.25 x). Toggle cases (a chip on/off, typing a
      letter and deleting it) report each direction's median in "dirs" and gate the worse one. Stress gates are absolute ms against the DESIGN.md targets and
-     only warn until STRESS_FAILS is true. -->
+     only warn until STRESS_FAILS is true. A drag also gates its worst frame (the lift and the first
+     preview, which p95 cannot see): the median over runs of each run's worst frame, ≤ WORST ms. -->
 <style>body{margin:0;font:12px monospace} iframe{position:absolute;left:0;top:0;border:0;background:#fff} #out{position:absolute;left:0;top:1100px;white-space:pre-wrap}</style>
 <pre id="out">PERF RUNNING</pre>
 <script>
-const STRESS_FAILS = false;   /* flip once the P0 fixes land (docs/DESIGN.md "Gate") */
+const STRESS_FAILS = true;   /* the P0 fixes are in (docs/DESIGN.md "Gate") */
+const WORST = 50;   /* a drag's worst frame, ms: the lift and the first preview, which p95 cannot see */
 const GUARD = 1.25, QUANTUM = 16;   /* one 60 Hz frame of slack on top of the ratio */
 (async () => {
   const P = new URLSearchParams(location.search), N = Math.max(1, +P.get('n') || 5), ONLY = P.get('case') || '', RECORD = P.has('record');
@@ -230,7 +232,10 @@ const GUARD = 1.25, QUANTUM = 16;   /* one 60 Hz frame of slack on top of the ra
       row.status = ms < gate ? 'pass' : STRESS_FAILS ? 'fail' : 'warn';
       if (row.status === 'fail') fails++;
     }
-    row.cal = r1(cal); row.runs = xs.map(r1); if (name === 'board_drag') row.max = r1(Math.max(...dragMax));
+    row.cal = r1(cal); row.runs = xs.map(r1);
+    /* the worst frame of each run, its median gated (one stray GC or a busy machine moves the max, not the median) */
+    if (name === 'board_drag') { row.max = r1(Math.max(...dragMax)); row.worst = r1(median(dragMax)); row.worstGate = WORST;
+      if (row.worst > WORST) { if (row.status !== 'fail') fails++; row.status = 'fail'; } }
     say(JSON.stringify(row));
   }
   if (fr) fr.remove();
