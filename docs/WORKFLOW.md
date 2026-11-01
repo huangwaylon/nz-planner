@@ -3,6 +3,25 @@
 Lead's decision after three proposals (designer, PM, architect; their full papers are kept locally
 in research/). This is the spec the increments are built and tested against.
 
+## Principles (owner, binding on every screen)
+1. **Visual first, text on demand.** Images, the map and the route carry the screen; words are the
+   detail layer. A card shows a photo, a name, and at most one line of signal. Everything else
+   (hours, flags, evidence, notes, credits beyond the overlay) waits behind a tap, a hover, or the
+   place sheet.
+   - No paragraphs on any list, card or board.
+   - Numbers are icons plus figures (🚗 1:05, ⚠ 1), never sentences.
+   - Warnings say what's wrong in one short line, and the reason opens on tap.
+2. **Say each thing once.** A fact lives in exactly one component, the one where it's acted on. If
+   another screen needs it, show a glyph or count that links there; never repeat the text.
+   - **Day facts** (sleep, drive, end time, ⚠, sun) live in the day header: the board column head,
+     or the calendar cell in ③. They aren't also in a strip, toast or summary row.
+   - **Place facts** (hours, flags, evidence, tier, gallery, credits) live in the place sheet. Cards
+     carry the photo, the name, the tier control and one signal.
+   - **Warnings** live on the stop they concern. The day header shows only a count.
+   - **Stage counts** live in the stepper only.
+   - **Help text and keyboard hints** appear once, then hide after first use, remembered in
+     `plan-ui:nz`.
+
 ## Stages
 A stepper, not a wizard. Every stage is always reachable, and each shows one live count.
 
@@ -104,9 +123,45 @@ A stepper, not a wizard. Every stage is always reachable, and each shows one liv
 
 ## Visual direction
 - **"An open travel book, not a console."** Paper background, hairline cards, shadow only while dragging. No gauges, charts or KPI tiles.
-- **Colour:** only day hues, ⚠ red and photographs.
-- **Type:** Mincho for names and headings, sans for data. Scale 12 / 13.5 / 15 / 18 / 24 / 40, plus the 76 day numeral.
 - **Grid:** 8 px, gutters 24/32, never more than three panes, and the map full-bleed to the right edge.
+
+## Type and colour system (owner: unify; fewer colours; readable on screens)
+Defined once as tokens on `.v-plan`. Rules use only these, and `tools/style.test.js` fails CI on
+anything else.
+- **One family, sans, everywhere.** That includes headings, place names, day numerals and the story
+  image. No Mincho or serif:
+  `--pl-font: "Hiragino Sans","Hiragino Kaku Gothic ProN",-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif`.
+  Figures use `font-variant-numeric: tabular-nums`, so times line up.
+- **Two weights:** 400 (text) and 600 (names, headings, selected state).
+- **Five sizes:**
+
+  | Token | Size | Line height | Used for |
+  |---|---|---|---|
+  | `--pl-fs-s` | 12 | 1.5 | meta, credits |
+  | `--pl-fs-m` | 14 | 1.6 | body, labels, stop rows |
+  | `--pl-fs-l` | 17 | 1.45 | place names, day titles |
+  | `--pl-fs-xl` | 22 | 1.35 | screen headings |
+  | `--pl-fs-d` | 40 | 1 | day numeral only |
+
+  JA body text keeps a 1.75 line height. Nothing below 12. `rem`-relative where the host allows,
+  so Larger Text works.
+- **Colour is a short list:**
+
+  | Token | Role |
+  |---|---|
+  | `--ink` | text |
+  | `--muted` | secondary text, ≥4.5:1 on every surface |
+  | `--line` | hairlines |
+  | `--bg` / `--surface` | backgrounds |
+  | `--acc` | the one accent: links, focus, selection, the primary button |
+  | `--pl-warn` | ⚠ only |
+
+  Everything else is the photographs.
+  - **Day hues (`--d1…--d6`) are markers, never text.** They appear as the route line, map pins
+    and a 3 px bar or dot on day headers and pills. The `--pl-dN-ink` text colours are retired:
+    day numbers and labels are `--ink`.
+  - **Tiers** are ink weights: solid `--ink`, `--muted`, outline, dashed. **Saved** is a glyph in
+    `--ink`. No extra hues anywhere: badges, chips and categories are ink or muted.
 
 ## Budget
 - **Phone, ②:** ≤100 KB gz on the first screen.
