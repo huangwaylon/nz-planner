@@ -32,7 +32,7 @@ const COLOUR_PROPS = /^(color|background(-color)?|border(-(top|right|bottom|left
 const SPACE_PROPS = /^(padding|margin|gap|row-gap|column-gap|inset|top|right|bottom|left|scroll-padding|scroll-margin)(-[a-z-]+)?$/;
 const SIZE_PROPS = /^(width|height|min-width|min-height|max-width|max-height|flex-basis|inline-size|block-size)$/;
 const TRANSITIONABLE = /^(transform|opacity|translate|scale|rotate|visibility|none|all 0s)$/;
-const DRAG_SEL = /pl-(drag|lift|dgh|swip|sorting|grab)/;
+const DRAG_SEL = /pl-(drag|lift|dgh|swip|sorting|grab)|is-(drag|lift|sort)/;
 
 let fails = 0, warns = 0, n = 0;
 const vals = {};
