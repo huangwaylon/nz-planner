@@ -19,7 +19,7 @@ const bye = code => { kids.forEach(k => { try { k.kill(); } catch (e) {} }); pro
   kids.push(spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], {cwd: ROOT, stdio: 'ignore'}));
   for (let i = 0; i < 50; i++) { try { if ((await fetch(`http://127.0.0.1:${PORT}/tools/e2e.html`)).ok) break; } catch (e) {} await wait(100); }
   const prof = fs.mkdtempSync(path.join(os.tmpdir(), 'nzp-e2e-'));
-  const ch = spawn(bin, ['--headless=new', '--no-sandbox', '--no-first-run', '--remote-debugging-port=0', '--user-data-dir=' + prof,
+  const ch = spawn(bin, ['--headless=new', ...(process.env.E2E_LANG ? ['--lang=' + process.env.E2E_LANG] : []), '--no-sandbox', '--no-first-run', '--remote-debugging-port=0', '--user-data-dir=' + prof,
     '--window-size=1200,1000', 'about:blank'], {stdio: ['ignore', 'ignore', 'pipe']});
   kids.push(ch);
   const port = await new Promise((res, rej) => { let buf = ''; const t = setTimeout(() => rej(new Error('Chrome did not start')), 20000);

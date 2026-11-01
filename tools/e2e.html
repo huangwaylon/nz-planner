@@ -68,8 +68,8 @@
     add.click(); await wait(300); await armOk();
     ok(await until(() => rows().length === n0 + 1, 3000), '＋ adds to the current day at once, even with an import on it');
     ok(!!q('main .pl-stop[data-id="' + IMP.id + '"]'), 'the import is still on the day after the add');
-    fr.contentWindow.history.back(); await wait(500);
-    ok(!q('.pl-sheet.is-open') && fr.contentWindow.location.hash === '#plan/12', 'Back closes the sheet and leaves the URL on the day');
+    fr.contentWindow.history.back();
+    ok(await until(() => !q('.pl-sheet.is-open') && fr.contentWindow.location.hash === '#plan/12', 5000), 'Back closes the sheet and leaves the URL on the day');
 
     fr.contentWindow.location.hash = '#review'; await wait(600);
     ok(view().dataset.stage === 'review', 'a typed #review opens ③');
@@ -222,7 +222,9 @@
     fr.contentWindow.location.hash = '#plan-nz=' + code;
     ok(await until(() => view()._pl.tier(gid0) === 'must', 5000), 'a v3 link fills her unset tiers');
     /* the group can land a beat after the tier on a slow runner: wait for it the same way */
-    ok(await until(() => view()._pl.trip().groups.some(g => g.ids.indexOf(gid0) >= 0 && g.name !== 'テスト外出'), 5000), 'its group arrives with the ids, never the name');
+    const gArrived = await until(() => view()._pl.trip().groups.some(g => g.ids.indexOf(gid0) >= 0 && g.name !== 'テスト外出'), 15000);
+    ok(gArrived, 'its group arrives with the ids, never the name');
+    if (!gArrived) lines.push('  diag ' + JSON.stringify({groups: view()._pl.trip().groups, tier: view()._pl.tier(gid0), hash: fr.contentWindow.location.hash}));
     /* the old-app guard: a stale v1 app moved our v2 to :broken and wrote v1 over it */
     flush(); const v2now = localStorage.getItem('plan:nz');
     localStorage.setItem('plan:nz:broken', v2now);
