@@ -30,6 +30,8 @@ const bye = code => { kids.forEach(k => { try { k.kill(); } catch (e) {} }); pro
   let id = 0; const pending = new Map();
   ws.addEventListener('message', e => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } });
   const send = (method, params) => new Promise(r => { const k = ++id; pending.set(k, r); ws.send(JSON.stringify({id: k, method, params})); });
+  /* E2E_CPU=4 node tools/e2e-run.js slows the CPU to shake out timing races before CI finds them */
+  if (+process.env.E2E_CPU > 1) await send('Emulation.setCPUThrottlingRate', {rate: +process.env.E2E_CPU});
   await send('Page.navigate', {url: `http://127.0.0.1:${PORT}/tools/e2e.html`});
   const t0 = Date.now(); let out = '';
   while (Date.now() - t0 < 150000) {

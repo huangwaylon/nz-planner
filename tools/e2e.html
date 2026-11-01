@@ -36,7 +36,9 @@
       w.addEventListener('error', e => errs.push(String(e.message)));
       w.addEventListener('unhandledrejection', e => errs.push('rejection: ' + String(e.reason && (e.reason.stack || e.reason)).slice(0, 400)));
       const ce = w.console.error; w.console.error = (...a) => { errs.push(a.map(String).join(' ')); ce.apply(w.console, a); };
-      res(); }; fr.src = '../index.html?nosw&e2e=' + Date.now() + hash; });
+      res(); }; fr.src = '../index.html?nosw&e2e=' + Date.now() + hash; })
+      /* onload fires before the app's async boot attaches its test hooks; a slow runner shows the gap */
+      .then(() => until(() => { const v = fr.contentDocument && fr.contentDocument.querySelector('.v-plan'); return v && v._pl; }, 15000));
     const doc = () => fr.contentDocument, q = s => doc().querySelector(s), qa = s => [...doc().querySelectorAll(s)];
     const view = () => q('.v-plan'), rows = () => qa('main .pl-stop');
     const flush = () => view()._pl.flush(), saved = () => { flush(); return JSON.parse(localStorage.getItem('plan:nz')); };
