@@ -219,7 +219,8 @@
     await load(); await until(() => q('.pl-collect .pl-card'));
     fr.contentWindow.location.hash = '#plan-nz=' + code;
     ok(await until(() => view()._pl.tier(gid0) === 'must', 5000), 'a v3 link fills her unset tiers');
-    ok(view()._pl.trip().groups.some(g => g.ids.indexOf(gid0) >= 0 && g.name !== 'テスト外出'), 'its group arrives with the ids, never the name');
+    /* the group can land a beat after the tier on a slow runner: wait for it the same way */
+    ok(await until(() => view()._pl.trip().groups.some(g => g.ids.indexOf(gid0) >= 0 && g.name !== 'テスト外出'), 5000), 'its group arrives with the ids, never the name');
     /* the old-app guard: a stale v1 app moved our v2 to :broken and wrote v1 over it */
     flush(); const v2now = localStorage.getItem('plan:nz');
     localStorage.setItem('plan:nz:broken', v2now);
