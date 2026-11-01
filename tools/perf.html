@@ -170,7 +170,7 @@ const GUARD = 1.25, QUANTUM = 16;   /* one 60 Hz frame of slack on top of the ra
       const pts = []; for (let i = 1; i <= 90; i++) { const seg = Math.min(2, Math.floor((i - 1) / 30)), f = ((i - 1) % 30 + 1) / 30, a = seg ? tg[seg - 1] : sr, b = tg[seg];
         pts.push([a.left + 20 + (b.left - a.left) * f, (a.top + 60) + (b.top + 80 - a.top - 60) * f]); }
       let prev = await raf(); const d = []; let on = false;
-      for (const [x, y] of pts) { pe(W(), 'pointermove', x, y); const t = await raf(); d.push(t - prev); prev = t; on = on || q('.v-plan').classList.contains('pl-dragging') || !!q('[class*="dragging"]'); }
+      for (const [x, y] of pts) { pe(W(), 'pointermove', x, y); const t = await raf(); d.push(t - prev); prev = t; on = on || !!q('.is-lifted, .is-dragging, .pl-dragging, .pl-dragghost:not([hidden])'); }
       pe(W(), 'pointercancel', pts[89][0], pts[89][1]);   /* cancel, so the plan is the same for the next run */
       if (!on) return null;   /* the controller never lifted: the selectors are stale, say skip rather than a fake 16.7 */
       xs.push(p95(d.slice(3))); dragMax.push(Math.max(...d));

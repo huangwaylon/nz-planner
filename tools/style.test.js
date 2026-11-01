@@ -12,15 +12,15 @@
    - motion: durations var(--pl-t-*), transitions name only transform / opacity / translate / scale /
      visibility, will-change only on the drag classes, and a prefers-reduced-motion block exists.
    It also reports the CSS rules for classes no *.js or index.html emits (dead rules), and the contract
-   classes with no rule. Contract gaps fail; dead rules fail once DEAD_FAILS is true (set when the JS
-   migration to the class contract is done; `--strict` forces it).
+   classes with no rule. Both fail; a contract class (or a contract extension) the JS does not use yet is
+   only reported, since it is the API the JS codes to.
    With --count it prints the distinct values per property instead (for the audit's before/after table). */
 'use strict';
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
 const files = fs.readdirSync(ROOT).filter(f => /^planner.*\.css$/.test(f)).sort();
 const COUNT = process.argv.includes('--count');
-const DEAD_FAILS = false || process.argv.includes('--strict');
+const DEAD_FAILS = true;   /* the JS migration to the class contract is done: a rule for a class no script emits fails */
 
 const NAMED = /\b(white|black|red|green|blue|gray|grey|silver|orange|yellow|purple|pink|brown|navy|teal|maroon|olive|lime|aqua|fuchsia)\b/i;
 const LIT = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?)\(\s*[\d.]/i;
@@ -150,10 +150,9 @@ const used = new Set(src.match(/\bpl-[\w-]*[a-z0-9]/gi));
    suffix appears as a quoted word anywhere in the JS (BTN('primary', …), ic(n,'24')) */
 const prefixes = new Set([...src.matchAll(/\b(pl-[a-z]+(?:--|__))(?=['"`]?\s*(?:\+|\$\{|'|"))/g)].map(m => m[1]));
 const quoted = new Set([...src.matchAll(/['"`]([\w-]+)['"`]/g)].map(m => m[1]));
-const emitted = c => used.has(c) || [...prefixes].some(p => c.startsWith(p) && quoted.has(c.slice(p.length)));
+const emitted = c => used.has(c) || [...prefixes].some(p => c.startsWith(p) && (quoted.has(c.slice(p.length)) || (/^\d+$/.test(c.slice(p.length)) && new RegExp('[?:]\\s*' + c.slice(p.length) + '\\b').test(src))));
 /* classes the CSS styles that no script writes: state the browser adds is not a class, so this is exact */
 const dead = [...cssClasses].filter(([c]) => !emitted(c));
-for (const [c, fs_] of dead) { if (DEAD_FAILS) { fails++; console.log(`FAIL dead rule: .${c} (${fs_.join(', ')}) — no *.js or index.html emits it`); } else warn(`dead rule: .${c} (${fs_.join(', ')})`); }
 const CONTRACT = ['pl-btn', 'pl-btn--primary', 'pl-btn--secondary', 'pl-btn--ghost', 'pl-btn--icon', 'pl-btn--s', 'pl-btn--l',
   'pl-chip', 'pl-chip--filter', 'pl-chip--choice', 'pl-seg', 'pl-field', 'pl-field__clear',
   'pl-row', 'pl-row__media', 'pl-row__body', 'pl-row__title', 'pl-row__meta', 'pl-row__trail',
@@ -161,6 +160,8 @@ const CONTRACT = ['pl-btn', 'pl-btn--primary', 'pl-btn--secondary', 'pl-btn--gho
   'pl-sheet', 'pl-sheet__head', 'pl-sheet__title', 'pl-sheet__close', 'pl-sheet__body', 'pl-sheet__foot',
   'pl-toast', 'pl-toast__text', 'pl-badge', 'pl-badge--warn', 'pl-stat', 'pl-dayhead', 'pl-marker',
   'pl-empty', 'pl-empty__media', 'pl-empty__text', 'pl-actionbar', 'pl-ico', 'pl-ico--16', 'pl-ico--20', 'pl-ico--24'];
+const EXT = ['pl-btn--float', 'pl-row--l'];   /* contract extensions (docs/DESIGN.md "Class contract") */
+for (const [c, fs_] of dead) { if (DEAD_FAILS && !CONTRACT.includes(c) && !EXT.includes(c)) { fails++; console.log(`FAIL dead rule: .${c} (${fs_.join(', ')}) — no *.js or index.html emits it`); } else warn(`dead rule: .${c} (${fs_.join(', ')})`); }
 for (const c of CONTRACT) if (!cssClasses.has(c)) bad('contract', '', `.${c} has no rule`);
 /* the other direction: a contract-style class (block__part or block--mod) the JS writes with no rule */
 const unstyled = [...used].filter(c => /__|--/.test(c) && /^pl-[a-z]+(__|--)[a-z0-9]+$/.test(c) && !cssClasses.has(c) && !/^pl-(d\d|fs|lh|s|r|e|i|h|t)-/.test(c));
