@@ -288,7 +288,7 @@ def main():
         # Data hygiene the schedule depends on: no U+FFFD anywhere (mojibake reached the plan
         # picker once), and no cafe or restaurant claiming to be open around the clock.
         hyg = []
-        for f in ('places.json', 'places-more.json', 'plans.json', 'photos.json'):
+        for f in ('places.json', 'places-more.json', 'plans.json', 'photos.json', 'gallery.json', 'frames.json', 'groups.json'):
             fp = os.path.join(D, f)
             if os.path.exists(fp) and '\ufffd' in open(fp, encoding='utf-8').read():
                 hyg.append('U+FFFD in ' + f)

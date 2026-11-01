@@ -43,6 +43,9 @@ def clean(entries, known, log):
                 continue
             seen.add(u)
             e = {k: im.get(k) for k in ('u', 'w', 'h', 'by', 'lic', 'page', 'alt', 'altJa') if im.get(k) not in (None, '')}
+            if any('\ufffd' in str(v) for v in e.values()):
+                log.append('%s: drop %s (U+FFFD in its text; fix the caption in research/gallery-fix.json)' % (pid, u[:80]))
+                continue
             if 'upload.wikimedia.org' in u and '/960px-' not in u:
                 log.append('%s: drop %s (Commons URL must be the 960px thumb form the app swaps widths on)' % (pid, u[:80]))
                 continue
@@ -86,8 +89,10 @@ def main():
     for f in SRC:
         if os.path.exists(f):
             raw = {}
+            altfix = json.load(open(fx)).get('alt', {}) if os.path.exists(fx) else {}
             for pid, imgs in json.load(open(f)).items():   # a dropped duplicate's images join its survivor
-                raw.setdefault(alias.get(pid, pid), []).extend(imgs or [])
+                # caption corrections apply before validation, so a fixed caption passes the U+FFFD check
+                raw.setdefault(alias.get(pid, pid), []).extend(dict(im, **altfix.get(im.get('u'), {})) for im in (imgs or []))
             for pid, imgs in clean(raw, known, log).items():
                 have = {x['u'] for x in g.get(pid, [])}
                 g[pid] = (g.get(pid, []) + [x for x in imgs if x['u'] not in have])[:MAX_PER_PLACE]
