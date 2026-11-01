@@ -63,9 +63,9 @@ planner.desk=function(c){
   function renderBoard(){ const P=plan();
     E.board.innerHTML=DB.days.map((d,k)=>{ const sc=sim().schedule(d,null,P,o()), s=sc.rows[0], e=sc.rows[sc.rows.length-1], h=c.heroOf(sc), x=ph(h), n=sc.rows.length-2, sl=place(e.id);
       const head=`<button type="button" class="pl-bh" data-bday="${k}">${x?`<img class="pl-bhi" src="${esc(x.src)}" alt="" width="3" height="2" ${k===S.day?'':'loading="lazy" fetchpriority="low"'} decoding="async">`:''}
-        <b>${+d.date.slice(8)}</b><span>${c.wdName(d.date)}</span><small>${esc(pt('sleepAt',{p:e.id==='akl'?'✈':nm(sl).replace(/\s*[(（].*?[)）]/g,'')}))}　${pt('stops',{n})}<br>🚗${dur(sc.drive)}　~${hm(e.arr)}${e.limit?` / ${hm(e.limit)}`:''}</small>${sc.warns?`<em>${pt('warnN',{n:sc.warns})}</em>`:''}</button>`;
+        <b>${+d.date.slice(8)}</b><span>${c.wdName(d.date)}</span><small>${esc(pt('sleepAt',{p:e.id==='akl'?'✈':nm(sl).replace(/\s*[(（].*?[)）]/g,'')}))}<br>🚗${dur(sc.drive)}　${pt('depart2',{t:hm(s.dep)})} → ${pt('arrive2',{t:hm(e.arr)})}</small>${sc.warns?`<em>⚠ ${sc.warns}</em>`:''}</button>`;
       const rows=sc.rows.slice(1,-1).map((r,i)=>(i?`<p class="pl-bl">${legT(r.leg)}</p>`:'')+`<button type="button" class="pl-bs${r.warns.length?' pl-bad':''}" data-drag="s:${d.date}:${r.id}" data-id="${r.id}">${tn(place(r.id),40)}<span>${hm(r.begin)}</span><b${nmLang(place(r.id))} title="${esc(nm(place(r.id)))}">${esc(nm(place(r.id)))}</b></button>`).join('');
-      return `<section class="pl-bc${k===S.day?' pl-cur':''}" data-dz="day" data-day="${k}" style="${dayStyle(k)}">${head}<p class="pl-bt">${pt('depart2',{t:hm(s.dep)})}</p>${rows||`<p class="pl-be">${pt('emptyDay')}</p>`}<p class="pl-bt">${pt('arrive2',{t:hm(e.arr)})}</p></section>`; }).join(''); }
+      return `<section class="pl-bc${k===S.day?' pl-cur':''}" data-dz="day" data-day="${k}" style="${dayStyle(k)}">${head}${rows||`<p class="pl-be">${pt('emptyDay')}</p>`}</section>`; }).join(''); }
   /* every day's route at once, each in its day colour */
   function allDays(on){ const g=svg.querySelector('.pl-alld'); svg.classList.toggle('pl-all',on); if(!on){ g.innerHTML=''; return; } const P=plan();
     g.innerHTML=DB.days.map((d,k)=>`<g data-day="${k}" style="${dayStyle(k)}">${legSegments(sim().schedule(d,null,P,o())).map(s=>{ const gm=s.kind==='drive'&&geom(s.a,s.b);

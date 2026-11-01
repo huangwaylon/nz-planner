@@ -437,7 +437,7 @@ planner.more=function(c){
   function dayModel2(P,d,i,mu){ const sc=schedule(d,null,P), ids=sc.rows.slice(1,-1).map(r=>r.id), e=sc.rows[sc.rows.length-1], an=e.an||{}, last=e.id==='akl';
     const warn=[]; sc.rows.forEach(r=>r.warns.forEach(w=>warn.push({kind:w.k,text:(r.kind==='stop'?nm(place(r.id))+'：':'')+c.warnText(w,d)}))); if(sc.long) warn.push({kind:'long',text:pt('longDrive',{d:dur(sc.drive)})});
     const first=place(ids[0]||e.id), sl=place(e.id), lb=d.labelJa||'';
-    return {date:d.date,colorVar:'--d'+(i%6+1),inkVar:'--pl-d'+(i%6+1)+'-ink',sleep:last?{name:'In flight',nameJa:'機内'}:{name:bare(sl.name),nameJa:bare(sl.nameJa||sl.name)},
+    return {date:d.date,colorVar:'--d'+(i%6+1),inkVar:'--ink',sleep:last?{name:'In flight',nameJa:'機内'}:{name:bare(sl.name),nameJa:bare(sl.nameJa||sl.name)},
       stops:ids.length,ids,mustPlaced:ids.filter(x=>mu.indexOf(x)>=0).length,mustTotal:mu.length,driveMin:Math.round(sc.drive),endTime:plus(sc.end),
       limit:{time:an.time||c.hhmm(S.dayEnd),label:last?{ja:'返車',en:'car'}:''},warn,
       booked:{done:ids.filter(x=>S.booked[x]).length,total:ids.filter(x=>(place(x)||{}).book).length},
@@ -453,7 +453,7 @@ planner.more=function(c){
   function renderReview(el){
     const all=[S.my].filter(Boolean).concat(S.versions,DB.presets), cur=plan(), pin=new Set(S.pin||[]);
     if(!el._rv){ el._rv=1;
-      el.innerHTML=`<div class="pl-rvh"><div><h2 class="pl-cl-t">${pt('st_review')}</h2><p class="pl-hint">${pt('rvS')}</p></div><div class="pl-chips pl-rvpin"></div>
+      el.innerHTML=`<div class="pl-rvh"><div><h2 class="pl-cl-t">${pt('st_review')}</h2>${S.help?`<p class="pl-hint">${pt('rvS')}</p>`:''}</div><div class="pl-chips pl-rvpin"></div>
         <div class="pl-rvact"><button type="button" class="pl-btn pl-sec" data-rv="cmp">${ic('compare','sm')}${pt('compare')}</button><button type="button" class="pl-btn pl-sec" data-rv="share">${ic('share','sm')}${pt('shareLink')}</button></div></div>
         <div class="pl-cal-pair"><div class="pl-rvcal"></div><div class="pl-rvver"></div></div>`;
       el.addEventListener('click',e=>{ const b=e.target.closest('[data-rv]'); if(!b) return;

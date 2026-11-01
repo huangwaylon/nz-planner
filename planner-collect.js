@@ -56,7 +56,7 @@ planner.collect=function(c){
     if(skip&&!force){ skip=false; KEY=k; return; }
     if(k===KEY&&!force) return; KEY=k;
     const pm=plannedMap(P), list=pool(), y=el.querySelector('.pl-clist')?scrollY:null;
-    el.innerHTML=`<div class="pl-crail"><div class="pl-ctop2"><div><h2 class="pl-cl-t">${pt('cT')}</h2><p class="pl-hint">${pt('cS')}</p></div>
+    el.innerHTML=`<div class="pl-crail"><div class="pl-ctop2"><div><h2 class="pl-cl-t">${pt('cT')}</h2>${S.help?`<p class="pl-hint">${pt('cS')}</p>`:''}</div>
         <span><button type="button" class="pl-cbtn" data-ca="undo"${S.hist.length?'':' disabled'}>${ic('undo','sm')}<span class="sr">${pt('undo')}</span></button> <button type="button" class="pl-cbtn${selMode?' pl-on':''}" data-ca="selmode" aria-pressed="${selMode}">${pt('sel')}</button></span></div>
       <label class="pl-search">${ic('search','sm')}<span class="sr">${pt('cSearch')}</span><input class="pl-cq" type="search" value="${esc(cf.q||'')}" placeholder="${esc(pt('cSearch'))}" autocomplete="off" enterkeyhint="search"></label>
       ${chips()}${sel.size||selMode?'':`<div class="pl-cbar pl-chand"><button type="button" class="pl-btn pl-pri" data-ca="handoff">${pt('handoff')}</button></div>`}</div>

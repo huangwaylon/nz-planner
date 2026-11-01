@@ -53,7 +53,7 @@ def main():
                 fact = {'ja': base['labelJa'].split('・', 1)[1], 'en': base['label'].split(': ', 1)[-1].split(', ', 1)[-1]}
             out[date] = {
                 'date': date, 'weekday': C.weekday(date),
-                'colorVar': '--d%d' % (i + 1), 'inkVar': '--pl-d%d-ink' % (i + 1),
+                'colorVar': '--d%d' % (i + 1), 'inkVar': '--ink',
                 'sleep': {'name': 'In flight', 'nameJa': '機内'} if last else
                          {'name': bare(p['name']), 'nameJa': bare(p['nameJa'])},
                 'stops': len(ids), 'ids': ids,

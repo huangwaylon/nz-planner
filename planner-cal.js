@@ -1,4 +1,4 @@
-/* planner-cal.js: ③'s month calendar and versions grid, a lazy chunk (≤3.5 KB gz with its CSS).
+/* planner-cal.js: ③'s month calendar and versions grid, a lazy chunk (≤6 KB gz with its CSS).
    planner.cal.render(el, model, opts) and .renderVersions(el, model, opts) write HTML into el, bind
    once per el, and re-render on langchange. Day cells carry data-drop="day" data-date; the drag
    controller fires a bubbling 'pl-drop' CustomEvent (detail = payload) on one -> opts.onDropStop.
@@ -69,6 +69,9 @@ const t=k=>T[k][E],
     el.innerHTML=`<ol class="pl-cal-ls" data-g>${m.days.map((d,i)=>`<li>${btn(d,i,0)}</li>`).join('')}</ol><table class="pl-cal-mo" data-g><caption>${E?en(f,{year:'numeric'}):f.getUTCFullYear()+'年'+(f.getUTCMonth()+1)+'月'}${total?`<small>${t('mu')} ${placed}/${total}</small>`:''}</caption><colgroup>${[0,1,2,3,4,5,6].map(c=>`<col${m.days.some(d=>wd(d.date)==c)?'':' class="pl-cal-k"'}>`).join('')}</colgroup><thead><tr>${[0,1,2,3,4,5,6].map(c=>`<th scope="col"${we(c)}>${wn(c)}</th>`).join('')}</tr></thead><tbody>${h}</tbody></table>${leg?`<p class="pl-cal-mk">${leg.slice(3)}</p>`:''}`;
   },
   key=x=>x?(x.stops||[]).join('|'):'',
+  /* the grid shows differences only: ＋/− stops against the active plan, a changed end, ⚠ */
+  df=(x,a)=>{ const p=x.stops.filter(s=>a.stops.indexOf(s)<0),q=a.stops.filter(s=>x.stops.indexOf(s)<0);
+    return [...p.slice(0,2).map(s=>'＋'+esc(s)),...q.slice(0,2).map(s=>'−'+esc(s))].join(' ')+(p.length+q.length>4?' …':'')+(x.endTime!=a.endTime?' ~'+tm(x.endTime):'')+(x.warn?' '+warn(x.warn):''); },
   versions=(el,m)=>{
     const V=m.versions.slice().sort((a,b)=>b.active-a.active),A=V[0]&&V[0].active&&V[0],ac=v=>v.active?' class="pl-cal-a"':'',
       row=f=>V.map(f).join('');
@@ -77,7 +80,7 @@ const t=k=>T[k][E],
       h+=`<tr><th scope="row" style="--c:var(${d.colorVar});--ci:var(${d.inkVar})"><b class="pl-cal-n">${dn(d.date)}</b><span${we(w)}>${wn(w)}</span></th>${row((v,c)=>{
         const x=v.days[d.date]||{stops:[]};
         return A&&v!=A&&key(x)==key(A.days[d.date])?`<td class="pl-cal-same">${t('same')}</td>`:
-          `<td${ac(v)}><button type="button" class="pl-cal-c" data-act="${v.active?'day':'take'}" data-v="${esc(v.id)}" data-date="${d.date}" data-r="${r}" data-c="${c}">${sp(' pl-cal-t',esc(L(x.label)))+sp('',x.stops.length+t('st')+' ~'+tm(x.endTime)+' '+warn(x.warn))+(v.active?'':sp(' pl-cal-hint',t('take')))}</button></td>`;
+          `<td${ac(v)}><button type="button" class="pl-cal-c" data-act="${v.active?'day':'take'}" data-v="${esc(v.id)}" data-date="${d.date}" data-r="${r}" data-c="${c}">${sp(' pl-cal-t',esc(L(x.label)))+(v.active?'':sp('',df(x,A&&A.days[d.date]||{stops:[]}))+sp(' pl-cal-hint',t('take')))}</button></td>`;
       })}</tr>`; });
     el.innerHTML=`<div class="pl-cal-vs" style="--n:${V.length}"><table class="pl-cal-vt" data-g><caption class="sr">${t('cmp')}</caption><thead>${h}</tbody><tfoot><tr><td></td>${row((v,c)=>`<td>${v.active?'':`<button type="button" class="pl-cal-use" data-act="use" data-v="${esc(v.id)}" data-r="${m.days.length}" data-c="${c}">${t('use')}</button>`}</td>`)}</tr></tfoot></table></div>`;
   },

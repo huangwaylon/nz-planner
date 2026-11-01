@@ -17,9 +17,9 @@
   'use strict';
   if (window.plstory) return;
   const W = 1080, H = 1920;
-  const SERIF = '"Hiragino Mincho ProN","Hiragino Mincho Pro","Yu Mincho","Noto Serif JP",serif';
-  const SANS = '"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif';
-  const LATIN = '-apple-system,"SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif';
+  /* one sans family everywhere, as in the planner (docs/WORKFLOW.md "Type and colour system"); weights 400 and 600 */
+  const SANS = '"Hiragino Sans","Hiragino Kaku Gothic ProN",-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif';
+  const SERIF = SANS, LATIN = SANS;
   // The planner's projection (planner.js prj(), after .map/nz.py), so the route lands where the map has it.
   const LAT0 = -40.45, LAT1 = -34.30, LON0 = 172.40, LON1 = 178.90, MW = 692;
   const KC = Math.cos((LAT0 + LAT1) / 2 * Math.PI / 180), SC = MW / ((LON1 - LON0) * KC);
@@ -103,8 +103,8 @@
     if (!document.fonts || !document.fonts.load) return Promise.resolve();
     const sample = 'きょうのプラン2月14日' + (m.titleJa || '') + m.stops.map(s => s.nameJa || s.name).join('');
     return Promise.all([
-      document.fonts.load('300 320px ' + SERIF, '0123456789'), document.fonts.load('600 52px ' + SERIF, sample),
-      document.fonts.load('600 42px ' + SANS, sample), document.fonts.load('300 30px ' + SANS, sample),
+      document.fonts.load('400 320px ' + SERIF, '0123456789'), document.fonts.load('600 52px ' + SERIF, sample),
+      document.fonts.load('600 42px ' + SANS, sample), document.fonts.load('400 30px ' + SANS, sample),
       document.fonts.load('600 30px ' + LATIN, 'NZ 2027')
     ]).catch(() => {}).then(() => document.fonts.ready);
   }
@@ -188,10 +188,10 @@
     const ew = track(c, 'NZ 2027', ex, ey, 6);
     c.fillRect(ex + ew + 18, ey - 10, 56, 2);
     track(c, 'DAY ' + String(m.dayNo || 1).padStart(2, '0'), ex + ew + 92, ey, 6);
-    c.textAlign = 'right'; c.fillStyle = onPhoto2; c.font = '500 28px ' + SANS;
+    c.textAlign = 'right'; c.fillStyle = onPhoto2; c.font = '400 28px ' + SANS;
     c.fillText(L(m, 'plan'), W - M - 56, ey);
 
-    // Title, the one serif moment: one line, or two at a break near the middle, never an ellipsis.
+    // Title: one line, or two at a break near the middle, never an ellipsis.
     const title = tidy(en ? (m.title || m.titleJa) : (m.titleJa || m.title)) || L(m, 'plan');
     const bx = M + 52, tw = PW - 104;
     c.font = '600 56px ' + SERIF;
@@ -207,7 +207,7 @@
     c.textAlign = 'left'; c.fillStyle = onPhoto;
     lines.forEach((t, i) => c.fillText(t, bx, by - 8 + i * 66));
     // Numeral with month and weekday stacked beside it, like a calendar page.
-    c.font = '300 250px ' + SERIF;
+    c.font = '400 250px ' + SERIF;
     const num = String(dt.getDate()), nw = c.measureText(num).width;
     c.save(); if (hero) { c.shadowColor = 'rgba(0,0,0,.22)'; c.shadowBlur = 30; }
     c.fillText(num, bx - 6, by - 104);
@@ -232,7 +232,7 @@
     if (rows.length > 1) { c.fillStyle = T.line; c.fillRect(gx - 1, y - 14, 2, RH * (rows.length - 1)); }
     rows.forEach((s, i) => {
       const cy = y - 14;
-      c.font = '500 31px ' + LATIN; c.fillStyle = T.muted; c.textAlign = 'right';
+      c.font = '400 31px ' + LATIN; c.fillStyle = T.muted; c.textAlign = 'right';
       c.fillText(s.time || '', tx, y);
       c.textAlign = 'left';
       c.beginPath(); c.arc(gx, cy, 25, 0, Math.PI * 2); c.fillStyle = T.bg; c.fill();
@@ -280,7 +280,7 @@
     c.textAlign = 'left';
     c.fillStyle = T.line; c.fillRect(M + 40, hair, W - 2 * M - 80, 2);
     if (m.stats) { c.font = '400 29px ' + SANS; c.fillStyle = T.ink2; c.fillText(fit(c, m.stats, W - 2 * M - 40), M + 40, y); y += 50; }
-    c.font = '500 28px ' + SANS; c.fillStyle = T.acc;
+    c.font = '400 28px ' + SANS; c.fillStyle = T.acc;
     c.fillText(fit(c, tagsFor(m).map(t => '#' + t).join('  '), W - 2 * M - 40), M + 40, y);
     // Small mark, centred low.
     c.fillStyle = T.muted; c.globalAlpha = .7;
@@ -295,7 +295,7 @@
   /* ---------- the preview sheet ---------- */
   const CSS = `
 .pl-story-scrim{position:fixed;inset:0;z-index:90;background:rgba(var(--scrim,14,16,34),.55);display:flex;align-items:flex-end;justify-content:center;-webkit-tap-highlight-color:transparent;}
-.pl-story-sheet{width:min(100%,520px);max-height:100vh;max-height:100dvh;overflow:auto;background:var(--surface,#fff);color:var(--ink,#1b1d33);border-radius:24px 24px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;flex-direction:column;align-items:center;gap:14px;font-family:-apple-system,"Hiragino Sans",system-ui,sans-serif;}
+.pl-story-sheet{width:min(100%,520px);max-height:100vh;max-height:100dvh;overflow:auto;background:var(--surface,#fff);color:var(--ink,#1b1d33);border-radius:24px 24px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;flex-direction:column;align-items:center;gap:14px;font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;}
 .pl-story-head{align-self:stretch;display:flex;align-items:center;justify-content:space-between;}
 .pl-story-head h2{margin:0;font:600 17px/1.3 "Hiragino Mincho ProN",serif;font-feature-settings:"palt";}
 .pl-story-x{min-width:44px;min-height:44px;border:0;background:none;color:var(--muted,#5e6382);font:600 15px system-ui;-webkit-touch-callout:none;cursor:pointer;}

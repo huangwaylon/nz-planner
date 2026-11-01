@@ -142,3 +142,16 @@ live in `PT` (each lazy chunk adds its own).
 - **Storage:** LS `plan:<slug>` `{v:2, active, trip:{tier, groups, notes}, my, versions, imports,
   booked}` (a v1 save is backed up to `plan:<slug>:v1` and migrated; see `planner.state`), and
   `plan-ui:<slug>` `{v:1, day, map, stage, cf, board, pin, hideInstall, hideIntro, routes, rorder}`.
+
+## Core notes
+
+Longer explanations moved out of `planner.js` (its bytes count against the phone's first screen). The
+code carries `/* note N … */` where each applies.
+
+1. Flag labels and levels live in data/nz/flags.json ({flag:{ja,en,level}}), loaded right after first paint; safety flags come first, in that file's order; 'hidden' ones are said elsewhere (hours, the booking toggle) or are authoring notes. tools/check_plans.py --gate fails on any unlabelled flag.
+2. drove: the minutes that count as driving (matrix or ≈), never walks or sailings. A leg into or out of a no-road place (plans.json noRoad: id -> road end) with no walk of its own is walk to its road end + the leg between road ends + walk from the other road end, as check_plans.leg().
+3. the sun at the place itself; best may be "sunrise,sunset" (judged by the end of the day the visit falls on: before noon = sunrise). mustSun places exist for it, so missing it is a ⚠; for the rest best is a preference and missing it a golden-hour hint. Before dawn is fine on the approach to a sunrise stop later that day.
+4. The day with ids added, simulated before anything is shown: one place goes to its cheapest open slot; a grouping (c) goes in as one block, placed by its best (sunset: the last stop ends at sunset; sunrise: the first starts at it) or its startAt, and an empty morning leaves at startAt. A block that breaks less always wins over one that is closer to its hour.
+5. plans — Three kinds, one shape {id,days,stay,start,notes,anchors?}: presets (plans.json), saved versions (frozen, ids "v-…") and My plan, the one working copy. Editing a preset or a version forks it into My plan, and the My plan it replaces is kept as an autosave first: nothing is overwritten. Plans hold place ids, minutes, HH:MM and the travellers' own notes only.
+6. zoom and pan — Every move — a gesture, the +/− buttons, a fit — moves .pl-world by a CSS transform and writes viewBox and --z once, when it ends, so no frame restyles the pins. --z is screen px per map unit; `scale(1/--z)` on each pin's inner group holds pins, labels and strokes at screen size.
+7. reorder: drag the handle (pointer events, iOS has no HTML5 DnD), or tap it for the 上へ/下へ/位置 sheet, which is also the VoiceOver and glove path. Transforms only while moving, layout measured once, one recompute per frame at most, and nothing re — renders under the finger. ----------

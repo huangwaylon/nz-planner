@@ -35,6 +35,8 @@ jobs:
       # The saved-state reader and the byte budget (docs/WORKFLOW.md).
       - run: node tools/state.test.js
       - run: node tools/budget.test.js
+      # the type and colour system: token sizes, one family, two weights, no colour literals
+      - run: node tools/style.test.js
       # ③'s calendar and versions grid (planner-cal.js) against its fixture.
       - run: node tools/cal.test.js
       # The page itself, headless: imports survive a reload, ⚠ day pills ask twice, the map tween ends.

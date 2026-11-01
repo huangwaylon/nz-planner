@@ -17,7 +17,7 @@ const PT={
     tapAgainDo:{ja:'もう一度タップで確定',en:'tap again to go ahead'}, thisOrder:{ja:'この並びだと：{w}',en:'With this order: {w}'}, keepIt:{ja:'このままにする',en:'Keep it'},   wait:{ja:'{t}開店まで待ち {d}',en:'{d} wait until {t}'}, estT:{ja:'直線距離からの概算',en:'Estimate from straight-line distance'},
   ferry:{ja:'フェリー',en:'Ferry'}, board:{ja:'乗船 {d}前',en:'board {d} before'}, sail:{ja:'{t}発 ⛴ {d}',en:'⛴ {t}, {d}'}, sailAny:{ja:'⛴ {d}',en:'⛴ {d}'},
   unverified:{ja:'未確認',en:'Unverified'},   closed:{ja:'{w}曜は定休日',en:'Closed on {w}'}, closedAt:{ja:'{t}閉店に間に合いません',en:'Closes {t} before the visit ends'},
-  hoursUnknown:{ja:'営業時間 未確認',en:'Hours unverified'}, overnight:{ja:'日付をまたぎます',en:'Runs past midnight'},
+  hoursUnknown:{ja:'営業時間 未確認',en:'Hours unverified'}, more2:{ja:'詳しく',en:'Details'}, overnight:{ja:'日付をまたぎます',en:'Runs past midnight'},
   dark:{ja:'日没（{t}）後まで屋外',en:'Outdoors after sunset ({t})'}, darkDrive:{ja:'日没（{t}）後の運転',en:'Driving after sunset ({t})'},
   tide:{ja:'干潮（{t}）から外れています',en:'Outside low tide ({t})'}, tideCheck:{ja:'潮位を確認',en:'Check the tide'},
   ferryMiss:{ja:'{t}の便に間に合いません',en:'Misses the {t} sailing'}, ferryBack:{ja:'帰りの便（{t}）に間に合いません',en:'Misses the last sailing back ({t})'},
@@ -28,7 +28,7 @@ const PT={
   free:{ja:'無料',en:'Free'}, always:{ja:'終日',en:'All day'}, closedToday:{ja:'休業',en:'Closed'},
   stay:{ja:'滞在',en:'Stay'}, walkN:{ja:'徒歩 {d}',en:'Walk {d}'}, tideOk:{ja:'干潮 {t} に合っています',en:'Fits low tide {t}'},
   landed:{ja:'着陸',en:'Land'}, limitHint:{ja:'{t} = 1日の終わりの目安（設定で変更）',en:'{t} is the end-of-day guide (change it in Plan)'}, limitFlight:{ja:'{t} = フライトに間に合う空港着',en:'{t} = at the airport in time for the flight'}, limitAnchor:{ja:'{t} = {name}に着く期限（このプランの設定）',en:'{t} = this plan’s time to reach {name}'},
-  overAt:{ja:'{name}の期限{t}を{d}超過',en:'{d} past the {t} limit at {name}'}, dawn:{ja:'日の出（{t}）前に屋外',en:'Outdoors before sunrise ({t})'}, missRise:{ja:'日の出（{t}）に間に合いません',en:'Misses sunrise ({t})'}, pastRise:{ja:'日の出（{t}）を過ぎています',en:'Past sunrise ({t})'}, leaveFor:{ja:'日の出（{s}）には{t}出発',en:'Leave {t} for sunrise ({s})'}, missSet:{ja:'日の入り（{t}）に間に合いません',en:'Misses sunset ({t})'},
+  overAt:{ja:'{name}の期限{t}を{d}超過',en:'{d} past the {t} limit at {name}'}, dawn:{ja:'日の出（{t}）前に屋外',en:'Outdoors before sunrise ({t})'}, missRise:{ja:'日の出（{t}）に間に合いません',en:'Misses sunrise ({t})'}, pastRise:{ja:'日の出（{t}）を過ぎています',en:'Past sunrise ({t})'}, leaveFor:{ja:'{t}出発で日の出に間に合う',en:'leave {t} for sunrise'}, missSet:{ja:'日の入り（{t}）に間に合いません',en:'Misses sunset ({t})'},
   goldRise:{ja:'日の出（{t}）の時間帯から外れています',en:'Not at sunrise ({t})'}, goldSet:{ja:'夕日（{t}）の時間帯から外れています',en:'Not at sunset ({t})'},
   clearDay:{ja:'この日を空にする',en:'Clear this day'}, cleared:{ja:'{d} を空にしました',en:'Cleared {d}'},       stayDec:{ja:'{name} の滞在を15分短く',en:'15 min shorter at {name}'}, stayInc:{ja:'{name} の滞在を15分長く',en:'15 min longer at {name}'},
   swap:{ja:'入れ替え',en:'Swap'}, move:{ja:'日を移動',en:'Move day'}, del:{ja:'外す',en:'Remove'}, note:{ja:'メモ',en:'Note'},
@@ -36,7 +36,7 @@ const PT={
   noteN:{ja:'メモ：{name}',en:'Note for {name}'}, notePh:{ja:'メモ（ふたりで共有）',en:'A note for both of you'},
   orderN:{ja:'並べ替え：{name}',en:'Reorder {name}'},     focus:{ja:'地図で見る：{name}',en:'Show {name} on the map'}, emptyDay:{ja:'この日はまだ空いています。',en:'Nothing planned yet.'}, addHere:{ja:'この日に追加',en:'Add to this day'},
   prevDay:{ja:'前の日',en:'Previous day'}, nextDay:{ja:'次の日',en:'Next day'}, story:{ja:'ストーリー画像',en:'Story image'},           reordered:{ja:'順番を変えました',en:'Reordered'},
-  removed:{ja:'{name} を外しました',en:'Removed {name}'},       undo:{ja:'元に戻す',en:'Undo'}, forked:{ja:'マイプランに保存',en:'Saved to My plan'}, overMy:{ja:'マイプランを上書きしました',en:'My plan overwritten'}, keptAs:{ja:'前のマイプランは「{name}」に残しています',en:'your previous My plan is kept as “{name}”'},
+  removed:{ja:'{name} を外しました',en:'Removed {name}'},       undo:{ja:'元に戻す',en:'Undo'}, keptAs:{ja:'前のマイプランは「{name}」に残しています',en:'your previous My plan is kept as “{name}”'},
   editedName:{ja:'{name}（編集）',en:'{name} (edited)'},
                     creditBook:{ja:'写真：旅のしおり',en:'Photo: travel book'}, saved:{ja:'保存済み',en:'Saved'}, savedS:{ja:'Google マップに保存済み',en:'Saved in Google Maps'},               gmaps:{ja:'Google マップ',en:'Google Maps'},       loadFail:{ja:'データを読み込めませんでした。再読み込みしてください。',en:'Could not load the data. Reload the page.'},
   close:{ja:'閉じる',en:'Close'}, done:{ja:'完了',en:'Done'},
@@ -67,9 +67,7 @@ const AREA={imported:{ja:'取り込み',en:'Imported'},west:{ja:'西オークラ
 const BEST={morning:{ja:'朝',en:'Morning'},midday:{ja:'昼',en:'Midday'},afternoon:{ja:'午後',en:'Afternoon'},sunset:{ja:'夕暮れ',en:'Sunset'},
   sunrise:{ja:'日の出',en:'Sunrise'},lowtide:{ja:'干潮',en:'Low tide'},any:{ja:'いつでも',en:'Any time'},night:{ja:'夜',en:'Night'}};
 /* Research flags are free-form notes; only these are shown, the rest stay in the data. */
-/* Flag labels and levels live in data/nz/flags.json ({flag:{ja,en,level}}), loaded right after first
-   paint; safety flags come first, in that file's order; 'hidden' ones are said elsewhere (hours, the
-   booking toggle) or are authoring notes. tools/check_plans.py --gate fails on any unlabelled flag. */
+/* note 1 in docs/FOLD.md "Core notes" */
 const FLAG={}, SAFETY=[], FLAGHIDE=new Set();
 function setFlags(o){ Object.keys(o||{}).forEach(k=>{ const v=o[k]; if(!v||!v.ja) return; FLAG[k]={ja:v.ja,en:v.en||v.ja};
   if(v.level==='safety') SAFETY.push(k); else if(v.level==='hidden') FLAGHIDE.add(k); }); }
@@ -128,7 +126,7 @@ const wdName=date=>ja()?WDJA[wdOf(date)]:WDEN[wdOf(date)];
 function dlabel(day,short){ const [,m,d]=day.date.split('-').map(Number);
   return ja()?(short?'':m+'月')+d+'日('+WDJA[wdOf(day.date)]+')':WDEN[wdOf(day.date)]+' '+d+(short?'':' Feb'); }
 /* A day's two colours: the bright --dN for lines and swatches, the ink for text and fills under white. */
-const dayStyle=i=>`--c:var(--d${i%6+1});--ci:var(--pl-d${i%6+1}-ink)`;
+const dayStyle=i=>`--c:var(--d${i%6+1})`;
 const latin=s=>!/[぀-ヿ㐀-鿿]/.test(s||'');
 /* Break points for Japanese names, since Safari has no word-break:auto-phrase. */
 const wbr=s=>esc(s).replace(/・/g,'・<wbr>').replace(/（/g,'<wbr>（').replace(/ &amp; /g,' <wbr>&amp; ').replace(/／/g,'／<wbr>');
@@ -206,9 +204,7 @@ function makeSim(DB){
   /* Minutes from a to b leaving at t: a walk from plans.json `walks` (either way; `down` the other
      way), an island crossing through its ferry, or a drive. kind 'drive' only for matrix minutes. */
   const walkOf=(a,b)=>{ for(const w of DB.walks){ if(w.a===a&&w.b===b) return {w,min:w.min}; if(w.b===a&&w.a===b) return {w,min:w.down!=null?w.down:w.min}; } return null; };
-  /* drove: the minutes that count as driving (matrix or ≈), never walks or sailings. A leg into or
-     out of a no-road place (plans.json noRoad: id -> road end) with no walk of its own is walk to its
-     road end + the leg between road ends + walk from the other road end, as check_plans.leg(). */
+  /* note 2 in docs/FOLD.md "Core notes" */
   function legAt(a,b,t,date,ws){
     const nr=DB.noRoad||{}, ea=nr[a], eb=nr[b], wk=walkOf(a,b);
     if((ea||eb)&&!wk){
@@ -255,10 +251,7 @@ function makeSim(DB){
         if(!lows) inf.push({k:'tideCheck'});
         else if(!lows.some(x=>Math.abs(arr+stay/2-toMin(x))<=TIDE_WINDOW)) ws.push({k:'tide',t:lows.join(' / ')});
         else inf.push({k:'tideOk',t:lows.find(x=>Math.abs(arr+stay/2-toMin(x))<=TIDE_WINDOW)}); }
-      /* the sun at the place itself; best may be "sunrise,sunset" (judged by the end of the day the
-         visit falls on: before noon = sunrise). mustSun places exist for it, so missing it is a ⚠;
-         for the rest best is a preference and missing it a golden-hour hint. Before dawn is fine on
-         the approach to a sunrise stop later that day. */
+      /* note 3 in docs/FOLD.md "Core notes" */
       const ss=sunsetOf(p,date), sr=sunriseOf(p,date), best=new Set(String(p.best||'any').split(',')), out=OUTDOOR.has(p.cat);
       if(out&&dep>ss+1&&!best.has('sunset')&&!best.has('night')) ws.push({k:'dark',t:ss});
       const forDawn=list.slice(list.indexOf(id)+1).some(x=>String(place(x).best).indexOf('sunrise')>=0);
@@ -302,10 +295,7 @@ function makeSim(DB){
     const out=[]; b.rows.forEach(r=>r.warns.forEach(w=>{ if(BREAKS.has(w.k)&&!had.has(r.kind+r.id+'|'+w.k)) out.push({id:r.id,kind:r.kind,w}); }));
     return out;
   }
-  /* The day with ids added, simulated before anything is shown: one place goes to its cheapest open
-     slot; a grouping (c) goes in as one block, placed by its best (sunset: the last stop ends at
-     sunset; sunrise: the first starts at it) or its startAt, and an empty morning leaves at startAt.
-     A block that breaks less always wins over one that is closer to its hour. */
+  /* note 4 in docs/FOLD.md "Core notes" */
   function insertPlan(day,list,ids,P,opt,c){
     list=list.filter(id=>DB.places.has(id)); ids=ids.filter((id,k)=>DB.places.has(id)&&list.indexOf(id)<0&&ids.indexOf(id)===k);
     if(!ids.length) return null;
@@ -421,7 +411,7 @@ const plannerFn=function planner(g){
     raw:LSJ.raw(KP), planId:null, my:null, versions:[], imports:[], booked:{}, trip:{tier:{},groups:[],notes:{}},
     impVer:1, placing:null, ip:null,
     day:Number.isInteger(+ui.day)?+ui.day:0, map:ui.map==='closed'||ui.map===false?'closed':'peek',
-    hideInstall:!!ui.hideInstall, hideIntro:!!ui.hideIntro, saveFail:false,
+    hideInstall:!!ui.hideInstall, hideIntro:true, help:!ui.hideIntro, saveFail:false,   /* help text (intro, hints) shows in the first session only */
     sel:null, sc:null, f:{q:'',cat:null,area:null,saved:null,sort:'trend'}, hist:[], browsing:false, drafts:{}, noteOpen:null,
     dayEnd:okHM(ui.dayEnd)?toMin(ui.dayEnd):DEADLINE,
     stage:['collect','plan','review'].indexOf(ui.stage)>=0?ui.stage:'plan', board:typeof ui.board==='boolean'?ui.board:null, pin:Array.isArray(ui.pin)?ui.pin.filter(x=>typeof x==='string').slice(0,3):null, cf:ui.cf&&typeof ui.cf==='object'?ui.cf:{}
@@ -485,11 +475,7 @@ const plannerFn=function planner(g){
     scrim:g.querySelector('.pl-scrim'), sheet:g.querySelector('.pl-sheet'), sbody:g.querySelector('.pl-sbody'), toast:g.querySelector('.pl-toast')};
   const svg=E.svg, main=E.main;
 
-  /* ---------- plans ----------
-     Three kinds, one shape {id,days,stay,start,notes,anchors?}: presets (plans.json), saved versions
-     (frozen, ids "v-…") and My plan, the one working copy. Editing a preset or a version forks it
-     into My plan, and the My plan it replaces is kept as an autosave first: nothing is overwritten.
-     Plans hold place ids, minutes, HH:MM and the travellers' own notes only. */
+  /* note 5 in docs/FOLD.md "Core notes" */
   const place=id=>DB.places.get(id);
   const nm=p=>p?(ja()?(p.nameJa||p.name):p.name):'?';
   const alt=p=>ja()?(p.nameJa&&p.name!==p.nameJa?p.name:''):(p.nameJa&&p.nameJa!==p.name?p.nameJa:'');
@@ -604,12 +590,14 @@ const plannerFn=function planner(g){
     S.hist.push(before); if(S.hist.length>100) S.hist.shift();
     /* name what the change broke, on every day it touched */
     const was=before.planId==='my'?before.my:findPlan(before.planId), bs=was?dayBreaks(was,S.my):[];
-    S.lastBreaks=bs; if(bs.length&&msg) msg+=' — ⚠ '+breakLine(bs);
+    S.lastBreaks=bs;
+    /* the toast names only what the screen does not already show: breaks on days out of view */
+    const off=view.classList.contains('pl-6')?[]:bs.filter(b=>b.day!==DB.days[S.day]); if(off.length&&msg) msg+=' — ⚠ '+breakLine(off);
     save();
     if(opt&&opt.quick&&S.sc) patchDay(); else renderSoon();
     /* the day's set of stops changed: the map refits it */
     const dk=DB.days[S.day].date; if(!was||String((was.days||{})[dk])!==String(S.my.days[dk]||[])) (soon?afterRender:raf)(()=>fitDay());
-    if(msg) toast(S.saveFail?msg:forked&&forked.kept?msg+' — '+pt('keptAs',{name:planName(forked.kept)}):forked?msg+' — '+pt(opt&&opt.fork===1?'overMy':'forked'):msg,undo);
+    if(msg) toast(!S.saveFail&&forked&&forked.kept?msg+' — '+pt('keptAs',{name:planName(forked.kept)}):msg,undo);
     if(opt&&opt.focus!=null) afterRender(()=>focusStop(opt.focus));
     return true;
   }
@@ -760,37 +748,32 @@ const plannerFn=function planner(g){
       return `<span class="pl-lp">${ic('car')}${dur(l.d1)}</span><span class="pl-lp pl-boat">${l.listed?pt('sail',{t:hm(l.dep),d:dur(l.sail)}):pt('sailAny',{d:dur(l.sail)})}</span>`+
         (l.listed&&l.way==='out'?`<span class="pl-km">${pt('board',{d:dur(f.board!=null?f.board:15)})}</span>`:'')+
         `<span class="pl-lp">${ic('car')}${dur(l.d2)}</span>`+(f.verified===false?`<span class="pl-unv">${pt('unverified')}</span>`:'')+gap+
-        (f.note||f.noteJa?`<span class="pl-fnote">${esc(ja()?f.noteJa||f.note:f.note||f.noteJa)}</span>`:'');
+        (f.note||f.noteJa?fnote(ja()?f.noteJa||f.note:f.note||f.noteJa):'');
     }
     /* a no-road place: on foot to or from its road end, the road leg between */
     if(l.combo){ const w=m=>m?`<span class="pl-lp pl-walk">🥾 ${pt('walkN',{d:dur(m)})}</span>`:''; return w(l.wa)+(l.sub?legInner(l.sub,{wait:0}):'')+w(l.wb)+gap; }
-    if(l.kind==='walk'){ const wn=l.w&&(ja()?l.w.noteJa||l.w.note:l.w.note||l.w.noteJa); return `<span class="pl-lp pl-walk">🥾 ${pt('walkN',{d:dur(l.min)})}</span>`+gap+(wn?`<span class="pl-fnote">${esc(wn)}</span>`:''); }
+    if(l.kind==='walk'){ const wn=l.w&&(ja()?l.w.noteJa||l.w.note:l.w.note||l.w.noteJa); return `<span class="pl-lp pl-walk">🥾 ${pt('walkN',{d:dur(l.min)})}</span>`+gap+(wn?fnote(wn):''); }
     return `${ic('car')}<span>${l.est?`<span class="pl-est" title="${esc(pt('estT'))}">≈</span>`:''}${dur(l.min)}</span><span class="pl-km">${uKm(Math.round(l.km))}</span>`+gap;
   }
+  /* a leg's note (the walk, the ferry) opens on a tap: the line itself stays one line */
+  const fnote=t=>`<details class="pl-fnote"><summary>${ic('chevron-down','xs')}<span class="sr">${esc(pt('more2'))}</span></summary><p>${esc(t)}</p></details>`;
   const whenText=r=>`${hm(r.begin)}–${hm(r.dep)}`;
   const bookBtn=(p,N)=>`<button type="button" class="pl-bookt" data-act="booked" data-id="${p.id}" aria-pressed="${!!S.booked[p.id]}">${ic(S.booked[p.id]?'check':'bookmark')}<span>${S.booked[p.id]?pt('booked'):pt('book')}</span><span class="sr">${pt('markBooked',{name:N})}</span></button>`;
   const infosHTML=r=>r.infos.length?`<div class="pl-infos">${r.infos.map(x=>chip('pl-info',x.k==='sunrise'||x.k==='sunsetAt'?'sunset':'',infoText(x))).join('')}</div>`:'';
   const warnsHTML=(r,day)=>r.warns.length?`<div class="pl-warns">${r.warns.map(w=>chip('pl-warn','alert',warnText(w,day))).join('')}</div>`:'';
   /* The note editor keeps its draft across any re-render: S.noteOpen + S.drafts. */
   function stopHTML(r,n,day){
-    const p=place(r.id), h=hoursText(p,day.date), fl=flagsOf(p).filter(f=>f!=='ferry'), N=esc(nm(p)), P=plan();
+    const p=place(r.id), fl=flagsOf(p).filter(f=>f!=='ferry'), N=esc(nm(p)), P=plan();
     const noteTxt=noteText(P,p.id), open=S.noteOpen===p.id, draft=open&&S.drafts[p.id]!=null?S.drafts[p.id]:noteTxt, eid=`pl-ne-${slug}-${p.id}`;
     return `<article class="pl-stop" data-id="${p.id}">
       <button type="button" class="pl-node" data-act="focus" data-id="${p.id}"><span class="sr">${pt('focus',{name:N})}</span><span class="pl-n">${n}</span></button>
       <div class="pl-body">
         <div class="pl-when">${whenText(r)}</div>
         <h3 class="pl-h3"><button type="button" class="pl-nm" data-act="open" data-id="${p.id}"${nmLang(p)}>${wbr(nm(p))}</button></h3>
-        ${alt(p)?`<div class="pl-sub"${altLang(p)}>${esc(alt(p))}</div>`:''}
-        <div class="pl-meta">
-          <span class="pl-m">${ic(glyphOf(p))}${tr(CAT,p.cat)}</span>
-          ${p.hours&&p.hours!=='always'&&h!==pt('closedToday')?`<span class="pl-m">${ic('clock')}${h}</span>`:''}
-          ${p.cost&&p.cost!=='free'?`<span class="pl-m">${esc(p.cost)}</span>`:''}
-          ${p.badge?`<span class="pl-sig">${esc(p.badge[lang()]||p.badge.ja)}</span>`:''}${savedTag(p)}
-        </div>
-        ${fl.length?`<div class="pl-flagrow">${fl.map(f=>flagT(f,p)?`<span class="pl-flag${rankFlag(f)<99?' pl-safe':''}">${flagT(f,p)}</span>`:'').join('')}</div>`:''}
+        <div class="pl-meta"><span class="pl-m">${ic(glyphOf(p))}<span class="sr">${tr(CAT,p.cat)}</span></span>${savedTag(p)}${fl.filter(f=>/-for-sunrise$/.test(f)).map(f=>flagT(f,p)?`<span class="pl-m">${ic('sunset','xs')}${flagT(f,p)}</span>`:'').join('')}</div>
         ${p.book?bookBtn(p,N):''}
         <div class="pl-ri">${infosHTML(r)}</div><div class="pl-rw">${warnsHTML(r,day)}</div>
-        <button type="button" class="pl-notebtn${noteTxt?' pl-has':''}" data-act="note" data-id="${p.id}" aria-expanded="${open}" aria-controls="${eid}"><span aria-hidden="true">${ic('pencil','xs')}${noteTxt?esc(noteTxt):pt('note')}</span><span class="sr">${pt('noteN',{name:N})}${noteTxt?'：'+esc(noteTxt):''}</span></button>
+        <button type="button" class="pl-notebtn${noteTxt?' pl-has':''}" data-act="note" data-id="${p.id}" aria-expanded="${open}" aria-controls="${eid}"><span aria-hidden="true">${ic('pencil','xs')}${pt('note')}</span><span class="sr">${pt('noteN',{name:N})}${noteTxt?'：'+esc(noteTxt):''}</span></button>
       </div>
       <button type="button" class="pl-handle" data-act="order" data-id="${p.id}">${ic('grip')}<span class="sr">${pt('orderN',{name:N})}</span></button>
       <div class="pl-acts">
@@ -835,9 +818,11 @@ const plannerFn=function planner(g){
   /* a cafe's own line (sig/sigJa) set large on its colour card, like a menu card */
   const colorCard=(p,cls)=>{ const sg=p&&(ja()?p.sigJa||p.sig:p.sig||p.sigJa);
     return `<div class="${cls}${sg?' pl-sigcard':''}"${sg?'':' aria-hidden="true"'}>${sg?`<span class="pl-sigtxt">${esc(sg)}</span>`:''}${ic(p?glyphOf(p):'map')}</div>`; };
-  const statsHTML=(sc,n,e)=>{ const bk=bookedCount(sc), st=[`${ic('car','xs')}${sc.est?'≈':''}${pt('drive',{d:dur(sc.drive)})}`, uKm(Math.round(sc.km)), pt('stops',{n}), pt('ends',{t:hm(e.arr)})];
-    if(bk.b) st.push(pt('bookedN',{a:bk.a,b:bk.b})); return st.map(x=>`<span class="pl-stat">${x}</span>`).join(''); };
-  const headWarns=(sc,e,day)=>sc.long||e.warns.length?`${sc.long?chip('pl-warn','alert',pt('longDrive',{d:dur(sc.drive)})):''}${e.warns.map(x=>chip('pl-warn','alert',warnText(x,day))).join('')}`:'';
+  /* day facts once, as icon + figure; a long drive marks the drive figure, not a second chip */
+  const statsHTML=(sc,n,e)=>{ const bk=bookedCount(sc), st=[`<span class="pl-stat${sc.long?' pl-bad':''}"${sc.long?` title="${esc(pt('longDrive',{d:dur(sc.drive)}))}"`:''}>${ic(sc.long?'alert':'car','xs')}<span class="sr">${pt('drive',{d:''})}</span>${sc.est?'≈':''}${dur(sc.drive)}`, uKm(Math.round(sc.km)), `${ic('map-pin','xs')}<span aria-hidden="true">${n}</span><span class="sr">${pt('stops',{n})}</span>`];   /* the end time is the end row's */
+    if(bk.b) st.push(ic('ticket','xs')+bk.a+'/'+bk.b); return st.map(x=>x.startsWith('<span')?x+'</span>':`<span class="pl-stat">${x}</span>`).join(''); };
+  /* the day's warnings live on their stops (and the end row); the header shows their count */
+  const headWarns=sc=>{ const n=sc.rows.reduce((t,r)=>t+r.warns.length,0); return n?chip('pl-warn','alert',String(n)):''; };
   function startLine(s){
     if(!s.an.buffer) return '';
     const nt=esc(ja()?s.an.noteJa||s.an.note||'':s.an.note||'');
@@ -861,7 +846,7 @@ const plannerFn=function planner(g){
           <h2 class="pl-dh-title">${wbr(dayTitle(day,P))}</h2>
         </div></div>
         <p class="pl-dh-stats">${statsHTML(sc,n,e)}</p>
-        <div class="pl-warns pl-hw">${headWarns(sc,e,day)}</div>${todoHTML(P)}
+        <div class="pl-warns pl-hw">${headWarns(sc)}</div>${todoHTML(P)}
       </header>`;
     const start=`<div class="pl-anchor pl-start">
         <div class="pl-aic">${ic(glyphOf(sp))}</div>
@@ -911,7 +896,7 @@ const plannerFn=function planner(g){
     const ei=main.querySelector('.pl-end .pl-ei'); if(ei) ei.innerHTML=e.infos.length?`<div class="pl-infos">${e.infos.map(x=>chip('pl-info','',infoText(x))).join('')}</div>`:'';
     main.querySelector('.pl-end').classList.toggle('pl-bad',!!e.warns.length);
     main.querySelector('.pl-dh-stats').innerHTML=statsHTML(sc,rows.length-2,e);
-    main.querySelector('.pl-hw').innerHTML=headWarns(sc,e,day);
+    main.querySelector('.pl-hw').innerHTML=headWarns(sc);
     renderTop(); renderDays();
   }
   function syncBook(b,id){ const on=!!S.booked[id]; b.setAttribute('aria-pressed',on); b.querySelector('use').setAttribute('href','#i-'+(on?'check':'bookmark')); b.querySelector('span').textContent=on?pt('booked'):pt('book'); }
@@ -1046,10 +1031,7 @@ const plannerFn=function planner(g){
     },3000);
   }
 
-  /* ---------- zoom and pan ----------
-     Every move — a gesture, the +/− buttons, a fit — moves .pl-world by a CSS transform and writes
-     viewBox and --z once, when it ends, so no frame restyles the pins. --z is screen px per map
-     unit; `scale(1/--z)` on each pin's inner group holds pins, labels and strokes at screen size. */
+  /* note 6 in docs/FOLD.md "Core notes" */
   const M={vb:[0,0,W,H],cur:[0,0,W,H],A:W/H,pxw:343,frame:0,tw:0,wheel:0,wm:null,ready:false,needFit:false};
   const maxW=()=>Math.max(W,H*M.A);
   const fin=b=>b.every(Number.isFinite)&&b[2]>0&&b[3]>0;
@@ -1186,9 +1168,7 @@ const plannerFn=function planner(g){
   }
   function flash(el){ if(el.animate&&!reduced.matches) el.animate([{boxShadow:'0 0 0 3px var(--c)'},{boxShadow:'0 0 0 0 transparent'}],{duration:900,easing:'ease-out'}); }
 
-  /* ---------- reorder: drag the handle (pointer events, iOS has no HTML5 DnD), or tap it for the
-     上へ/下へ/位置 sheet, which is also the VoiceOver and glove path. Transforms only while moving,
-     layout measured once, one recompute per frame at most, and nothing re-renders under the finger. ---------- */
+  /* note 7 in docs/FOLD.md "Core notes" */
   let suppressClick=false;
   function wireDrag(){
     main.addEventListener('pointerdown',e=>{
@@ -1375,7 +1355,7 @@ const plannerFn=function planner(g){
   /* saved:true = the traveller saved it in her own Google Maps list, the strongest signal we have */
   /* a cafe's signature item ("サワードウ") as a small line on list rows */
   function sigLine(p){ const t=p&&(ja()?p.sigJa||p.sig:p.sig||p.sigJa); return t?`<small class="pl-sigl">${esc(t)}</small>`:''; }
-  function savedTag(p){ return p&&p.saved?`<span class="pl-saved" title="${esc(pt('savedS'))}">${ic('bookmark','xs')}${pt('saved')}</span>`:''; }
+  function savedTag(p){ return p&&p.saved?`<span class="pl-saved" title="${esc(pt('savedS'))}">${ic('bookmark','xs')}<span class="sr">${pt('saved')}</span></span>`:''; }
   /* the place sheet and the plans sheet live in planner-more.js, fetched before the first tap */
   const openPlace=(id,back)=>needMore().then(m=>m.openPlace(id,back));
   const openPlans=()=>needMore().then(m=>m.openPlans());
@@ -1518,7 +1498,7 @@ const plannerFn=function planner(g){
       h+=`<div class="pl-note pl-line"><p>${pt('lineMsg')}</p><a class="pl-btn pl-pri" href="${esc(u.href)}">${pt('lineBtn')}</a></div>`; }
     else if(ios&&!navigator.standalone&&!matchMedia('(display-mode: standalone)').matches&&!S.hideInstall)
       h+=`<div class="pl-note"><span class="pl-glyph">${ic('share')}</span><p>${pt('installMsg')}</p><button type="button" class="pl-close" data-act="hideinstall">${ic('x','sm')}<span class="sr">${pt('dismiss')}</span></button></div>`;
-    if(!S.hideIntro&&!S.my&&!S.versions.length)
+    if(S.help&&!S.my&&!S.versions.length)
       h+=`<div class="pl-note pl-intro"><p>${pt('intro')}</p><button type="button" class="pl-close" data-act="hideintro">${ic('x','sm')}<span class="sr">${pt('dismiss')}</span></button></div>`;
     E.notice.innerHTML=h;
   }
@@ -1608,6 +1588,7 @@ const plannerFn=function planner(g){
   /* third boot task: listeners, notices, share links, then the lazy loads on idle */
   let wired=false, pendingTap=null;
   function wire(){
+    if(S.help) saveUI();   /* seen once: the next launch hides the help */
     queueMicrotask(()=>{ wired=true; const t=pendingTap; pendingTap=null; if(t&&t.isConnected) t.click(); });
     E.days.addEventListener('click',e=>{ const b=e.target.closest('.pl-daybtn'); if(b) setDay(+b.dataset.day); });
     E.bar.addEventListener('click',openPlans);
@@ -1626,7 +1607,7 @@ const plannerFn=function planner(g){
     view.querySelector('.pl-savebtn').addEventListener('click',()=>openVerName(null));
     E.notice.addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(!b) return;
       if(b.dataset.act==='hideinstall'){ S.hideInstall=true; saveUI(); renderNotice(); }
-      if(b.dataset.act==='hideintro'){ S.hideIntro=true; saveUI(); renderNotice(); }
+      if(b.dataset.act==='hideintro'){ S.help=false; renderNotice(); }
       if(b.dataset.act==='purge'){ S.versions=S.versions.filter(v=>v.kind!=='auto'); S.hist=[]; if(save()) toast(pt('purged')); renderTop(); } });
     document.addEventListener('langchange',()=>{ labels(); DB.list.forEach(p=>{ delete p._s; }); render(); renderNotice(); select(null); if(!DRAG) refreshSheet(); });
     addEventListener('hashchange',importHash);
