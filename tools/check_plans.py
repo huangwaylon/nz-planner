@@ -171,11 +171,24 @@ class Sim:
         warn.append(('ferry', 'missed the last %s %s sailing (%s), ready at %s' % (f['id'], way, times[-1], hm(ready))))
         return ready
 
+    def anchors(self, plan, d):
+        """The day's start and end. A night's stay carries over: when the day before ends at an anchored
+        place (a hut, a camp, another bed) and this day names no start of its own, it starts there."""
+        date = d['date']
+        an = plan.get('anchors', {})
+        ov = an.get(date, {})
+        start, end = dict(d['start'], **ov.get('start', {})), dict(d['end'], **ov.get('end', {}))
+        if 'start' not in ov:
+            days = [x['date'] for x in self.plans['days']]
+            i = days.index(date)
+            prev = an.get(days[i - 1], {}).get('end') if i > 0 else None
+            if prev and prev.get('id'):
+                start['id'] = prev['id']
+        return start, end
+
     def day(self, plan, d):
         date = d['date']
-        a = dict(d['start']), dict(d['end'])
-        ov = plan.get('anchors', {}).get(date, {})
-        start, end = dict(a[0], **ov.get('start', {})), dict(a[1], **ov.get('end', {}))
+        start, end = self.anchors(plan, d)
         stops = plan['days'].get(date, [])
         stay = plan.get('stay', {})
         t = mins(plan.get('start', {}).get(date) or start.get('time') or '09:00') + start.get('buffer', 0)
@@ -199,6 +212,8 @@ class Sim:
                     warn.append(('closed', '%s is closed on %s' % (sid, wd)))
                 else:
                     o, c = [mins(x) for x in span.split(',')[0].split('-')]
+                    if c <= o:      # 16:00-00:00: a close at or before the opening is the next day
+                        c += 1440
                     if arr < o:
                         arr = o
                     if arr + min(dur, 45) > c:
@@ -295,7 +310,7 @@ def main():
         for plan in s.plans['plans']:
             for d in s.plans['days']:
                 r = s.day(plan, d)
-                st = (plan.get('anchors', {}).get(d['date'], {}).get('start') or d['start'])['id']
+                st = s.anchors(plan, d)[0]['id']
                 ids = [st] + [x[2] for x in r['rows']]
                 legs |= {(a, b) for a, b, row in zip(ids, ids[1:], r['rows']) if row[3] == 'drive' and a != b}
         for c in s.plans.get('clusters', []):

@@ -6,7 +6,9 @@
          Three Sisters -> tarns is drive + walk up (237 min); only the drive counts as driving
      (b) a late start that misses the tarns' sunrise (mustSun): a blocking 'sun' problem
      (c) stayDay on the tarns changes that day's visit only
-     (d) a place reached after midnight past its closing time is closed */
+     (d) a place reached after midnight past its closing time is closed
+     (e) a closing time at or before the opening (truth/dare 16:00-00:00) is the next day: open at 21:00
+     (f) a night's stay carries over: an end anchor at the hut on Feb 13 starts Feb 14 at the hut */
 'use strict';
 const fs = require('fs'), path = require('path'), vm = require('vm'), {execFileSync} = require('child_process');
 const ROOT = path.join(__dirname, '..'), D = path.join(ROOT, 'data', 'nz');
@@ -63,7 +65,10 @@ lateStart.anchors = clone(lateStart.anchors || {}); if (lateStart.anchors[F14] &
 const stayDay = byId('hut'); stayDay.id = 'hut-stayday'; stayDay.stayDay = {[F14]: {'pouakai-tarns': 60}};
 const midnight = byId('classic'); midnight.id = 'classic-midnight';
 { const l = midnight.days[F14], k = l.indexOf('three-sisters-elephant-rock'); l.splice(k + 1, 0, 'small-mercies'); }
-const extra = [hutReorder, lateStart, stayDay, midnight];
+const lateBar = byId('classic'); lateBar.id = 'classic-truthdare'; lateBar.days['2027-02-12'] = lateBar.days['2027-02-12'].concat(['truth-dare-bar']);
+const hutNight = byId('classic'); hutNight.id = 'classic-hutnight'; hutNight.anchors = Object.assign(clone(hutNight.anchors || {}), {[F13]: {end: {id: 'pouakai-hut'}}});
+hutNight.days[F14] = hutNight.days[F14].filter(x => x !== 'mangorei-trailhead'); hutNight.start = Object.assign({}, hutNight.start, {[F14]: '06:20'});
+const extra = [hutReorder, lateStart, stayDay, midnight, lateBar, hutNight];
 
 const all = plans.plans.concat(extra), R = ref(all);
 all.forEach((P, k) => { const A = app(P); A.forEach((d, i) => same(d, R[k][i], `${P.id} ${d.date}`)); });
@@ -81,5 +86,9 @@ const day = (P, date) => app(P).find(d => d.date === date);
 { const d = day(midnight, F14), r = d.rows.find(x => x[2] === 'deco-titirangi');
   ok(r && r[0][0] === '+' && d.kinds.includes('closed'), `(d) Deco after midnight must be closed: ${r} ${d.kinds}`); }
 
+{ const sc = sim.schedule(DB.days.find(x => x.date === '2027-02-12'), null, lateBar), r = sc.rows.find(x => x.id === 'truth-dare-bar');
+  ok(r && !r.warns.some(w => w.k === 'closedAt'), `(e) truth/dare 16:00-00:00 open at ${r && hm(r.begin)}: ${r && JSON.stringify(r.warns)}`); }
+{ const d = day(hutNight, F14), an = sim.anchorsOf(DB.days.find(x => x.date === F14), hutNight);
+  ok(an.start.id === 'pouakai-hut' && d.rows[0][2] === 'pouakai-tarns' && d.rows[0][0] <= '06:50', `(f) Feb 14 starts at the hut, tarns by sunrise: ${an.start.id} ${d.rows[0]}`); }
 console.log(fails ? `${fails} of ${checks} checks failed` : `${checks} checks passed (${all.length} plans x ${DB.days.length} days vs check_plans.py)`);
 process.exit(fails ? 1 : 0);

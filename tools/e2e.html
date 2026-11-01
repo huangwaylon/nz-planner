@@ -205,6 +205,16 @@
       const fk = q('[data-act="forkover"]'); if (fk) { fk.click(); await wait(400); }
       ok(view()._pl.sim('my')[1].rows.slice(-1)[0][2] === 'belt-road-holiday-park' && view()._pl.sim('my')[2].rows[0][2] !== undefined, 'the camp becomes that night\'s end'); }
     doc().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await wait(300);
+    /* a hut night (W2 P1-A): the next morning starts AT the hut, no walk down and back up, and reaches the tarns before sunrise */
+    view()._pl.open('pouakai-hut');
+    const hp = await until(() => q('[data-act="sleep"][data-id="pouakai-hut"][data-day="2"]'), 4000);
+    if (hp) { hp.click(); await wait(300); if (hp.isConnected && hp.classList.contains('pl-armed')) { hp.click(); await wait(300); }
+      const fk = q('[data-act="forkover"]'); if (fk) { fk.click(); await wait(400); }
+      const d14 = view()._pl.sim('my')[3], first = d14.rows[0];
+      ok(view()._pl.sim('my')[2].rows.slice(-1)[0][2] === 'pouakai-hut' && first[2] === 'pouakai-tarns' && first[0] <= '06:50' && !d14.rows.some(r => r[2] === 'mangorei-trailhead' && d14.rows.indexOf(r) < 1),
+        'after a hut night the next day starts at the hut and reaches the tarns by sunrise: ' + JSON.stringify(first)); }
+    else ok(false, 'the hut offers night pills');
+    doc().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await wait(300);
     /* the phone never asked for the desktop chunk */
     ok(!fr.contentWindow.performance.getEntriesByType('resource').some(e => /planner-desk/.test(e.name)), 'a 393-wide planner never loads planner-desk');
     /* ---------- wide: 1440 then 1920, in a second frame ---------- */

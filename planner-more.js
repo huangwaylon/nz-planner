@@ -552,9 +552,15 @@ planner.more=function(c){
   /* a camp or a hut is somewhere to sleep, not a 12-hour stop: the pills set the night's end anchor
      (and the next morning's start there), each simulated: arrival at the camp, ⚠ with the reason */
   const sleeps=p=>p&&p.cat==='camp';
+  /* The next morning starts AT the bed: its leading stops that only led there (the hut's road end) go,
+     and when the morning holds a sunrise stop, the start is set so the walk from the bed arrives first. */
   const sleepFn=(id,k)=>m=>{ const d=DB.days[k], n=DB.days[k+1]; m.anchors=m.anchors||{};
     DB.days.forEach(x=>{ const l=m.days[x.date]; if(l&&l.indexOf(id)>=0) l.splice(l.indexOf(id),1); });
-    m.anchors[d.date]=Object.assign({},m.anchors[d.date],{end:{id}}); if(n) m.anchors[n.date]=Object.assign({},m.anchors[n.date],{start:{id}}); };
+    m.anchors[d.date]=Object.assign({},m.anchors[d.date],{end:{id}}); if(!n) return;
+    m.anchors[n.date]=Object.assign({},m.anchors[n.date],{start:{id}});
+    const re=(DB.noRoad||{})[id], l=m.days[n.date]||[]; while(re&&l[0]===re) l.shift();
+    const sr=l.find(x=>/sunrise/.test(place(x).best||''));
+    if(sr){ const S2=SIMc(), t=S2.sunriseOf(place(sr),n.date)-S2.legAt(id,sr,0,n.date,[]).min-10; if(t>0){ m.start=m.start||{}; m.start[n.date]=pad(Math.floor(t/5)*5/60|0)+':'+pad(Math.floor(t/5)*5%60); } } };
   const sleptK=id=>{ const P=plan(); return DB.days.findIndex(d=>((P.anchors||{})[d.date]||{}).end&&P.anchors[d.date].end.id===id); };
   function sleepPick(id,cls){ const P=plan(), k0=sleptK(id);
     const pills=DB.days.slice(0,-1).map((d,k)=>{ const fn=sleepFn(id,k), bs=k===k0?[]:c.trial(fn)||[], m=clone({id:'t',days:P.days,stay:P.stay||{},start:P.start||{},stayDay:P.stayDay||{},anchors:P.anchors||{}}); fn(m);

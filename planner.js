@@ -180,8 +180,10 @@ function makeSim(DB){
   const idsOf=(date,P)=>(P.days[date]||[]).filter(id=>DB.places.has(id));
   /* stayDay {date:{id:min}} beats stay {id:min}: one place can be visited on two days for different lengths */
   const stayOf=(id,P,date)=>{ const p=place(id), sd=date&&P.stayDay&&P.stayDay[date]; return sd&&sd[id]!=null?sd[id]:P.stay&&P.stay[id]!=null?P.stay[id]:(p&&p.dur!=null?p.dur:60); };
-  function anchorsOf(day,P){ const o=P.anchors&&P.anchors[day.date]||{};
-    return {start:Object.assign({},day.start,o.start||{}), end:Object.assign({},day.end,o.end||{})}; }
+  /* a night's stay carries over (as tools/check_plans.py): with no start of its own, a day starts
+     where the day before ended at an anchored place (a hut, a camp, another bed) */
+  function anchorsOf(day,P){ const A=P.anchors||{}, o=A[day.date]||{}, i=DB.days.findIndex(d=>d.date===day.date), pe=i>0&&(A[DB.days[i-1].date]||{}).end;
+    return {start:Object.assign({},day.start,!o.start&&pe&&pe.id?{id:pe.id}:{},o.start||{}), end:Object.assign({},day.end,o.end||{})}; }
   const startOf=(day,P)=>toMin(P.start&&P.start[day.date]||anchorsOf(day,P).start.time||'09:00');
   function drive(a,b){
     const t=DB.travel, i=DB.tIdx[a], j=DB.tIdx[b];
@@ -242,7 +244,7 @@ function makeSim(DB){
       if(h&&typeof h==='object'){            /* after midnight too: 翌01:02 at a 22:00 close is closed */
         const span=h[WD[wdOf(date)]];
         if(!span) ws.push({k:'closed'});
-        else { const w=String(span).split(',')[0].split('-').map(toMin), o=w[0], c=w[1];
+        else { const w=String(span).split(',')[0].split('-').map(toMin), o=w[0], c=w[1]<=o?w[1]+1440:w[1];   /* 16:00-00:00: a close at or before the opening is the next day */
           if(arr<o) arr=o;
           if(arr+Math.min(stay,45)>c) ws.push({k:'closedAt',t:c}); }
       } else if(h==='unknown') inf.push({k:'hoursUnknown'});
