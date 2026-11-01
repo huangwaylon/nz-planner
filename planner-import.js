@@ -12,7 +12,7 @@ const PTI={
   gm1:{ja:'Googleマップでリストを開く',en:'Open the list in Google Maps'},
   gm2:{ja:'共有 →「リンクをコピー」',en:'Share → Copy link'},
   gm3:{ja:'ここに貼る',en:'Paste it here'},
-  impLink:{ja:'リストのリンク',en:'List link'},
+  impLink:{ja:'リストのリンク',en:'List link'}, impLinkGo:{ja:'読み込む',en:'Read'}, impLinkOn:{ja:'Googleマップで共有したリストのリンクを貼り付けます',en:'Paste the link of a list shared from Google Maps'}, linkFail:{ja:'リストを読めませんでした（{e}）',en:'Could not read the list ({e})'},
   soon:{ja:'準備中',en:'Coming soon'},
   linkSoon:{ja:'リストのリンクで取り込む（準備中）',en:'Import from a list link (coming soon)'},
   impLinkHint:{ja:'リンクからの読み込みはもうすぐ使えます。今は「その他の方法」から。',en:'Links will work soon. For now, use Other ways.'},
@@ -82,10 +82,11 @@ plimport.ui=function(c){
       <section class="pl-imsec"><h3>${ic('map-pin','sm')}${pt('impGmT')}</h3>
         <label class="pl-btn pl-pri pl-file">${ic('download','sm')}${pt('impGmFile')}<input type="file" accept=".csv,.json,text/csv,application/json" multiple name="gmfile" data-src="gm"></label>
         <p class="pl-hint">${pt('impGmFileS')}</p>
-        <details class="pl-other"><summary>${pt('linkSoon')}</summary>
+        ${c.sync()&&c.sync().state().paired?`<div class="pl-linkrow"><input type="url" name="gmlink" class="pl-gmlink" placeholder="${esc(pt('impLink'))}" aria-describedby="pl-lh-${slug}" enterkeyhint="go"><button type="button" class="pl-btn pl-sec" data-act="gmgo">${pt('impLinkGo')}</button></div>
+          <p class="pl-hint" id="pl-lh-${slug}">${pt('impLinkOn')}</p>`:`<details class="pl-other"><summary>${pt('linkSoon')}</summary>
           ${steps([['map',pt('gm1')],['share',pt('gm2')],['download',pt('gm3')]])}
           <div class="pl-linkrow"><input type="url" name="gmlink" disabled placeholder="${esc(pt('impLink'))}" aria-describedby="pl-lh-${slug}"><span class="pl-soon">${pt('soon')}</span></div>
-          <p class="pl-hint" id="pl-lh-${slug}">${pt('impLinkHint')}</p></details></section>
+          <p class="pl-hint" id="pl-lh-${slug}">${pt('impLinkHint')}</p></details>`}</section>
       ${trayHTML()}
       ${S.imports.length?`<div class="pl-impfoot"><span>${pt('impCount',{n:S.imports.length})}</span><button type="button" class="pl-btn pl-ghost" data-act="impdelall">${ic('trash','sm')}${pt('impDelAll')}</button></div>`:''}`;
     E.sbody.scrollTop=y;
@@ -124,10 +125,23 @@ plimport.ui=function(c){
         else { const p=I.parseSavedPosts(j); if(p.length) posts=posts.concat(p); else colls=colls.concat(I.parseSavedCollections(j)); }
       }catch(e){ bad++; }
     }
+    if(gm.length&&c.sync()) gm=await resolveFids(gm);
     if(gm.length) startPreview('gm',gm.map(it=>gmItem(it,G)));
     else if(posts.length||colls.length) startPreview('ig',I.matchToPlaces(I.mergeSaved(posts,colls),DB.base).map(igItem));
     else { S.ip=null; renderImport(); toast(pt(bad?'readFail':'nothingFound')); }
   }
+  /* paired: a shared list link is read by the sync backend (gmlist) into the same preview */
+  async function readLink(u){ u=u.trim(); if(!u||!c.sync()) return;
+    const lib=await needLib(), G=lib.gm, box=E.sbody.querySelector('.pl-impbody'); if(box) box.innerHTML=`<p class="pl-none">${pt('reading')}</p>`;
+    const r=await c.sync().call('gmlist',{url:u});
+    if(!r.ok){ S.ip=null; renderImport(); toast(pt('linkFail',{e:r.error||'?'})); return; }
+    const items=r.items||(r.place?[r.place]:[]); if(!items.length){ S.ip=null; renderImport(); toast(pt('nothingFound')); return; }
+    startPreview('gm',items.map(it=>gmItem(it,G))); }
+  /* Takeout CSV rows carry only a fid: gmplace resolves their name and position */
+  async function resolveFids(gm){ const need=gm.filter(it=>it.lat==null&&it.fid).map(it=>it.fid); if(!need.length) return gm;
+    const r=await c.sync().call('gmplace',{fids:need}); if(!r.ok) return gm;
+    const by={}; (r.places||[]).forEach(p=>{ if(p&&p.fid&&p.lat!=null) by[p.fid]=p; });
+    return gm.map(it=>it.lat==null&&by[it.fid]?Object.assign({},it,{name:it.name||by[it.fid].name,lat:by[it.fid].lat,lon:by[it.fid].lon,address:it.address||by[it.fid].address,cc:it.cc||by[it.fid].cc}):it); }
   /* A Google item close to a place we already have is that place: it adds a link, not a duplicate. */
   function gmItem(it,G){
     const raw=it.name+'@'+(it.lat==null?'':it.lat.toFixed(4)+','+it.lon.toFixed(4));
@@ -251,6 +265,7 @@ plimport.ui=function(c){
       switch(act){
         case 'imcancel': S.ip=null; renderImport(); break;
         case 'imgo': commitImport(); break;
+        case 'gmgo': readLink((E.sbody.querySelector('.pl-gmlink')||{}).value||''); break;
         case 'imcoll': S.ip.coll=b.dataset.v||null; renderImport(); break;
         case 'imcc': S.ip.cc=b.dataset.v; S.ip.regions=null; renderImport(); break;
         case 'imreg': { const ip=S.ip, G=window.plimport.gm, all=G.summarizeAreas(ip.items.filter(i=>i.lat!=null),REG).find(x=>x.cc===ip.cc).regions.map(r=>r.code||'?');

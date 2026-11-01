@@ -5,9 +5,9 @@
    GALLERY keeps the gallery pictures someone has looked at, for offline: Commons only, because only
    a CORS response can be checked (an opaque one could be an error page, and costs ~7 MB of quota each),
    least recently used out first past GMAX. */
-const SHELL = 'nzp-shell-v19';
+const SHELL = 'nzp-shell-v20';
 /* The data cache is renamed with every SHELL bump, so a deploy never serves last build's plans.json. */
-const DATA = 'nzp-data-v19';
+const DATA = 'nzp-data-v20';
 const MEDIA = 'nzp-media';     // photos: a changed photo gets a new filename, so this name never changes
 const GALLERY = 'nzp-gallery', GMAX = 300;
 const APP = ['./', './index.html', './poc.css', './planner.css', './host.js', './planner.js', './import.js', './planner-import.js', './planner-import.css', './planner-more.js', './planner-more.css', './planner-collect.js', './planner-collect.css', './planner-cal.js', './planner-cal.css', './planner-gallery.js', './planner-gallery.css', './manifest.webmanifest', './icon-180.png'];

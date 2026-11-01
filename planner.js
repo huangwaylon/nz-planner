@@ -504,7 +504,9 @@ const plannerFn=function planner(g){
   function plannedMap(P){ const m=new Map(); P=P||plan(); DB.days.forEach((d,i)=>(P.days[d.date]||[]).forEach(id=>{ if(!m.has(id)) m.set(id,i); })); return m; }
   /* v2: {v:2, active, trip:{tier, groups, notes}, my, versions, imports, booked}. The v1 string it
      replaced was copied to plan:<slug>:v1 before the first v2 write (loadState). */
-  function save(){ const ok=LSJ.set(KP,{v:2,active:S.planId,trip:S.trip,my:S.my,versions:S.versions,imports:S.imports,booked:S.booked}); noteSave(ok); return ok; }
+  function save(){ const ok=LSJ.set(KP,{v:2,active:S.planId,trip:S.trip,my:S.my,versions:S.versions,imports:S.imports,booked:S.booked}); noteSave(ok); if(SY) SY.saved(); return ok; }
+  /* sync (planner-sync.js) loads only on a paired phone, or to read a #pair= link */
+  let SY=null, SYP=null; const loadSync=()=>SYP||(SYP=Promise.all([loadCss('pl-sync',view.dataset.syncCss||'planner-sync.css'),loadJs(view.dataset.syncSrc||'planner-sync.js')]).then(()=>SY=planner.sync(ctx()),()=>{ SYP=null; }));
   let uiT=0; const saveUISoon=()=>{ clearTimeout(uiT); uiT=setTimeout(()=>idle(saveUI,2000),400); };
   function saveUI(){ LSJ.set(KU,{v:1,stage:S.stage,cf:S.cf,board:S.board,pin:S.pin,day:S.day,map:S.map==='full'?'peek':S.map,dayEnd:S.dayEnd!==DEADLINE?hhmm(S.dayEnd):undefined,hideInstall:S.hideInstall,hideIntro:S.hideIntro,routes:RC.map,rorder:RC.order}); }
   function noteSave(ok){ if(ok===!S.saveFail) return; S.saveFail=!ok; renderNotice(); }
@@ -1298,6 +1300,7 @@ const plannerFn=function planner(g){
     rebuildPlaces(); renderTop(); renderDays(); renderMain(anim); renderMap(); renderStages();
     if(S.stage==='collect'&&CM) CM.render(); else if(S.stage==='review'&&MM) MM.renderReview(E.review);
     if(DK) DK.render();
+    if(SY) SY.decor();
     if(fk&&!main.contains(document.activeElement)){ const t=main.querySelector(fk); if(t) t.focus({preventScroll:true}); }
     if(ta&&S.noteOpen){ const t=main.querySelector(`#pl-ne-${slug}-${S.noteOpen} textarea`); if(t){ t.focus({preventScroll:true}); try{ t.setSelectionRange(sel[0],sel[1]); }catch(e){} } }
     const f=after; after=[]; f.forEach(x=>x());
@@ -1405,7 +1408,7 @@ const plannerFn=function planner(g){
     E.sbody.addEventListener('click',e=>{
       const b=e.target.closest('[data-act]'); if(!b||E.sheet.inert) return;
       const day=DB.days[S.day], date=day.date, kind=sheetKind, arg=sheetArg||{};
-      if(/^(imcancel|imgo|imcoll|imcc|imreg|imall|placeon|nomopen|nomgo|nomset|impdelall)$/.test(b.dataset.act)){ needImp().then(u=>u.click(b.dataset.act,b)); return; }
+      if(/^(gmgo|imcancel|imgo|imcoll|imcc|imreg|imall|placeon|nomopen|nomgo|nomset|impdelall)$/.test(b.dataset.act)){ needImp().then(u=>u.click(b.dataset.act,b)); return; }
       switch(b.dataset.act){
         case 'close': closeSheet(); break;
         case 'import': S.ip=null; openImport(); break;
@@ -1468,7 +1471,7 @@ const plannerFn=function planner(g){
   function ctx(){ return {S,DB,E,view,svg,slug,SRC,pt,esc,ic,head,doneBar,openSheet,closeSheet,toast,undo,pushHist,save,render,edit,plan,findPlan,planName,presetName,
     idsOf,schedule,dayStyle,dlabel,dayTitle,dur,hm,nm,nmLang,wbr,place,bodyOf,snapshot,renderTop,fitDay,isCand,plannedMap,FAMILY,thumb,tr,CAT,AREA,
     unverifiedHours,reorder,focusStop,afterRender,okHM,clone,switchToMe,hav,mapState,saveUI,select,unprj,ja,showCands,stopPlacing,impChanged,
-    savedTag,sigLine,titleT,flagT,warnText,breakText,guard,trial,breakLine,keepMy,forkGo,armed,legSegments,geom,arc,pathD,g,main,heroOf,thumb,glyphOf,ic,col:()=>CM,gal:p=>GX?GX.gal(p):[],gx:()=>GX,loadGallery,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,loadCss,loadJs,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:(o,soft)=>Object.keys(o).forEach(k=>{ if(!soft||!PT[k]) PT[k]=o[k]; })}; }
+    savedTag,sigLine,titleT,flagT,warnText,breakText,guard,trial,breakLine,keepMy,forkGo,armed,legSegments,geom,arc,pathD,g,main,heroOf,thumb,glyphOf,ic,col:()=>CM,gal:p=>GX?GX.gal(p):[],gx:()=>GX,loadGallery,sync:()=>SY,loadSync,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,loadCss,loadJs,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:(o,soft)=>Object.keys(o).forEach(k=>{ if(!soft||!PT[k]) PT[k]=o[k]; })}; }
   const openOrder=id=>needMore().then(m=>m.openOrder(id));
   const openSwap=id=>needMore().then(m=>m.openSwap(id));
   const openCompare=(a,b)=>needMore().then(m=>m.openCompare(a,b));
@@ -1581,7 +1584,7 @@ const plannerFn=function planner(g){
     if(S.stage==='collect') needCollect().then(c=>c.render(),()=>{}); else if(S.stage==='review') needMore(true).then(m=>m.renderReview(E.review));
     setTimeout(()=>{ renderMap(); setTimeout(wire,0); },0);
     /* photos (6 KB gz) and flag labels (5 KB) wait for the first paint, so they stay off the first screen's bytes (tools/budget.test.js) */
-    afterPaint(()=>{ loadPhotos(); loadFlags(); });
+    afterPaint(()=>{ loadPhotos(); loadFlags(); if(LS.get('plan-sync:'+slug)||/#pair=/.test(location.hash)) loadSync(); });
   }
   const afterPaint=f=>raf(()=>setTimeout(f,0));
   const loadFlags=()=>fetch(SRC+'flags.json').then(r=>r.ok?r.json():null).then(o=>{ if(!o) return; setFlags(o); DB.list.forEach(p=>{ delete p._s; }); if(!DRAG) renderSoon(); if(sheetKind==='place') refreshSheet(); }).catch(()=>{});
@@ -1629,7 +1632,7 @@ const plannerFn=function planner(g){
         warns:sc.rows.flatMap(r=>r.warns.map(w=>w.k)).concat(sc.long?['long']:[])}; }), ready:()=>lazy.travel,
       /* tools/e2e.html: is a gesture or tween still thought to be running; how much coastline is drawn */
       busy:()=>busyUI(), land:()=>svg.querySelectorAll('.pl-land path').length, places:()=>DB.places.size,
-      code:()=>needMore(true).then(m=>m.codeNow()), tier:id=>tierOf(id), trip:()=>S.trip, gal:loadGallery, open:openPlace, more:()=>needMore()}});
+      code:()=>needMore(true).then(m=>m.codeNow()), tier:id=>tierOf(id), trip:()=>S.trip, gal:loadGallery, open:openPlace, more:()=>needMore(), sync:loadSync}});
     if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{});
   }
   const get=u=>fetch(u).then(r=>{ if(!r.ok) throw new Error(u+' '+r.status); return r.json(); });

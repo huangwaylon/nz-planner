@@ -193,3 +193,4 @@
 .pl-csk{position:absolute;left:8px;top:8px;z-index:1;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 2px var(--ink);color:var(--surface);font-style:normal;pointer-events:none;}
 .pl-csel .pl-csk{background:var(--ink);}
 @media (pointer:coarse){ .pl-cbar b{display:none;} }
+.pl-syncbox{display:grid;gap:8px;margin:16px 0;} .pl-syncbox h3{margin:0;font:600 var(--pl-fs-m)/1.4 var(--pl-font);}

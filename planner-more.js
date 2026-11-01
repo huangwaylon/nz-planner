@@ -6,7 +6,7 @@
 (function(){
 'use strict';
 if(typeof planner!=='function'||planner.more) return;
-const PTM={ selDone:{ja:'選択をやめる',en:'Stop selecting'}, toGroup:{ja:'グループへ',en:'To a group'}, toDays:{ja:'日程へ',en:'To the days'}, planList:{ja:'一覧',en:'All plans'}, inGroup:{ja:'→ {g}',en:'→ {g}'}, already:{ja:'{n}件はすでに{d}に入っています',en:'{n} already on {d}'},
+const PTM={ syncT2:{ja:'同期',en:'Sync'}, pairPh:{ja:'リンクを貼り付け',en:'Paste the pairing link'}, pairGo:{ja:'つなぐ',en:'Pair'}, selDone:{ja:'選択をやめる',en:'Stop selecting'}, toGroup:{ja:'グループへ',en:'To a group'}, toDays:{ja:'日程へ',en:'To the days'}, planList:{ja:'一覧',en:'All plans'}, inGroup:{ja:'→ {g}',en:'→ {g}'}, already:{ja:'{n}件はすでに{d}に入っています',en:'{n} already on {d}'},
 sleepQ:{ja:'この夜に泊まる',en:'Stay this night'}, sleepS:{ja:'{d}の夜は{name}に泊まります',en:'{name} for the night of {d}'}, sleptOn:{ja:'{d}の夜に泊まる予定',en:'Staying the night of {d}'}, unsleep:{ja:'泊まるのをやめる',en:'Don’t stay here'}, unslept:{ja:'{name}に泊まるのをやめました',en:'No longer staying at {name}'},
 bestDay:{ja:'最適 {d}',en:'Best {d}'}, placedN:{ja:'{n}/{of} 配置',en:'{n}/{of} placed'}, noDay:{ja:'⚠ どの日も崩れます',en:'⚠ breaks every day'}, grpSum:{ja:'約{d}・運転{m}',en:'about {d}, {m} driving'}, picks:{ja:'おすすめ',en:'Suggested'}, use:{ja:'使う',en:'Use'}, rename2:{ja:'名前を変える',en:'Rename'}, drop:{ja:'グループを解く',en:'Ungroup'}, noGroup:{ja:'グループなし',en:'Not in a group'},
 mine:{ja:'わたしのリスト',en:'My list'}, mAll:{ja:'すべて',en:'All'}, m_must:{ja:'絶対',en:'Must'}, m_want:{ja:'行きたい',en:'Want'}, m_maybe:{ja:'余裕',en:'If time'}, mGrp:{ja:'グループ：{g}',en:'Group: {g}'}, picksH:{ja:'おすすめ',en:'Suggestions'}, mineNone:{ja:'①で分けた場所とグループがここに出ます',en:'Places you sort in ① and your groups show here'},
@@ -683,6 +683,7 @@ planner.more=function(c){
       <section class="pl-pastebox"><h3>${pt('pasteT')}</h3><p class="pl-hint">${pt('pasteS')}</p>
         <label class="pl-search"><span class="sr">${pt('pasteT')}</span><input class="pl-paste" name="paste" type="url" inputmode="url" autocomplete="off" placeholder="https://…#plan-${slug}=…" enterkeyhint="go"></label>
         <div class="pl-sheet-acts"><button type="button" class="pl-btn pl-sec" data-act="pasteclip">${pt('pasteClip')}</button><button type="button" class="pl-btn pl-pri" data-act="pastego">${pt('pasteGo')}</button></div></section>
+      <section class="pl-syncbox"></section>
       <label class="pl-dayend"><span>${pt('dayEnd')}</span><input class="pl-dayendin" name="dayend" type="time" step="900" value="${c.hhmm(S.dayEnd)}"></label>
       <div class="pl-sheet-acts">
         <button type="button" class="pl-btn pl-sec" data-act="savever">${ic('bookmark','sm')}${pt('saveVer')}</button>
@@ -690,6 +691,9 @@ planner.more=function(c){
         <button type="button" class="pl-btn pl-sec" data-act="share">${ic('share','sm')}${pt('shareLink')}</button>
       </div>
       ${S.my?`<button type="button" class="pl-btn pl-danger" data-act="reset">${ic('trash','sm')}${pt('reset')}</button>`:''}`,'plans');
+    /* sync: the paired phone's box (planner-sync), else the one field that pairs an installed app */
+    const sb=E.sbody.querySelector('.pl-syncbox'); if(c.sync()) c.sync().box(sb);
+    else sb.innerHTML=`<h3>${pt('syncT2')}</h3><label class="pl-search"><span class="sr">${pt('pairPh')}</span><input class="pl-pairin" name="pair" type="text" autocomplete="off" placeholder="${esc(pt('pairPh'))}"></label><button type="button" class="pl-btn pl-sec" data-act="pairgo">${pt('pairGo')}</button>`;
   }
   return {
     codeNow:()=>pack(payload()), moveFn,
@@ -743,6 +747,7 @@ planner.more=function(c){
           add.forEach(patchCand); const q=b.closest('.pl-dayq'); if(q) q.remove(); break; }
         case 'clearf': S.f={q:'',cat:null,area:null,saved:null,sort:S.f.sort}; openBrowse(); break;
         case 'dayend': break;
+        case 'pairgo': { const i=E.sbody.querySelector('.pl-pairin'), v=i?i.value:''; if(i) i.value=''; c.loadSync().then(()=>c.sync()&&c.sync().pairText(v)).then(ok=>{ if(ok&&c.kind()==='plans') openPlans(); }); break; }
         case 'forknew': case 'forkover': c.forkGo(act==='forknew'); break;
         case 'gzoom': { const gl=b.closest('.pl-gal'), tr=gl.querySelector('.pl-gtrack'), i=[...tr.children].indexOf(b.parentNode);
           gl.style.setProperty('--ar',b.dataset.ar); gl.classList.toggle('pl-gfull'); tr.scrollLeft=i*tr.clientWidth; break; }

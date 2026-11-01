@@ -16,7 +16,7 @@ const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) fails++
 const SHELL = ['index.html', 'host.js', 'planner.js', 'planner.css', 'poc.css', 'data/nz/places.json', 'data/nz/plans.json'];
 /* photos.json and flags.json count too unless the boot defers them past the first paint */
 const core0 = fs.readFileSync(path.join(ROOT, 'planner.js'), 'utf8');
-const deferred = /afterPaint\(\(\)=>\{ loadPhotos\(\); loadFlags\(\); \}\)/.test(core0) && (core0.match(/loadPhotos\(\);/g) || []).length <= 2;
+const deferred = /afterPaint\(\(\)=>\{ loadPhotos\(\); loadFlags\(\);/.test(core0) && (core0.match(/loadPhotos\(\);/g) || []).length <= 2;
 if (!deferred) SHELL.push('data/nz/photos.json', 'data/nz/flags.json');
 ok(deferred, 'photos.json and flags.json load after the first paint (else they count in the first screen)');
 const plan2 = sum(SHELL.concat(['data/nz/land-lo.svg.html']));
@@ -29,7 +29,7 @@ const coreSrc = fs.readFileSync(path.join(ROOT, 'planner.js'), 'utf8');
 ok(!SHELL.concat(collect).some(f => /gallery/.test(f)) && (coreSrc.match(/'gallery\.json'/g) || []).length === 1 && /function loadLazy\(\)\{[^}]*loadGallery\(\)/.test(coreSrc),
   'gallery.json is fetched only by loadGallery(), from the deferred loadLazy() and on demand — not on the first screen');
 
-const CAPS = [[['planner-collect.js', 'planner-collect.css'], 7.5], [['planner-desk.js', 'planner-desk.css'], 16], [['planner-cal.js', 'planner-cal.css'], 6], [['planner-gallery.js', 'planner-gallery.css'], 2]];
+const CAPS = [[['planner-collect.js', 'planner-collect.css'], 7.5], [['planner-desk.js', 'planner-desk.css'], 16], [['planner-cal.js', 'planner-cal.css'], 6], [['planner-gallery.js', 'planner-gallery.css'], 2], [['planner-sync.js', 'planner-sync.css'], 8]];   /* sync: paired phones only, after paint */
 const shellSrc = ['planner.js', 'planner-more.js'].map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
 /* desktop-only, after paint (coordinator's budget decision): 16 KB. A chunk counts once the shell or planner-more can load it; one still being built beside it is reported only */
 CAPS.forEach(([fs_, cap]) => { const n = sum(fs_); if (!fs_.some(has)) { console.log(`--   ${fs_[0]} not built yet`); return; }

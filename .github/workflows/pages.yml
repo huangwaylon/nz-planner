@@ -37,6 +37,8 @@ jobs:
       - run: node tools/budget.test.js
       # the type and colour system: token sizes, one family, two weights, no colour literals
       - run: node tools/style.test.js
+      # sync client against a fake Apps Script: queue replay, dedupe, since tails, rev reset, keep-both, key never leaks
+      - run: node tools/sync.test.js
       # ③'s calendar and versions grid (planner-cal.js) against its fixture.
       - run: node tools/cal.test.js
       # the Apps Script backend against fakes of the Apps Script services

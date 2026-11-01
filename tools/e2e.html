@@ -216,6 +216,31 @@
     else ok(false, 'the hut offers night pills');
     doc().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await wait(300);
     /* the phone never asked for the desktop chunk */
+    /* sync against a stub endpoint (never the live one): pair, send an edit, read the other person's */
+    { const W = fr.contentWindow, KEY = 'c'.repeat(64), rows = []; let last = 0; const real = W.fetch.bind(W);
+      W.fetch = (u, o) => { u = String(u);
+        if (/config\.json$/.test(u)) return Promise.resolve(new W.Response(JSON.stringify({syncUrl: 'https://stub.invalid/exec'})));
+        if (u === 'https://stub.invalid/exec') { const b = JSON.parse(o.body); let r;
+          if (b.key !== KEY) r = {ok: false, error: 'unauthorized'};
+          else if (b.action === 'whoami') r = {ok: true, me: 'a'};
+          else if (b.action === 'event') { if (rows.some(x => x[2] === b.id)) r = {ok: true, duplicate: true}; else { const at = new Date(Math.max(Date.now(), last + 1)); last = +at; rows.push([at.toISOString(), 'a', b.id, b.type, JSON.stringify(b.data)]); r = {ok: true}; } }
+          else if (b.action === 'snapshot') r = {ok: true, rev: 'e2e', rows: rows.filter(x => !b.since || x[0] > b.since)};
+          else r = {ok: false, error: 'bad_request'};
+          return Promise.resolve(new W.Response(JSON.stringify(r))); }
+        return real(u, o); };
+      const SY = await view()._pl.sync(); const okp = SY && await SY.pairText('#pair=' + KEY); await wait(300);
+      const st = JSON.parse(W.localStorage.getItem('plan-sync:nz') || 'null');
+      ok(okp && st && st.me === 'a' && !doc().body.innerHTML.includes(KEY), 'pairing with a #pair= key stores {key, me, url} in LS and never renders the key');
+      q('.pl-stage[data-stage="plan"]').click(); await wait(300);
+      const del = q('main .pl-row [data-act="del"]'), did = del && del.dataset.id; if (del) { del.click(); await wait(300); if (del.isConnected && /⚠/.test(toastTxt())) { del.click(); await wait(300); } const fk2 = q('[data-act="forkover"]'); if (fk2) { fk2.click(); await wait(300); } }
+      await until(() => rows.some(x => x[3] === 'day_set'), 3000);
+      ok(rows.some(x => x[3] === 'day_set' && JSON.parse(x[4]).ids.indexOf(did) < 0) && /同期済み|Synced/.test((q('.pl-sync') || {}).textContent || ''), 'an edit goes out as a day_set and the dot says 同期済み');
+      const dk = W.document.querySelector('.pl-daybtn[aria-pressed="true"]'), k = dk ? +dk.dataset.day : 0, date = plans.days[k].date;
+      rows.push([new Date(last + 5).toISOString(), 'b', 'b-e2e-1', 'day_set', JSON.stringify({plan: 'my', date, ids: ['piha'], stayDay: {}, start: null, base: null})]); last += 5;
+      await SY.pull(true); await wait(400);
+      ok(JSON.stringify(view()._pl.sim('my')[k].rows.slice(0, -1).map(r => r[2])) === JSON.stringify(['piha']) || /両方残して|Both are kept/.test(toastTxt()), 'the other person\'s day arrives (or both are kept)');
+      ok(/B/.test((q('.pl-who') || {}).textContent || ''), 'the day header says who edited it: ' + ((q('.pl-who') || {}).textContent || ''));
+      SY.unpair(); W.localStorage.removeItem('plan-sync-q:nz'); W.localStorage.removeItem('plan-sync-m:nz'); W.fetch = real; }
     /* saving a version closes the sheet and offers 「一覧」 in the toast, no picker opening by itself (W2 P1-D) */
     { const m = await view()._pl.more(); m.saveVersionNamed(null, 'E2E案'); await wait(400);
       ok(!q('.pl-plans') && /一覧|All plans/.test((q('.pl-toast .pl-tx') || {}).textContent || ''), 'saving a version toasts 「一覧」 and does not open the picker'); }
