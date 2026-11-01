@@ -1,12 +1,4 @@
-/* PLANNER — an editable day-by-day itinerary for one book, as a tab (.v-plan) of its guide.
-   One function, planner(g), like packing(g) and map(g): it returns early when the guide has no
-   .v-plan, and everything it touches is scoped by the guide's slug. It assumes only what the book
-   provides: LS.get/LS.set (strings), <html lang> plus the document 'langchange' event, span.u for
-   distances (and LS 'units'), and the #i-* sprite. Runtime strings live in PT.
-   Data (data-src, default data/<slug>/): places.json + plans.json first; travel.json, routes.json,
-   photos.json and places-more.json after first paint. Times match tools/check_plans.py exactly.
-   Storage: LS 'plan:<slug>' {v:1, active, my, versions, imports, booked} and
-            'plan-ui:<slug>' {v:1, day, map, hideInstall, hideIntro, routes, rorder}. */
+/* PLANNER: planner(g), the book's planner tab. The contract (what it assumes of the book, its data and storage) is in docs/FOLD.md "The core". */
 var planner=(function(){
 'use strict';
 
@@ -36,7 +28,7 @@ const PT={
   free:{ja:'無料',en:'Free'}, always:{ja:'終日',en:'All day'}, closedToday:{ja:'休業',en:'Closed'},
   stay:{ja:'滞在',en:'Stay'}, walkN:{ja:'徒歩 {d}',en:'Walk {d}'}, tideOk:{ja:'干潮 {t} に合っています',en:'Fits low tide {t}'},
   landed:{ja:'着陸',en:'Land'}, limitHint:{ja:'{t} = 1日の終わりの目安（設定で変更）',en:'{t} is the end-of-day guide (change it in Plan)'}, limitFlight:{ja:'{t} = フライトに間に合う空港着',en:'{t} = at the airport in time for the flight'}, limitAnchor:{ja:'{t} = {name}に着く期限（このプランの設定）',en:'{t} = this plan’s time to reach {name}'},
-  overAt:{ja:'{name}の期限{t}を{d}超過',en:'{d} past the {t} limit at {name}'}, dawn:{ja:'日の出（{t}）前に屋外',en:'Outdoors before sunrise ({t})'}, missRise:{ja:'日の出（{t}）に間に合いません',en:'Misses sunrise ({t})'}, missSet:{ja:'日の入り（{t}）に間に合いません',en:'Misses sunset ({t})'},
+  overAt:{ja:'{name}の期限{t}を{d}超過',en:'{d} past the {t} limit at {name}'}, dawn:{ja:'日の出（{t}）前に屋外',en:'Outdoors before sunrise ({t})'}, missRise:{ja:'日の出（{t}）に間に合いません',en:'Misses sunrise ({t})'}, pastRise:{ja:'日の出（{t}）を過ぎています',en:'Past sunrise ({t})'}, leaveFor:{ja:'日の出（{s}）には{t}出発',en:'Leave {t} for sunrise ({s})'}, missSet:{ja:'日の入り（{t}）に間に合いません',en:'Misses sunset ({t})'},
   goldRise:{ja:'日の出（{t}）の時間帯から外れています',en:'Not at sunrise ({t})'}, goldSet:{ja:'夕日（{t}）の時間帯から外れています',en:'Not at sunset ({t})'},
   clearDay:{ja:'この日を空にする',en:'Clear this day'}, cleared:{ja:'{d} を空にしました',en:'Cleared {d}'},       stayDec:{ja:'{name} の滞在を15分短く',en:'15 min shorter at {name}'}, stayInc:{ja:'{name} の滞在を15分長く',en:'15 min longer at {name}'},
   swap:{ja:'入れ替え',en:'Swap'}, move:{ja:'日を移動',en:'Move day'}, del:{ja:'外す',en:'Remove'}, note:{ja:'メモ',en:'Note'},
@@ -273,7 +265,8 @@ function makeSim(DB){
       if(out&&arr<sr-30&&!best.has('sunrise')&&!best.has('night')&&!forDawn) ws.push({k:'dawn',t:sr});
       const morning=arr<720, only=k=>best.size===1&&best.has(k), miss=(e,t)=>(p.mustSun?ws:inf).push({k:p.mustSun?'sunMiss':'golden',e,t});
       if(best.has('sunrise')&&(morning||only('sunrise'))&&!(arr<=sr+10&&dep>=sr)) miss('rise',sr);
-      if(best.has('sunset')&&(!morning||only('sunset'))&&!(arr<=ss+15&&dep>=ss-30)) miss('set',ss);
+      /* a sunrise-or-sunset place visited between the two has missed the sunrise, not the sunset */
+      if(best.has('sunset')&&(!morning||only('sunset'))&&!(arr<=ss+15&&dep>=ss-30)){ if(best.has('sunrise')&&arr>sr&&dep<ss-30) miss('past',sr); else miss('set',ss); }
       if(best.has('sunrise')&&morning) inf.push({k:'sunrise',t:sr});
       if(best.has('sunset')&&!morning) inf.push({k:'sunsetAt',t:ss});
       if(l.kind==='ferry'&&l.f.verified===false) inf.push({k:'ferryUnverified'});
@@ -510,7 +503,14 @@ const plannerFn=function planner(g){
   const atTxt=t=>{ const d=new Date(t||0); return (d.getMonth()+1)+'/'+d.getDate()+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); };
   const planName=p=>p.id==='my'?(p.name||pt('my')):p.id.startsWith('v-')?(p.name||pt(p.kind==='shared'?'shared':'autoSaved',{t:atTxt(p.at)})):(ja()?p.nameJa:p.name);
   /* plan.titles[date] {ja,en} names a version's day before the default day label */
-  const dayTitle=(day,P)=>{ const t=(P||plan()).titles&&(P||plan()).titles[day.date]; return t&&(t[lang()]||t.ja||t.en)||(ja()?day.labelJa:day.label); };
+  /* a preset's day title holds only while the day still matches that preset's day (60 % of the stops);
+     otherwise the day is named by its first two stops, so two different days never read the same */
+  const titleT=(day,P)=>{ P=P||plan(); const t=P.titles&&P.titles[day.date], src=P.id==='my'||String(P.id).startsWith('v-')?findPlan(P.from)||P:P,
+      a=idsOf(day.date,P), b=idsOf(day.date,src), n=a.filter(x=>b.indexOf(x)>=0).length, u=new Set(a.concat(b)).size;
+    if(t&&(!u||n/u>=.6)) return t; if(!a.length) return null;
+    const two=k=>a.slice(0,2).map(id=>{ const p=place(id); return (k?p.nameJa||p.name:p.name).replace(/\s*[(（].*?[)）]/g,''); }).join(k?'・':' · ');
+    return {ja:two(1),en:two(0)}; };
+  const dayTitle=(day,P)=>{ const t=titleT(day,P); return t?t[lang()]||t.ja||t.en:(ja()?day.labelJa:day.label); };
   /* notes in plans.json are "JA / EN"; the travellers' own are one language */
   /* her note on a place is the trip's (every version shows it); a preset's own "JA / EN" note otherwise */
   const noteText=(P,id)=>{ const n=S.trip.notes[id]||P.notes&&P.notes[id]; if(!n) return ''; const k=n.indexOf(' / '); return k<0?n:(ja()?n.slice(0,k):n.slice(k+3)); };
@@ -565,10 +565,12 @@ const plannerFn=function planner(g){
   /* Commit, unless it breaks something: then the first tap says what and arms the control, and a
      second tap on it within 15 s commits. Same rule as the day picker. */
   /* after a drop or a typed start time: what the new day breaks, with keep or undo, inline */
-  function confirmBar(bs){ if(!bs||!bs.length) return; (soon?afterRender:raf)(()=>{ const l=main.querySelector('.pl-list'); if(!l) return;
+  function confirmBar(bs,id){ if(!bs||!bs.length) return; (soon?afterRender:raf)(()=>{ const l=main.querySelector('.pl-list'); if(!l) return;
     const d=document.createElement('div'); d.className='pl-confirm'; d.setAttribute('role','alert');
     d.innerHTML=`<p>${ic('alert','sm')}<span>${esc(pt('thisOrder',{w:breakLine(bs)}))}</span></p><div><button type="button" class="pl-btn pl-sec" data-act="keep">${pt('keepIt')}</button><button type="button" class="pl-btn pl-pri" data-act="undoit">${pt('undo')}</button></div>`;
-    main.querySelectorAll('.pl-confirm').forEach(x=>x.remove()); l.before(d); }); }
+    main.querySelectorAll('.pl-confirm').forEach(x=>x.remove());
+    /* beside the row that moved, when there is one */
+    const r=id&&main.querySelector(`.pl-row[data-id="${CSS.escape(id)}"]`), li=r&&(r.closest("li")||r); if(li) li.tagName==="LI"?li.append(d):li.after(d); else l.before(d); }); }
   let ARM=null;
   /* the first call arms key and says no; a second within 15 s says yes */
   const armed=key=>{ if(ARM&&ARM.key===key&&Date.now()-ARM.t<15000){ ARM=null; return true; } ARM={key,t:Date.now()}; return false; };
@@ -724,7 +726,7 @@ const plannerFn=function planner(g){
       case 'ferryDay': return pt('ferryDay',{w:wdName(day.date)});
       case 'over': return w.flight?pt('overFlight',{t:hm(w.t)}):w.soft?pt('over',{t:hm(w.t),d:dur(w.m)}):pt('overAt',{name:nm(place(w.at)),t:hm(w.t),d:dur(w.m)});
       case 'dawn': return pt('dawn',{t:hm(w.t)});
-      case 'sunMiss': return pt(w.e==='rise'?'missRise':'missSet',{t:hm(w.t)});
+      case 'sunMiss': return pt(w.e==='rise'?'missRise':w.e==='past'?'pastRise':'missSet',{t:hm(w.t)});
       default: return '';
     }
   }
@@ -737,12 +739,18 @@ const plannerFn=function planner(g){
       default: return '';
     }
   }
+  /* 「日の出には…出発」 is worked out, not quoted: sunrise at the place less the way there from the
+     day's start and 10 minutes, so arriving by then really is before sunrise */
+  const flagT=(f,p)=>{ if(!/^start-[\d:]+-for-sunrise$/.test(f)) return tr(FLAG,f);
+    const k=plannedMap().get(p.id), day=DB.days[k]; if(!day) return '';
+    const sr=sunriseOf(p,day.date), l=SIM.legAt(SIM.anchorsOf(day,plan()).start.id,p.id,0,day.date,[]);
+    return pt('leaveFor',{s:hm(sr),t:hm(Math.floor((sr-l.min-10)/5)*5)}); };
   const unverifiedHours=p=>hasFlag(p,'hours-times-unverified')||p.hours==='unknown';
+  /* the hours the simulation uses, always: listed but unverified ones say so after the times */
   function hoursText(p,date){
-    if(unverifiedHours(p)) return pt('hoursUnknown');
-    const h=p.hours; if(!h||typeof h!=='object') return pt('always');
+    const h=p.hours; if(h==='unknown') return pt('hoursUnknown'); if(!h||typeof h!=='object') return pt('always');
     const v=h[WD[wdOf(date)]]; if(!v) return pt('closedToday');
-    return String(v).split(',').map(s=>s.split('-').map(x=>hm(toMin(x))).join('–')).join(', ');
+    return String(v).split(',').map(s=>s.split('-').map(x=>hm(toMin(x))).join('–')).join(', ')+(unverifiedHours(p)?'（'+pt('unverified')+'）':'');
   }
   const chip=(cls,icon,txt)=>`<span class="${cls}">${icon?ic(icon):''}${txt}</span>`;
   function legInner(l,to){
@@ -779,7 +787,7 @@ const plannerFn=function planner(g){
           ${p.cost&&p.cost!=='free'?`<span class="pl-m">${esc(p.cost)}</span>`:''}
           ${p.badge?`<span class="pl-sig">${esc(p.badge[lang()]||p.badge.ja)}</span>`:''}${savedTag(p)}
         </div>
-        ${fl.length?`<div class="pl-flagrow">${fl.map(f=>`<span class="pl-flag${rankFlag(f)<99?' pl-safe':''}">${tr(FLAG,f)}</span>`).join('')}</div>`:''}
+        ${fl.length?`<div class="pl-flagrow">${fl.map(f=>flagT(f,p)?`<span class="pl-flag${rankFlag(f)<99?' pl-safe':''}">${flagT(f,p)}</span>`:'').join('')}</div>`:''}
         ${p.book?bookBtn(p,N):''}
         <div class="pl-ri">${infosHTML(r)}</div><div class="pl-rw">${warnsHTML(r,day)}</div>
         <button type="button" class="pl-notebtn${noteTxt?' pl-has':''}" data-act="note" data-id="${p.id}" aria-expanded="${open}" aria-controls="${eid}"><span aria-hidden="true">${ic('pencil','xs')}${noteTxt?esc(noteTxt):pt('note')}</span><span class="sr">${pt('noteN',{name:N})}${noteTxt?'：'+esc(noteTxt):''}</span></button>
@@ -1223,7 +1231,7 @@ const plannerFn=function planner(g){
       const up=ev=>{ if(ev&&ev.pointerId!=null&&ev.pointerId!==D.id||!DRAG) return;
         const was=D.on, a=D.from, b=D.to; cleanup();
         if(was){ suppressClick=true; setTimeout(()=>{ suppressClick=false; },400); }
-        if(was&&a!==b){ const id=ids[a]; if(edit(m=>{ const l=m.days[date]; const i=l.indexOf(id); if(i<0) throw new Error('gone'); l.splice(i,1); l.splice(b,0,id); },pt('reordered'),{focus:b})) confirmBar(S.lastBreaks); }
+        if(was&&a!==b){ const id=ids[a]; if(edit(m=>{ const l=m.days[date]; const i=l.indexOf(id); if(i<0) throw new Error('gone'); l.splice(i,1); l.splice(b,0,id); },pt('reordered'),{focus:b})) confirmBar(S.lastBreaks,id); }
         else if(PENDING) render();
       };
       const cancel=()=>{ if(!DRAG) return; cleanup(); render(); };
@@ -1482,7 +1490,7 @@ const plannerFn=function planner(g){
   function ctx(){ return {S,DB,E,view,svg,slug,SRC,pt,esc,ic,head,doneBar,openSheet,closeSheet,toast,undo,pushHist,save,render,edit,plan,findPlan,planName,presetName,
     idsOf,schedule,dayStyle,dlabel,dayTitle,dur,hm,nm,nmLang,wbr,place,bodyOf,snapshot,renderTop,fitDay,isCand,plannedMap,FAMILY,thumb,tr,CAT,AREA,
     unverifiedHours,reorder,focusStop,afterRender,okHM,clone,switchToMe,hav,mapState,saveUI,select,unprj,ja,showCands,stopPlacing,impChanged,
-    savedTag,sigLine,warnText,breakText,guard,trial,breakLine,keepMy,forkGo,armed,legSegments,geom,arc,pathD,g,main,heroOf,thumb,glyphOf,ic,col:()=>CM,gal:p=>GX?GX.gal(p):[],gx:()=>GX,loadGallery,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,loadCss,loadJs,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:(o,soft)=>Object.keys(o).forEach(k=>{ if(!soft||!PT[k]) PT[k]=o[k]; })}; }
+    savedTag,sigLine,titleT,flagT,warnText,breakText,guard,trial,breakLine,keepMy,forkGo,armed,legSegments,geom,arc,pathD,g,main,heroOf,thumb,glyphOf,ic,col:()=>CM,gal:p=>GX?GX.gal(p):[],gx:()=>GX,loadGallery,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,loadCss,loadJs,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:(o,soft)=>Object.keys(o).forEach(k=>{ if(!soft||!PT[k]) PT[k]=o[k]; })}; }
   const openOrder=id=>needMore().then(m=>m.openOrder(id));
   const openSwap=id=>needMore().then(m=>m.openSwap(id));
   const openCompare=(a,b)=>needMore().then(m=>m.openCompare(a,b));

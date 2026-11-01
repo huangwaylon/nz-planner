@@ -248,7 +248,9 @@
     if (mapW) {
       const mx = W - M - mapW, my = PT + PH + 58, mh = Math.min(RH * Math.max(rows.length, 3) + 6, 400);
       const pts = geo.map(s => prj(s.lat, s.lon));
-      let x0 = Math.min(...pts.map(p => p[0])), x1 = Math.max(...pts.map(p => p[0])), y0 = Math.min(...pts.map(p => p[1])), y1 = Math.max(...pts.map(p => p[1]));
+      // where the day ends (the night's bed, or the airport): the drive home is part of the day
+      const home = m.home && m.home.lat != null ? prj(m.home.lat, m.home.lon) : null, all = home ? pts.concat([home]) : pts;
+      let x0 = Math.min(...all.map(p => p[0])), x1 = Math.max(...all.map(p => p[0])), y0 = Math.min(...all.map(p => p[1])), y1 = Math.max(...all.map(p => p[1]));
       const span = Math.max(x1 - x0, (y1 - y0) * mapW / mh, 8) * 1.5;
       const cx = (x0 + x1) / 2, cyy = (y0 + y1) / 2, k = mapW / span;
       c.save(); rr(c, mx, my, mapW, mh, 30); c.clip();
@@ -261,12 +263,13 @@
       const line = (q, dash) => { c.beginPath(); q.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.setLineDash(dash); c.stroke(); };
       c.lineWidth = 6; c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = T.day;
       // Road shapes when the planner has them (map units, the same projection); walk and ferry dotted, as in the book.
-      // Only legs between two of the day's stops: the legs out of and back to the base would put it on the card.
-      const near = q => pts.some(p => Math.hypot(p[0] - q[0], p[1] - q[1]) < 1.2);
+      // Legs between the day's stops and on to where it ends (the drive home is drawn too).
+      const near = q => all.some(p => Math.hypot(p[0] - q[0], p[1] - q[1]) < 1.2);
       const legs = (m.legs || []).filter(l => l && l.pts && l.pts.length > 1 && near(l.pts[0]) && near(l.pts[l.pts.length - 1]));
       if (legs.length) legs.forEach(l => line(l.pts.map(to), l.kind === 'drive' ? [] : [2, 12]));
-      else line(sp, []);
+      else line(home ? sp.concat([to(home)]) : sp, []);
       c.setLineDash([]);
+      if (home) { const q = to(home); c.fillStyle = T.day; c.fillRect(q[0] - 9, q[1] - 9, 18, 18); }
       sp.forEach((p, i) => { c.beginPath(); c.arc(p[0], p[1], i === 0 ? 11 : 8, 0, Math.PI * 2); c.fillStyle = i === 0 ? T.day : T.surface; c.fill(); c.lineWidth = 4; c.strokeStyle = T.day; c.stroke(); });
       c.restore();
     }

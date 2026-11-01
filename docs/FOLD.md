@@ -127,3 +127,18 @@ The book caps `.views` at 720 px. Folding the planner adds `.guide:has(.t-plan:c
 - ② (desk): one thumb per palette place and board stop.
 - Story: a stop without its own photo may use its first Commons picture (the canvas needs CORS).
 - Offline: sw.js keeps viewed Commons pictures in `nzp-gallery`, CORS 200s only (never opaque), LRU, 300 entries. Other hosts are network-only.
+
+## The core
+
+`planner.js` is one function, `planner(g)`, like the book's `packing(g)` and `map(g)`: it returns
+early when the guide has no `.v-plan`, and everything it touches is scoped by the guide's slug. It
+assumes only what the book provides: `LS.get` / `LS.set` (strings), `<html lang>` plus the document
+`langchange` event, `span.u` for distances (and LS `units`), and the `#i-*` sprite. Runtime strings
+live in `PT` (each lazy chunk adds its own).
+
+- **Data** (`data-src`, default `data/<slug>/`): `places.json` and `plans.json` first; `travel.json`,
+  `routes.json`, `photos.json`, `places-more.json` and `gallery.json` after first paint. Times match
+  `tools/check_plans.py` exactly.
+- **Storage:** LS `plan:<slug>` `{v:2, active, trip:{tier, groups, notes}, my, versions, imports,
+  booked}` (a v1 save is backed up to `plan:<slug>:v1` and migrated; see `planner.state`), and
+  `plan-ui:<slug>` `{v:1, day, map, stage, cf, board, pin, hideInstall, hideIntro, routes, rorder}`.

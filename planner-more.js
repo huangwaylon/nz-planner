@@ -6,7 +6,8 @@
 (function(){
 'use strict';
 if(typeof planner!=='function'||planner.more) return;
-const PTM={ sleepQ:{ja:'この夜に泊まる',en:'Stay this night'}, sleepS:{ja:'{d}の夜は{name}に泊まります',en:'{name} for the night of {d}'}, sleptOn:{ja:'{d}の夜に泊まる予定',en:'Staying the night of {d}'}, unsleep:{ja:'泊まるのをやめる',en:'Don’t stay here'}, unslept:{ja:'{name}に泊まるのをやめました',en:'No longer staying at {name}'},
+const PTM={ already:{ja:'{n}件はすでに{d}に入っています',en:'{n} already on {d}'},
+sleepQ:{ja:'この夜に泊まる',en:'Stay this night'}, sleepS:{ja:'{d}の夜は{name}に泊まります',en:'{name} for the night of {d}'}, sleptOn:{ja:'{d}の夜に泊まる予定',en:'Staying the night of {d}'}, unsleep:{ja:'泊まるのをやめる',en:'Don’t stay here'}, unslept:{ja:'{name}に泊まるのをやめました',en:'No longer staying at {name}'},
 bestDay:{ja:'最適 {d}',en:'Best {d}'}, placedN:{ja:'{n}/{of} 配置',en:'{n}/{of} placed'}, noDay:{ja:'⚠ どの日も崩れます',en:'⚠ breaks every day'}, grpSum:{ja:'約{d}・運転{m}',en:'about {d}, {m} driving'}, picks:{ja:'おすすめ',en:'Suggested'}, use:{ja:'使う',en:'Use'}, rename2:{ja:'名前を変える',en:'Rename'}, drop:{ja:'グループを解く',en:'Ungroup'}, noGroup:{ja:'グループなし',en:'Not in a group'},
 mine:{ja:'わたしのリスト',en:'My list'}, mAll:{ja:'すべて',en:'All'}, m_must:{ja:'絶対',en:'Must'}, m_want:{ja:'行きたい',en:'Want'}, m_maybe:{ja:'余裕',en:'If time'}, mGrp:{ja:'グループ：{g}',en:'Group: {g}'}, picksH:{ja:'おすすめ',en:'Suggestions'}, mineNone:{ja:'①で分けた場所とグループがここに出ます',en:'Places you sort in ① and your groups show here'},
 forkT:{ja:'マイプランに編集があります',en:'My plan has edits of its own'}, forkS:{ja:'「{name}」を編集すると、マイプランが置き換わります。',en:'Editing “{name}” replaces My plan.'}, forkOver:{ja:'マイプランを上書き',en:'Overwrite My plan'}, forkNew:{ja:'新しい案として保存',en:'Save as a new version'}, forkNewS:{ja:'今のマイプランは「{name}」として案に残ります',en:'Your current My plan stays as the version “{name}”'},
@@ -202,7 +203,7 @@ planner.more=function(c){
      swap breaks elsewhere, and a trailhead that leaves with the walk, are said on the row */
   let LASTSWAP=null;
   function altRow(x){
-    const why=x.r.wait>0?pt('wait',{t:hm(x.r.begin),d:dur(x.r.wait)}):unverifiedHours(x.p)?pt('hoursUnknown'):'', day=DB.days[S.day];
+    const why=x.r.wait>0?pt('wait',{t:hm(x.r.begin),d:dur(x.r.wait)}):x.p.hours==='unknown'?pt('hoursUnknown'):'', day=DB.days[S.day];
     const br=x.breaks.map(b=>(b.kind==='stop'?nm(place(b.id))+'：':'')+c.warnText(b.w,day));
     return `<li><button type="button" class="pl-alt${br.length?' pl-altw':''}" data-act="doswap" data-id="${x.p.id}">${thumb(x.p)}
       <span><b${nmLang(x.p)}>${wbr(nm(x.p))}</b>${sigLine(x.p)}<small>${savedTag(x.p)}${hm(x.r.begin)}–${hm(x.r.dep)}　${tr(CAT,x.p.cat)}　${tr(AREA,x.p.area)}${why?`　<em>${esc(why)}</em>`:''}</small>
@@ -355,7 +356,7 @@ planner.more=function(c){
     groups.sort((a,b)=>(!!b.c.first)-(!!a.c.first)||(!a.c.id)-(!b.c.id)||b.sv-a.sv||a.s-b.s);
     fill(box,[mine.html,mine.html&&groups.length?`<h3 class="pl-plansep pl-pickh">${pt('picksH')}</h3>`:''].concat(groups.map(x=>{ const free=x.m.filter(id=>!planned.has(id)).length, cn=(ja()?x.c.nameJa:x.c.name)||x.c.name||x.c.id;
       return `<section class="pl-clus"><div class="pl-clus-h"><h3>${esc(cn)}<small>${pt('count',{n:x.m.length})}</small></h3>
-        ${x.c.id&&free>1?`<button type="button" class="pl-addall" data-act="addall" data-id="${x.c.id}" aria-expanded="false">${ic('plus','xs')}<span aria-hidden="true">${pt('addAll')}</span><span class="sr">${esc(pt('addAllN',{name:cn}))}</span></button>`:''}</div>
+        ${x.c.id&&free>1?`<button type="button" class="pl-addall" data-act="addall" data-id="${x.c.id}" data-ids="${esc(x.m.filter(id=>!planned.has(id)).join(' '))}" aria-expanded="false">${ic('plus','xs')}<span aria-hidden="true">${pt('addAll')} ${free}</span><span class="sr">${esc(pt('addAllN',{name:cn}))}</span></button>`:''}</div>
         ${x.c.id&&x.c.id!=='_imp'?`<p class="pl-clsum">${clusterSum(x.m)}${x.c.startAt?`　${pt('startAt',{t:x.c.startAt})}`:''}</p>`:''}
         ${x.m.map(id=>candRow(id,planned,day,null)).join('')}</section>`; })));
   }
@@ -389,7 +390,7 @@ planner.more=function(c){
         ${ids.map(id=>candRow(id,planned,day,null)).join('')||`<p class="pl-none">${pt('mineNone')}</p>`}</section>`+
       gs.map(({g,m})=>{ const free=m.filter(id=>!planned.has(id)).length;
         return `<section class="pl-clus pl-mine"><div class="pl-clus-h"><h3>${esc(pt('mGrp',{g:g.name}))}<small>${pt('count',{n:m.length})}</small></h3>
-        ${free>0?`<button type="button" class="pl-addall" data-act="addall" data-id="${g.id}" aria-expanded="false">${ic('plus','xs')}<span aria-hidden="true">${pt('addAll')}</span><span class="sr">${esc(pt('addAllN',{name:g.name}))}</span></button>`:''}</div>
+        ${free>0?`<button type="button" class="pl-addall" data-act="addall" data-id="${g.id}" data-ids="${esc(m.filter(id=>!planned.has(id)).join(' '))}" aria-expanded="false">${ic('plus','xs')}<span aria-hidden="true">${pt('addAll')} ${free}</span><span class="sr">${esc(pt('addAllN',{name:g.name}))}</span></button>`:''}</div>
         <p class="pl-clsum">${clusterSum(m)}</p>${m.map(id=>candRow(id,planned,day,null)).join('')}</section>`; }).join('');
     return {html,ids}; }
   /* The first screenful goes in now, the rest after the frame: the sheet opens without parsing
@@ -447,7 +448,7 @@ planner.more=function(c){
     const others=pin.length?pin:all.filter(x=>x.id!==P.id).slice(0,2).map(x=>x.id);
     const ver=x=>{ const ds=DB.days.map((d,i)=>dayModel2(x,d,i,mu)), placed=new Set(ds.flatMap(d=>d.ids.filter(i=>mu.indexOf(i)>=0)));
       return {id:x.id,name:planName(x),nameJa:planName(x),active:x.id===P.id,totals:{driveMin:ds.reduce((t,d)=>t+d.driveMin,0),warn:ds.reduce((t,d)=>t+d.warn.length,0),must:[placed.size,mu.length]},
-        days:Object.fromEntries(ds.map((d,i)=>[d.date,{stops:d.ids.map(i=>nm(place(i))),endTime:d.endTime,warn:d.warn.length,label:x.titles&&x.titles[d.date]||null}]))}; };
+        days:Object.fromEntries(ds.map((d,i)=>[d.date,{stops:d.ids.map(i=>nm(place(i))),endTime:d.endTime,warn:d.warn.length,label:c.titleT(d,x)}]))}; };
     return {trip:{start:DB.days[0].date,end:DB.days[DB.days.length-1].date,lang:c.lang()},days,versions:[P].concat(others.map(findPlan)).map(ver)}; }
   function renderReview(el){
     const all=[S.my].filter(Boolean).concat(S.versions,DB.presets), cur=plan(), pin=new Set(S.pin||[]);
@@ -507,13 +508,14 @@ planner.more=function(c){
      nameJa, cat, photo, lat, lon}], stats, tags}, plus the leg shapes in map units. */
   function dayModel(){
     const day=DB.days[S.day], sc=S.sc, cs=getComputedStyle(c.main);
-    const P=plan(), tt=P.titles&&P.titles[day.date];
+    const P=plan(), tt=c.titleT(day,P);
     return {slug, guide:c.g, lang:lang(), date:day.date, dayNo:S.day+1, title:tt&&tt.en||day.label, titleJa:tt&&tt.ja||day.labelJa,
       color:cs.getPropertyValue('--c').trim(), ink:cs.getPropertyValue('--ci').trim(),
       stops:sc.rows.filter(r=>r.kind==='stop').map(r=>{ const p=place(r.id); return {id:p.id,time:hm(r.begin),end:hm(r.dep),name:p.name,nameJa:p.nameJa||p.name,cat:p.cat,best:p.best||'',
         sun:(r.infos.find(x=>x.k==='sunrise'||x.k==='sunsetAt')||{}).t!=null?hm(r.infos.find(x=>x.k==='sunrise'||x.k==='sunsetAt').t):'',
         lat:p.lat,lon:p.lon,photo:DB.photos&&DB.photos[p.id]||commons(p)}; }),
       stats:pt('drive',{d:dur(sc.drive)})+' · '+Math.round(sc.km)+' km · '+pt('stops',{n:sc.rows.length-2}),
+      home:(p=>p&&{lat:p.lat,lon:p.lon})(place(sc.rows[sc.rows.length-1].id)),
       tags:[...new Set(sc.rows.map(r=>place(r.id).igTag).filter(Boolean))].slice(0,3),
       legs:c.legSegments(sc).map(s=>({kind:s.kind,pts:(s.kind==='drive'&&c.geom(s.a,s.b)||{pts:[s.p0,s.p1]}).pts}))};
   }
@@ -616,7 +618,7 @@ planner.more=function(c){
         ${p.best&&p.best!=='any'?`<div class="pl-fact"><dt>${pt('best')}</dt><dd>${bestText(p,day.date)}</dd></div>`:''}
         ${p.aesthetic?`<div class="pl-fact"><dt>${pt('aesthetic')}</dt><dd><span class="pl-meter" style="--v:${p.aesthetic}" aria-hidden="true"></span> ${p.aesthetic}/5<span class="sr">${pt('of5',{n:p.aesthetic})}</span></dd></div>`:''}
       </dl>
-      ${flagsOf(p).length?`<div class="pl-flags">${flagsOf(p).map(f=>`<span class="pl-flag">${tr(FLAG,f)}</span>`).join('')}</div>`:''}`}
+      ${flagsOf(p).length?`<div class="pl-flags">${flagsOf(p).map(f=>c.flagT(f,p)?`<span class="pl-flag">${c.flagT(f,p)}</span>`:'').join('')}</div>`:''}`}
       ${evid&&evid.length?`<section class="pl-why"><h3>${pt('why')}</h3>${ja()?`<p class="pl-whyja">${p.badge?esc(p.badge.ja):pt('whyJa',{n:evid.length})}</p>`:`<ul>${evid.map(x=>`<li lang="en">${esc(x.replace(/\s*—?\s*https?:\/\/\S+/g,''))}</li>`).join('')}</ul>`}
         ${(more.sources||[]).length?`<p class="pl-src">${[...new Set(more.sources.map(domain).filter(Boolean))].slice(0,5).map((dm,k)=>`<a href="${esc(more.sources.find(u=>domain(u)===dm))}" target="_blank" rel="noopener">${esc(dm)}</a>`).join('')}</p>`:''}</section>`:''}
       <p class="pl-coords"><span>${pt('coords')} <span lang="en">${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}</span></span><button type="button" class="pl-ab pl-lbl" data-act="copyc" data-v="${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}">${pt('copy')}</button></p>
@@ -715,9 +717,11 @@ planner.more=function(c){
           if(c.guard(b,'mh'+id+date,m=>{ const a=m.days[from]; a.splice(a.indexOf(id),1); const l=(m.days[date]=m.days[date]||[]); l.splice(c.sim().bestPos(day,l,id,m,{deadline:S.dayEnd}).pos,0,id); },pt('movedTo',{d:dlabel(day)}))) openPlace(id,back); break; }
         case 'addall': { const sec=b.closest('.pl-clus'), ex=sec.querySelector(':scope > .pl-dayq');
           if(ex){ ex.remove(); b.setAttribute('aria-expanded','false'); break; }
-          b.closest('.pl-clus-h').insertAdjacentHTML('afterend',dayPick(b.dataset.id,'pl-dayq-clus',clusterOf(b.dataset.id))); b.setAttribute('aria-expanded','true');
+          /* only the members the list shows (and not yet placed) are added */
+          const cl=clusterOf(b.dataset.id); S.clv=cl&&b.dataset.ids?Object.assign({},cl,{ids:b.dataset.ids.split(' ')}):cl;
+          b.closest('.pl-clus-h').insertAdjacentHTML('afterend',dayPick(b.dataset.id,'pl-dayq-clus',S.clv)); b.setAttribute('aria-expanded','true');
           const cur=sec.querySelector('.pl-dq.pl-cur'); if(cur) cur.focus(); break; }
-        case 'addallday': { const c=clusterOf(b.dataset.id); if(!c) break;
+        case 'addallday': { const c=S.clv&&S.clv.id===b.dataset.id?S.clv:clusterOf(b.dataset.id); if(!c) break;
           const add=addIds(c); if(!add.length){ toast(pt('nothingAdded')); break; }
           if(armPill(b)||!applyAdd(+b.dataset.day,add,c)) break;
           add.forEach(patchCand); const q=b.closest('.pl-dayq'); if(q) q.remove(); break; }

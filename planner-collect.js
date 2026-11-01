@@ -32,9 +32,9 @@ planner.collect=function(c){
       .sort((a,b)=>(!!b.saved)-(!!a.saved)||(b.trend||0)*10+(b.aesthetic||0)-(a.trend||0)*10-(a.aesthetic||0)); }
   /* one card: the place, where it already is, and the four tier buttons (44 px each, the word always shown) */
   function card(p,pm){ const t=tierOf(p.id), g=groupOf(p.id), on=pm.get(p.id), R=focus===p.id?'':' tabindex="-1"';
-    return `<article class="pl-cc${sel.has(p.id)?' pl-csel':''}" data-id="${p.id}" data-tier="${t}" tabindex="${focus===p.id?0:-1}">${(S.cardMedia||thumb)(p)}
+    return `<article class="pl-cc${sel.has(p.id)?' pl-csel':''}" data-id="${p.id}" data-tier="${t}" tabindex="${focus===p.id?0:-1}"><button type="button" class="pl-ccm" data-ca="open" data-id="${p.id}" tabindex="-1" aria-hidden="true">${(S.cardMedia||thumb)(p)}</button>
       <div class="pl-ccb"><button type="button" class="pl-ccn" data-ca="open" data-id="${p.id}"${nmLang(p)}${R}>${wbr(nm(p))}</button>
-      <small><span>${tr(CAT,p.cat)}</span><span>${tr(AREA,p.area)}</span>${on!=null?`<span class="pl-ccd">${pt('inDay2',{d:dlabel(DB.days[on])})}</span>`:''}${g?`<span>${esc(pt('inGroup',{g:g.name}))}</span>`:''}${seeded(p.id)?`<span class="pl-ccs">${pt('fromSaved')}</span>`:''}${sel.has(p.id)?`<span class="sr">${pt('selN',{n:''})}</span>`:''}</small></div>
+      <small>${on!=null?`<span class="pl-ccd">${ic('calendar','xs')}${pt('inDay2',{d:dlabel(DB.days[on])})}</span>`:`<span>${tr(CAT,p.cat)}</span>`}${seeded(p.id)?`<span class="pl-ccs">${ic('bookmark','xs')}<span class="sr">${pt('fromSaved')}</span></span>`:''}${sel.has(p.id)?`<span class="sr">${pt('selN',{n:''})}</span>`:''}</small></div>
       <div class="pl-tseg" role="group" aria-label="${esc(pt('tierOf',{name:nm(p)}))}">${T.map(k=>`<button type="button" data-ca="tier" data-t="${k}" data-id="${p.id}" aria-pressed="${t===k}"${R} title="${esc(pt('t_'+k))}">${k==='maybe'?`<span class="pl-tl">${pt('s_maybe')}</span><span class="pl-ts">${pt('ss_maybe')}</span>`:pt('s_'+k)}</button>`).join('')}</div></article>`; }
   const sec=(k,title,n,body,extra,shut)=>`<section class="pl-cs" data-k="${esc(k)}">${shut?'<details>':''}<${shut?'summary':'div'} class="pl-csh"><h3>${title}<small>${n}</small></h3>${extra||''}</${shut?'summary':'div'}><div class="pl-csl">${body}</div>${shut?'</details>':''}</section>`;
   function sections(list,pm){ const by=f=>{ const o=new Map(); list.forEach(p=>{ const k=f(p); if(!o.has(k)) o.set(k,[]); o.get(k).push(p); }); return o; };
@@ -101,9 +101,10 @@ planner.collect=function(c){
       case 'selx': selMode=false; sel.clear(); render(true); break;
       case 'bulk': { const ids=[...sel]; setTier(ids,b.dataset.t,pt('tiered',{n:ids.length,t:pt('t_'+b.dataset.t)})); break; }
       case 'group': { const ids=targets(); if(!ids.length){ toast(pt('nothingSel')); break; } c.needMore().then(m=>m.groupSheet(ids)); break; }
-      case 'days': { const ids=[...sel].filter(i=>!plannedMap(c.plan()).has(i)); if(!ids.length){ toast(pt('nothingSel')); break; }
+      case 'days': { const pm=plannedMap(c.plan()), ids=[...sel].filter(i=>!pm.has(i)), on=[...sel].filter(i=>pm.has(i)); if(!ids.length&&!on.length){ toast(pt('nothingSel')); break; }
         S.selc={id:'_sel',ids,name:pt('selN',{n:ids.length}),nameJa:pt('selN',{n:ids.length})};
-        c.needMore().then(m=>openSheet(head(pt('toDays'),pt('selN',{n:ids.length}))+m.dayPick('_sel','pl-dayq-big',S.selc)+doneBar(),'cdays')); break; }
+        /* what is already on a day is said, not dropped */
+        c.needMore().then(m=>openSheet(head(pt('toDays'),pt('selN',{n:ids.length})+(on.length?'　'+pt('already',{n:on.length,d:dlabel(DB.days[pm.get(on[0])])}):''))+(ids.length?m.dayPick('_sel','pl-dayq-big',S.selc):'')+doneBar(),'cdays')); break; }
       case 'handoff': handoff(); break;
       case 'clearf': Object.assign(cf,{q:'',cat:null,saved:null}); saveUI(); render(true); break;
       case 'undo': c.undo(); break;
