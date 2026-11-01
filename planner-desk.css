@@ -32,42 +32,34 @@
   .v-plan[data-stage="collect"] .pl-map .pl-legs{display:none;}
 }
 
-/* ---------- ② the palette: musts still to place, groups as blocks, then the wants; rows are unboxed ---------- */
+/* ---------- ② the palette: musts still to place, groups as blocks, then the wants; compact rows ---------- */
 .pl-palette{padding:var(--pl-s-3) 0 var(--pl-s-5);}
-.pl-ph3{display:flex;align-items:baseline;gap:var(--pl-s-2);margin:var(--pl-s-5) 0 var(--pl-s-2);font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
-.pl-ph3 small{font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
-.pl-ok{margin-left:auto;font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);font-style:normal;color:var(--ink);}
-.pl-pi{display:flex;align-items:center;gap:var(--pl-s-3);width:100%;min-height:var(--pl-h-m);margin:0;padding:var(--pl-s-1) 0;border:0;border-bottom:var(--pl-hair);border-radius:0;background:none;
-  text-align:left;font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--ink);cursor:grab;}
-.pl-tn{flex:none;width:var(--pl-h-s);height:var(--pl-h-s);border-radius:var(--pl-r-1);overflow:hidden;display:grid;place-items:center;background:var(--pl-tint);color:var(--muted);}
-.pl-tn img{width:100%;height:100%;object-fit:cover;display:block;}
-.pl-pg{margin:0 0 var(--pl-s-2);padding:var(--pl-s-2) var(--pl-s-3);border-radius:var(--pl-r-2);background:var(--pl-tint);cursor:grab;}
-.pl-pg b{font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);} .pl-pg small{margin-left:var(--pl-s-2);font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
-.pl-pg .pl-pi:last-child{border-bottom:0;}
-.pl-pmore{display:block;width:100%;min-height:var(--pl-h-m);border:0;background:none;color:var(--acc);font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);text-align:left;}
+.pl-palette .pl-row{min-height:var(--pl-h-m);padding:var(--pl-s-1) 0;cursor:grab;}
+.pl-palette .pl-row__media{width:var(--pl-h-s);height:var(--pl-h-s);}
+.pl-palette .pl-row__title{font-size:var(--pl-fs-s);line-height:var(--pl-lh-s);}
+.pl-palette .pl-thumb{width:100%;height:100%;}
+.pl-palette__group{margin:0 0 var(--pl-s-2);padding:var(--pl-s-2) var(--pl-s-3);border-radius:var(--pl-r-2);background:var(--pl-tint);cursor:grab;}
+.pl-palette__group h4{display:flex;align-items:center;gap:var(--pl-s-2);margin:0;font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);}
+.pl-palette__group .pl-row:last-child{border-bottom:0;}
+.pl-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
 
 /* ---------- ② the 6日 board: an app-height spread, six lanes on paper, the map as the facing page ---------- */
 .pl-board{grid-template-columns:repeat(6,minmax(0,1fr));gap:0;align-items:start;}
 .pl-bc{min-width:0;padding:0 var(--pl-s-2) var(--pl-s-5);border-right:var(--pl-hair);}
 .pl-bc:last-child{border-right:0;}
-.pl-bc.pl-cur{background:color-mix(in srgb,var(--surface) 70%,transparent);}
-/* the board's day header (pl-dayhead, column layout): the 3 px bar on top */
-.pl-bh{display:grid;grid-template-columns:auto 1fr;column-gap:var(--pl-s-2);align-items:baseline;width:100%;padding:0 0 var(--pl-s-2);border:0;border-top:var(--pl-bar) solid var(--c);background:var(--bg);text-align:left;color:var(--ink);}
-.pl-bc.pl-cur .pl-bh{background:transparent;}
-.pl-bhi{grid-column:1 / -1;width:100%;height:auto;aspect-ratio:3/2;margin:0 0 var(--pl-s-2);border-radius:0 0 var(--pl-r-1) var(--pl-r-1);object-fit:cover;display:block;}
-.pl-bh b{margin-top:var(--pl-s-2);font:600 var(--pl-fs-d)/var(--pl-lh-d) var(--pl-font);letter-spacing:-.02em;color:var(--ink);}
-.pl-bh>span{font:400 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
-.pl-bh small{grid-column:1 / -1;margin-top:var(--pl-s-1);font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--ink);}
-.pl-bh em{grid-column:1 / -1;font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);font-style:normal;color:var(--pl-warn);}
-.pl-bl{margin:0 0 0 calc(var(--pl-m-s) + var(--pl-s-2));padding:var(--pl-s-1) 0;font:400 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
-.pl-bs{display:grid;grid-template-columns:var(--pl-m-s) minmax(0,1fr);column-gap:var(--pl-s-2);align-items:start;width:100%;margin:0;padding:var(--pl-s-2) 0;border:0;border-bottom:var(--pl-hair);border-radius:0;background:none;
-  text-align:left;color:var(--ink);cursor:grab;}
-.pl-bs .pl-tn{width:var(--pl-m-s);height:var(--pl-m-s);grid-row:span 2;}
-.pl-bs>span{font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
-.pl-bs>b{font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;}
-.pl-bs.pl-bad>span{color:var(--pl-warn);}
-.pl-bs:focus-visible{outline:var(--pl-focus);outline-offset:-3px;}
-.pl-be{display:grid;place-items:center;min-height:120px;margin:var(--pl-s-2) 0;padding:var(--pl-s-3);border:1px dashed var(--line);border-radius:var(--pl-r-2);font:400 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);color:var(--muted);text-align:center;}
+.pl-bc.is-current{background:color-mix(in srgb,var(--surface) 70%,transparent);}
+/* the board's day header (pl-dayhead, column layout): the 3 px bar on top, the photo, numeral and weekday, the stats */
+.pl-board .pl-dayhead{margin:0;padding:0 0 var(--pl-s-2);border-top:var(--pl-bar) solid var(--day);background:var(--bg);}
+.pl-bc.is-current .pl-dayhead{background:transparent;}
+.pl-board .pl-dayhead__media{aspect-ratio:3/2;margin:0 0 var(--pl-s-2);border-radius:0 0 var(--pl-r-1) var(--pl-r-1);}
+.pl-board .pl-dayhead__photo{display:block;width:100%;height:100%;object-fit:cover;}
+.pl-board .pl-dayhead__row{display:flex;align-items:baseline;gap:var(--pl-s-2);width:100%;padding:0;border:0;background:none;text-align:left;color:var(--ink);cursor:pointer;}
+.pl-board .pl-dayhead__stats{display:flex;flex-wrap:wrap;gap:0 var(--pl-s-3);margin:var(--pl-s-1) 0 0;font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);}
+.pl-board .pl-row{align-items:flex-start;cursor:grab;}
+.pl-board .pl-row__title{font-size:var(--pl-fs-s);line-height:var(--pl-lh-s);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;}
+.pl-board .pl-thumb{width:100%;height:100%;}
+.pl-board .pl-leg{min-height:0;padding:var(--pl-s-1) 0 var(--pl-s-1) calc(var(--pl-m-s) + var(--pl-s-3));font:400 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);margin:0;}
+.pl-bc>.pl-hint{margin:var(--pl-s-2) 0;padding:var(--pl-s-4) var(--pl-s-2);border:1px dashed var(--line);border-radius:var(--pl-r-2);text-align:center;}
 /* one scroll context: the lanes grow with their stops and the page scrolls; the palette and the map
    stay at viewport height beside them, and the day heads stick to the top */
 @container plan (min-width:1760px){
@@ -78,30 +70,26 @@
   .v-plan.pl-6[data-stage="plan"] .pl-palette{overflow:auto;overscroll-behavior:contain;}
   .v-plan.pl-6[data-stage="plan"] .pl-mapcard .pl-mapbox{height:100%;}
   .v-plan.pl-6 .pl-bc{display:flex;flex-direction:column;}
-  .v-plan.pl-6 .pl-bh{position:sticky;top:0;z-index:1;}
+  .v-plan.pl-6 .pl-board .pl-dayhead{position:sticky;top:0;z-index:1;}
 }
 @container plan (min-width:2400px){ .v-plan{--pl-pal-w:280px;} }
 
-/* ---------- dragging: a shadow only on the thing in your hand; will-change only while it moves ---------- */
-.pl-dgh{position:fixed;z-index:80;left:0;top:0;pointer-events:none;max-width:280px;padding:var(--pl-s-2) var(--pl-s-3);border-radius:var(--pl-r-2);background:var(--surface);
-  box-shadow:var(--pl-e-2);font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);color:var(--ink);will-change:transform;}
-.pl-dgh b{display:block;}
-.pl-dgh small{display:block;font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);} .pl-dgh .pl-gw{color:var(--pl-warn);}
-.pl-dragging,.pl-dragging *{cursor:grabbing!important;user-select:none;}
-.pl-lift{opacity:.45;}
-.pl-dzon{outline:2px dashed var(--ink);outline-offset:3px;}
-.pl-cal-d.pl-dzon{background:var(--pl-tint);}
-.pl-armbar{position:fixed;z-index:81;width:340px;padding:var(--pl-s-3);border-radius:var(--pl-r-2);background:var(--surface);box-shadow:var(--pl-e-2);outline:2px solid var(--pl-warn);outline-offset:-2px;
-  font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);color:var(--pl-warn);}
-.pl-armbar p{margin:0 0 var(--pl-s-2);} .pl-armbar div{display:flex;justify-content:flex-end;gap:var(--pl-s-2);}
+/* ---------- dragging: a shadow only on the thing in your hand (the JS sets will-change while it moves) ---------- */
+.pl-dragghost{position:fixed;z-index:80;left:0;top:0;pointer-events:none;max-width:280px;padding:var(--pl-s-2) var(--pl-s-3);border-radius:var(--pl-r-2);background:var(--surface);
+  box-shadow:var(--pl-e-2);font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);color:var(--ink);}
+.pl-dragghost b{display:block;}
+.pl-dragghost small{display:block;font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
+[data-drag].is-lifted{opacity:.45;}
+.is-dropzone{outline:2px dashed var(--ink);outline-offset:3px;}
+.pl-cal-d.is-dropzone{background:var(--pl-tint);}
 
 /* ---------- hover, on fine pointers only; a lane, a stop or a card lights its pin (no transition) ---------- */
 @media (hover:hover){
-  .v-plan :is(.pl-bs,.pl-pi):hover{background:var(--pl-tint);}
-  .v-plan .pl-bc:hover .pl-bh b{text-decoration:underline 1px;text-underline-offset:4px;}
+  .v-plan :is(.pl-board,.pl-palette) .pl-row:hover{background:var(--pl-tint);}
+  .v-plan .pl-board .pl-dayhead__row:hover .pl-dayhead__num{text-decoration:underline 1px;text-underline-offset:4px;}
 }
-.pl-row.pl-hot,.pl-bs.pl-hot,.pl-card.pl-hot{outline:2px solid var(--ink);outline-offset:-2px;}
-.pl-map .pl-pin.pl-hot .pl-mk{stroke:var(--ink);stroke-width:3px;}
+.pl-row.is-hot,.pl-card.is-hot{outline:2px solid var(--ink);outline-offset:-2px;}
+.pl-map .pl-pin.is-hot .pl-mk{stroke:var(--ink);stroke-width:3px;}
 
 /* ---------- every day at once on the board's map ---------- */
 .pl-map.pl-all .pl-legs{display:none;}
@@ -112,4 +100,4 @@
 .pl-map .pl-cands [data-t="want"] .pl-mk{fill:color-mix(in srgb,var(--ink) 55%,var(--surface));}
 .pl-map .pl-cands [data-t="skip"]{opacity:.35;}
 /* the palette and board thumbs: the first picture that loads, else the glyph (before the gallery chunk too) */
-.pl-tn.pl-g1>img:not(:first-of-type),.pl-tn.pl-g1:has(img)>.pl-gfb{display:none;}
+

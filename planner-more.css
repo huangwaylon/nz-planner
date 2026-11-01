@@ -2,14 +2,14 @@
    planner-more.js, so the first screen never pays for them. Tokens and components come from
    planner.css; this file only places them. */
 /* section labels: one style, on the pane's left edge */
-.pl-plansep,.pl-listhead{margin:var(--pl-s-5) 0 var(--pl-s-2);font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
+.pl-listhead{margin:var(--pl-s-5) 0 var(--pl-s-2);font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
 .pl-pastebox,.pl-syncbox{margin:var(--pl-s-4) 0 0;padding:var(--pl-s-4);border-radius:var(--pl-r-2);background:var(--pl-tint);}
 .pl-pastebox h3,.pl-syncbox h3{margin:0 0 var(--pl-s-2);font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);}
 .pl-syncbox{display:grid;gap:var(--pl-s-2);}
 .pl-syncbox h3{margin:0;}
 .pl-dayend{display:flex;align-items:center;justify-content:space-between;gap:var(--pl-s-3);min-height:var(--pl-h-l);margin-top:var(--pl-s-3);font-size:var(--pl-fs-m);color:var(--muted);}
 /* plans: photo tiles; the chosen one turns ink */
-.pl-plans>.pl-plansep{grid-column:1 / -1;}
+
 /* order and swap: plain rows */
 .pl-orderud{display:grid;grid-template-columns:1fr 1fr;gap:var(--pl-s-2);margin-bottom:var(--pl-s-3);}
 .pl-orderlist{list-style:none;margin:0;padding:0;}
@@ -18,84 +18,6 @@
 /* candidates */
 
 .pl-clus{margin-top:var(--pl-s-4);}
-.pl-clus-h{display:flex;align-items:center;justify-content:space-between;gap:var(--pl-s-3);margin:0 0 var(--pl-s-1);}
-.pl-clus-h h3{margin:0;font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);}
-.pl-clus-h small{display:block;font:400 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
-/* the day quick-pick: day pills, ⚠ in the text, never a red ring */
-.pl-dayq{grid-column:1 / -1;display:flex;flex-direction:column;gap:var(--pl-s-2);padding:var(--pl-s-1) 0 var(--pl-s-2);}
-.pl-dayq-big{margin:var(--pl-s-1) 0 var(--pl-s-3);}
-/* the place */
-
-.pl-facts{display:grid;grid-template-columns:1fr 1fr;gap:var(--pl-s-3) var(--pl-s-4);margin:0 0 var(--pl-s-4);padding:var(--pl-s-4);border-radius:var(--pl-r-2);background:var(--pl-tint);}
-/* compare: neutral text, a dot marks what only one version has */
-
-/* ③: heading, the versions to compare, then the calendar and the versions grid (planner-cal) */
-
-.pl-rvh{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--pl-s-3) var(--pl-s-5);margin:0 0 var(--pl-s-5);}
-.pl-rvpin{flex:1 1 320px;margin:0;padding:0;align-items:center;}
-.pl-rvpin .pl-hint{flex:none;margin:0 var(--pl-s-1) 0 0;white-space:nowrap;}
-/* the place's gallery */
-.pl-gal{position:relative;margin:0 0 var(--pl-s-3);--ar:16/9;}
-.pl-gtrack{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;border-radius:var(--pl-r-2);background:var(--pl-tint);}
-.pl-gtrack::-webkit-scrollbar{display:none;}
-.pl-gf{position:relative;flex:0 0 100%;margin:0;scroll-snap-align:center;scroll-snap-stop:always;aspect-ratio:16/9;}
-.pl-gfull .pl-gf{aspect-ratio:var(--ar);max-height:70vh;max-height:70dvh;}
-.pl-gz{display:block;width:100%;height:100%;padding:0;border:0;background:none;cursor:zoom-in;-webkit-touch-callout:none;}
-.pl-gfull .pl-gz{cursor:zoom-out;}
-.pl-gz img{display:block;width:100%;height:100%;object-fit:cover;}
-.pl-gfull .pl-gz img{object-fit:contain;}
-.pl-gf figcaption{position:absolute;right:var(--pl-s-2);bottom:var(--pl-s-2);max-width:calc(100% - 16px);padding:0 var(--pl-s-2);border-radius:var(--pl-r-1);background:rgba(var(--pl-scrim),.64);color:var(--surface);font:400 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.pl-gf figcaption a{display:inline-flex;align-items:center;min-height:24px;color:inherit;text-decoration:none;}
-.pl-gdots{display:flex;justify-content:center;align-items:end;gap:var(--pl-s-2);height:16px;}
-.pl-gdots i{width:8px;height:8px;border-radius:50%;background:var(--muted);opacity:.45;}
-.pl-gal:has(.pl-gf)>.pl-gfb,.pl-gal:not(:has(.pl-gf))>:is(.pl-gtrack,.pl-gdots){display:none;}
-/* ① by group: おすすめ to adopt, each with a cover */
-.pl-picks ul{list-style:none;margin:0;padding:0;}
-.pl-picks li{display:grid;grid-template-columns:var(--pl-m-s) minmax(0,1fr) auto;gap:0 var(--pl-s-3);align-items:center;padding:var(--pl-s-2) 0;border-bottom:var(--pl-hair);}
-.pl-picks b{font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);grid-column:2;}
-.pl-picks small{font:400 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);grid-column:2;}
-.pl-picks .pl-cbtn{grid-row:1 / span 2;grid-column:3;}
-/* ① select mode (planner-more draws the bar): one row, a ○ / ✓ on each card's photo, no key digits on touch */
-
-.pl-cc{position:relative;}
-/* the 「案」 menu: versions as photo rows, the current one ringed in ink, tools behind ⋯ */
-.pl-plans{display:block;}
-.pl-plans .pl-row__media{width:var(--pl-m-l);height:var(--pl-m-s);}
-.pl-row--current .pl-row__media{outline:2px solid var(--ink);outline-offset:2px;}
-.pl-row--current .pl-row__name{color:var(--ink);}
-.pl-plans__auto,.pl-plans__more{margin-top:var(--pl-s-3);}
-:is(.pl-plans__auto,.pl-plans__more)>summary{display:flex;align-items:center;min-height:var(--pl-h-m);font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);color:var(--acc);cursor:pointer;}
-.pl-menu{position:relative;}
-.pl-menu>summary{list-style:none;}
-.pl-menu>summary::-webkit-details-marker{display:none;}
-.pl-menu__list{position:absolute;z-index:3;right:0;top:100%;display:flex;flex-direction:column;min-width:160px;padding:var(--pl-s-2);border-radius:var(--pl-r-2);background:var(--surface);box-shadow:var(--pl-e-2);}
-.pl-menu__list .pl-btn{justify-content:flex-start;}
-/* 候補 (browse): the search stays on top while the list scrolls under it */
-.pl-browse__top{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:var(--pl-s-3);padding:0 0 var(--pl-s-2);background:var(--surface);}
-.pl-browse__top .pl-field{flex:1;min-width:0;}
-.pl-browse__n{flex:none;font:400 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
-.pl-browse__filters{display:flex;flex-direction:column;align-items:flex-start;gap:var(--pl-s-1);margin:0 0 var(--pl-s-2);}
-.pl-browse__filters .pl-chips{align-self:stretch;margin-top:0;}
-.pl-cand{content-visibility:auto;contain-intrinsic-size:auto 64px;}
-.pl-clus__head{display:flex;align-items:center;justify-content:space-between;gap:var(--pl-s-3);min-height:var(--pl-h-m);}
-.pl-clus__head h3{display:flex;align-items:center;gap:var(--pl-s-2);margin:0;font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);}
-.pl-clus__sum,.pl-cs__meta{margin:0;font:400 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
-/* ① select mode's action bar: the count, ✕, the 印 menu (opening upward), グループへ, 日程へ */
-.pl-actionbar__n{padding:0 var(--pl-s-2);font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);}
-.pl-actionbar .pl-menu__list{top:auto;bottom:calc(100% + var(--pl-s-2));left:0;right:auto;}
-.pl-actionbar>.pl-menu>summary{list-style:none;}
-.is-disabled{opacity:.4;pointer-events:none;}
-/* the day quick-pick: day pills (a choice chip shaped as a day: its 3 px bar, the numeral, the added
-   drive and the end time); ⚠ is in the text, never a red ring */
-.pl-dayq__k{margin:0;font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
-.pl-dayq__k small{margin-left:var(--pl-s-2);font-weight:400;}
-.pl-dayq__days{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--pl-s-1);}
-.pl-day{flex-direction:column;gap:0;min-width:0;min-height:var(--pl-h-l);padding:var(--pl-s-1) 0;border:0;border-top:var(--pl-bar) solid var(--day);border-radius:var(--pl-r-1);}
-.pl-day b{font:600 var(--pl-fs-l)/var(--pl-lh-l) var(--pl-font);}
-.pl-day small{display:flex;align-items:center;gap:var(--pl-s-1);font:400 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);white-space:nowrap;}
-.pl-day[aria-current="date"]{outline:1px solid var(--ink);outline-offset:-1px;}
-.pl-day[data-warn] small:first-of-type{color:var(--pl-warn);}
-.pl-day:disabled{opacity:.4;}
 .pl-dayq-big .pl-day{min-height:var(--pl-m-l);}
 /* the place: the photo (or gallery) leads, then the name, the tier control, the one action, details */
 .pl-place{display:flex;flex-direction:column;}
@@ -132,3 +54,4 @@
 .pl-gdots i[aria-current="true"]{background:var(--ink);opacity:1;}
 .pl-gal__n{padding-inline:0;}
 .pl-place__media .pl-gal{margin:0;}
+.pl-cand .pl-row__trail .pl-btn--icon{color:var(--acc);}   /* ＋ adds: an accent glyph, never an accent fill */

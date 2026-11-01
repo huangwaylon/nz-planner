@@ -2,5 +2,5 @@
    loads shows; the photo or the glyph only when none did. ① cards add 「+n」 for the rest. */
 .pl-g1{position:relative;}
 .pl-g1>img:not(:first-of-type),.pl-g1:has(img)>.pl-gfb,.pl-gn{display:none;}
-.pl-cc .pl-gn{display:block;position:absolute;right:var(--pl-s-1);bottom:var(--pl-s-1);padding:0 var(--pl-s-1);border-radius:var(--pl-r-1);background:rgba(var(--pl-scrim),.64);color:var(--surface);font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);font-style:normal;}
+.pl-card .pl-gn{display:block;position:absolute;right:var(--pl-s-2);bottom:var(--pl-s-2);padding:0 var(--pl-s-1);border-radius:var(--pl-r-1);background:rgba(var(--pl-scrim),.64);color:var(--surface);font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);font-style:normal;}
 .pl-g1:not(:has(img))>.pl-gn{display:none;}
