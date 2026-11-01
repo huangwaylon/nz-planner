@@ -46,6 +46,8 @@ jobs:
       # The page itself, headless: imports survive a reload, ⚠ day pills ask twice, the map tween ends.
       # Needs Node 22+ (global WebSocket) and the runner image's Google Chrome.
       - run: node tools/e2e-run.js
+      # The perf gate at 4x CPU (docs/DESIGN.md "Gate"): stress cases warn for now, the seed baseline guard (<=1.25x) fails.
+      - run: node tools/perf-run.js
       # Every version's days must still simulate cleanly against the shipped data.
       - run: python3 tools/gallery.py --check
       - run: python3 tools/sun.py
