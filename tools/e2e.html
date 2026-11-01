@@ -216,6 +216,16 @@
     else ok(false, 'the hut offers night pills');
     doc().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await wait(300);
     /* the phone never asked for the desktop chunk */
+    /* saving a version closes the sheet and offers 「一覧」 in the toast, no picker opening by itself (W2 P1-D) */
+    { const m = await view()._pl.more(); m.saveVersionNamed(null, 'E2E案'); await wait(400);
+      ok(!q('.pl-plans') && /一覧|All plans/.test((q('.pl-toast .pl-tx') || {}).textContent || ''), 'saving a version toasts 「一覧」 and does not open the picker'); }
+    /* select mode (W2 P1-G): ○ on each card, the bar one row (≤ 12 % of the screen) */
+    q('.pl-stage[data-stage="collect"]').click(); await wait(500);
+    const sm = await until(() => q('.pl-collect [data-ca="selmode"]'), 4000); if (sm) sm.click();
+    const csk = await until(() => qa('.pl-collect .pl-csk').length > 3 && q('.pl-cbar[role="toolbar"]'), 4000);
+    ok(!!csk && q('.pl-cbar[role="toolbar"]').getBoundingClientRect().height <= 852 * .12, 'select mode shows ○ on cards and a one-row bar ≤ 12 % high');
+    const sx = q('.pl-cbar [data-ca="selx"]'); if (sx) { sx.click(); await wait(300); }
+    q('.pl-stage[data-stage="plan"]').click(); await wait(400);
     ok(!fr.contentWindow.performance.getEntriesByType('resource').some(e => /planner-desk/.test(e.name)), 'a 393-wide planner never loads planner-desk');
     /* ---------- wide: 1440 then 1920, in a second frame ---------- */
     const wf = document.createElement('iframe'); wf.style.cssText = 'width:1440px;height:900px;border:0'; document.body.appendChild(wf);
@@ -239,6 +249,14 @@
       ok(R('.pl-crail').right <= R('.pl-clist').left + 1, 'the filter rail sits left of the cards'); }
     else ok(false, '① cards at 1440');
     wq('.pl-stage[data-stage="plan"]').click(); await wait(500);
+    /* Alt+→ on a stop: clean moves at once; ⚠ arms the bar (Enter / Esc), never a timed second press */
+    { const row = wq('.pl-main .pl-row'), rid = row && row.dataset.id, d0 = wv()._pl.sim('my').findIndex(d => d.rows.some(r => r[2] === rid));
+      if (row && d0 >= 0 && d0 < 5) { (row.querySelector('button') || row).focus(); wd().dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowRight', key: 'ArrowRight', altKey: true, bubbles: true})); await wait(600);
+        const moved = wv()._pl.sim('my')[d0 + 1].rows.some(r => r[2] === rid), armedA = !wq('.pl-armbar').hidden;
+        ok(moved !== armedA, 'Alt+→ moves at once when clean, or arms the ⚠ bar: moved ' + moved + ', armed ' + armedA);
+        if (armedA) { wd().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await wait(300); }
+        else { wd().dispatchEvent(new KeyboardEvent('keydown', {key: 'z', metaKey: true, bubbles: true})); await wait(400); } }
+      else ok(false, 'a stop row to move with Alt+→'); }
     /* drag a palette place onto the day; the ghost's arrival is the applied time */
     const src = wq('.pl-palette .pl-pi'), sid = src.dataset.id, sr = src.getBoundingClientRect(), tl = wq('.pl-main .pl-tl').getBoundingClientRect();
     const pe = (el, type, x, y) => el.dispatchEvent(new (wf.contentWindow.PointerEvent)(type, {bubbles: true, cancelable: true, pointerType: 'mouse', clientX: x, clientY: y, button: 0, pointerId: 1, isPrimary: true}));

@@ -18,7 +18,7 @@ const PTD={
   mustOpen:{ja:'絶対・未配置',en:'Must, not placed'}, grps:{ja:'グループ',en:'Groups'}, d1:{ja:'1日',en:'1 day'}, d6:{ja:'6日',en:'6 days'},
   arr:{ja:'着 {t}',en:'arrive {t}'}, plusD:{ja:'＋運転{d}',en:'+{d} driving'}, goIn:{ja:'入れる',en:'Put it in'}, stop2:{ja:'やめる',en:'Cancel'},
   dropped:{ja:'{name} を {d} に',en:'{name} to {d}'}, filt:{ja:'絞る',en:'Filter'}, allIn:{ja:'すべて配置済み',en:'all placed'},
-  more2:{ja:'ほか {n}件・絞る',en:'{n} more: filter'}, emptyDay:{ja:'この日は空です。左から置く',en:'Nothing on this day yet. Drop a place here'},
+  palMore:{ja:'ほか {n}件・絞る',en:'{n} more: filter'}, emptyDay:{ja:'この日は空です。左から置く',en:'Nothing on this day yet. Drop a place here'},
   sleepAt:{ja:'泊 {p}',en:'stay {p}'}, warnN:{ja:'⚠ 注意 {n}',en:'⚠ {n} alerts'}, depart2:{ja:'{t} 発',en:'leave {t}'}, arrive2:{ja:'{t} 着',en:'arrive {t}'},
   t_want:{ja:'行きたい',en:'Want'}, t_maybe:{ja:'時間があれば',en:'If time'}, t_must:{ja:'絶対行く',en:'Must go'}, t_skip:{ja:'見送り',en:'Skip'}, t_:{ja:'未仕分け',en:'To sort'},
   /* the desktop's own copy: keys, and click rather than tap */
@@ -58,7 +58,7 @@ planner.desk=function(c){
     E.palette.innerHTML=`<label class="pl-search"><span class="sr">${pt('filt')}</span><input class="pl-pq" name="pq" type="search" value="${esc(q)}" placeholder="${esc(pt('filt'))}"></label>`+
       (cv.of&&!cv.open.length?`<h3 class="pl-ph3">${pt('mustOpen')}<small>0</small><em class="pl-ok">✓ ${pt('allIn')}</em></h3>`:sec(pt('mustOpen'),open.map(item).join(''),open.length))+
       sec(pt('grps'),gs,S.trip.groups.length)+
-      ['want','maybe'].map(t=>{ const l=tierList(t); return sec(pt('t_'+t),l.slice(0,60).map(item).join('')+(l.length>60?`<button type="button" class="pl-pmore" data-pq>${pt('more2',{n:l.length-60})}</button>`:''),l.length); }).join(''); }
+      ['want','maybe'].map(t=>{ const l=tierList(t); return sec(pt('t_'+t),l.slice(0,60).map(item).join('')+(l.length>60?`<button type="button" class="pl-pmore" data-pq>${pt('palMore',{n:l.length-60})}</button>`:''),l.length); }).join(''); }
   /* ---------- the board: six lanes, each headed by its day's photo and facts, each a drop target ---------- */
   function renderBoard(){ const P=plan();
     E.board.innerHTML=DB.days.map((d,k)=>{ const sc=sim().schedule(d,null,P,o()), s=sc.rows[0], e=sc.rows[sc.rows.length-1], h=c.heroOf(sc), x=ph(h), n=sc.rows.length-2, sl=place(e.id);
@@ -141,17 +141,20 @@ planner.desk=function(c){
     gh.innerHTML=`<b>${esc(D.p.label)}</b><small>${esc(D.pv.text)}</small>${D.pv.bs&&D.pv.bs.length?`<small class="pl-gw">⚠ ${esc(breakLine(D.pv.bs,D.pv.day))}</small>`:''}`; }
   function commit(pv,t){ if(pv.trip){ c.editTrip(pv.trip,null); return; }
     if(pv.cal){ t.el.dispatchEvent(new CustomEvent('pl-drop',{bubbles:true,detail:{ids:D0.ids,from:D0.from,group:D0.group&&D0.group.id}})); return; }
-    if(edit(pv.fn,pt('dropped',{name:D0.label,d:dlabel(pv.day)}))&&pv.day!==DB.days[S.day]&&!view.classList.contains('pl-6')) setDay(DB.days.indexOf(pv.day)); }
+    if(edit(pv.fn,pv.msg||pt('dropped',{name:D0.label,d:dlabel(pv.day)}))&&pv.day!==DB.days[S.day]&&!view.classList.contains('pl-6')) setDay(DB.days.indexOf(pv.day)); }
   let D0=null, ARMED=null;
   function arm(pv,t,src){ ARMED={pv,t,src}; ar.hidden=false; ar.innerHTML=`<p>⚠ ${esc(breakLine(pv.bs,pv.day))}</p><div><button type="button" class="pl-btn pl-sec" data-ar="0">${pt('stop2')} <kbd>Esc</kbd></button><button type="button" class="pl-btn pl-pri" data-ar="1">${pt('goIn')} <kbd>⏎</kbd></button></div>`;
     const r=t.el.getBoundingClientRect(); ar.style.left=Math.max(8,Math.min(innerWidth-360,r.left))+'px'; ar.style.top=Math.min(innerHeight-140,r.top+20)+'px'; ar.querySelector('[data-ar="1"]').focus(); }
   function disarm(go){ const a=ARMED; ARMED=null; ar.hidden=true; if(go&&a) commit(a.pv,a.t); else if(a&&a.src&&a.src.isConnected) a.src.focus({preventScroll:true}); }
   ar.addEventListener('click',e=>{ const b=e.target.closest('[data-ar]'); if(b) disarm(b.dataset.ar==='1'); });
-  document.addEventListener('keydown',e=>{ if(ARMED&&(e.key==='Escape'||e.key==='Enter')){ e.preventDefault(); e.stopPropagation(); disarm(e.key==='Enter'); return; }
+  document.addEventListener('keydown',e=>{ if(D&&D.on&&e.key==='Escape'){ e.preventDefault(); end(0); return; }
+    if(ARMED&&(e.key==='Escape'||e.key==='Enter')){ e.preventDefault(); e.stopPropagation(); disarm(e.key==='Enter'); return; }
     /* Alt+←/→: the focused stop to the day before or after, checked like any move */
     if(e.altKey&&(e.code==='ArrowLeft'||e.code==='ArrowRight')&&S.stage==='plan'){ const row=document.activeElement&&document.activeElement.closest('.pl-row,.pl-bs'); if(!row) return;
       const from=row.dataset.drag?row.dataset.drag.split(':')[1]:DB.days[S.day].date, fk=DB.days.findIndex(d=>d.date===from), k=fk+(e.code==='ArrowLeft'?-1:1); if(k<0||k>=DB.days.length) return; e.preventDefault();
-      c.needMore().then(m=>{ c.guard(row,'alt'+row.dataset.id+k,m.moveFn(row.dataset.id,from,DB.days[k]),pt('movedTo',{d:dlabel(DB.days[k])})); }); return; }
+      /* clean: it moves at once; ⚠: the armed bar asks (Enter / Esc), no timer */
+      c.needMore().then(m=>{ const fn=m.moveFn(row.dataset.id,from,DB.days[k]), bs=c.trial(fn)||[], pv={fn,bs,day:DB.days[k],msg:pt('movedTo',{d:dlabel(DB.days[k])})};
+        if(bs.length) arm(pv,{el:row},row); else edit(fn,pv.msg); }); return; }
     colKey(e); },true);
   view.addEventListener('pointerdown',e=>{ if(e.pointerType==='touch'||e.button) return; if(e.target.closest('input,a,select,textarea')) return;
     const src=e.target.closest('[data-drag],.pl-collect .pl-cc'); if(!src) return;

@@ -1629,7 +1629,7 @@ const plannerFn=function planner(g){
         warns:sc.rows.flatMap(r=>r.warns.map(w=>w.k)).concat(sc.long?['long']:[])}; }), ready:()=>lazy.travel,
       /* tools/e2e.html: is a gesture or tween still thought to be running; how much coastline is drawn */
       busy:()=>busyUI(), land:()=>svg.querySelectorAll('.pl-land path').length, places:()=>DB.places.size,
-      code:()=>needMore(true).then(m=>m.codeNow()), tier:id=>tierOf(id), trip:()=>S.trip, gal:loadGallery, open:openPlace}});
+      code:()=>needMore(true).then(m=>m.codeNow()), tier:id=>tierOf(id), trip:()=>S.trip, gal:loadGallery, open:openPlace, more:()=>needMore()}});
     if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{});
   }
   const get=u=>fetch(u).then(r=>{ if(!r.ok) throw new Error(u+' '+r.status); return r.json(); });

@@ -485,3 +485,5 @@ html.pl-failed .pl-skel{display:none;}
 .pl-dpick:has(.pl-dwhy) .pl-dn{grid-row:span 2;text-align:center;}
 .pl-stat.pl-bad{color:var(--pl-warn);}
 .pl-hint{margin:6px 2px 10px;font-size:var(--pl-fs-s);line-height:1.6;color:var(--muted);}
+/* the musts still to place: the palette lists them at ≥1024, the chips only below */
+@container plan (min-width:1024px){ .pl-todo{display:none;} }

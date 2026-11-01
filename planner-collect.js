@@ -11,8 +11,7 @@ const PTC={
   cT:{ja:'集める',en:'Collect'}, cS:{ja:'カードのボタンで仕分け、もう一度押すと戻ります',en:'Sort with the buttons on each card; tap again to unsort'},
   byTier:{ja:'ティア',en:'Tier'}, byGroup:{ja:'グループ',en:'Group'}, byArea:{ja:'エリア',en:'Area'}, sortBy2:{ja:'並べ方',en:'Arrange by'},
   fromSaved:{ja:'保存済みから',en:'from your saves'}, tierOf:{ja:'{name} の行きたさ',en:'How much for {name}'},
-  sel:{ja:'選択',en:'Select'}, selN:{ja:'{n}件選択',en:'{n} selected'}, selDone:{ja:'選択をやめる',en:'Stop selecting'},
-  toGroup:{ja:'グループへ',en:'To a group'}, toDays:{ja:'日程へ',en:'To the days'}, handoff:{ja:'日程に組む →',en:'Plan the days →'}, inDay2:{ja:'{d}に配置',en:'on {d}'}, tiered:{ja:'{n}件を「{t}」に',en:'{n} set to “{t}”'},   ungrouped:{ja:'「{g}」を解きました',en:'Ungrouped “{g}”'}, made:{ja:'「{g}」を作りました',en:'Made “{g}”'}, nothingSel:{ja:'カードを選んでください',en:'Select some cards first'},
+  sel:{ja:'選択',en:'Select'}, selN:{ja:'{n}件選択',en:'{n} selected'}, handoff:{ja:'日程に組む →',en:'Plan the days →'}, inDay2:{ja:'{d}に配置',en:'on {d}'}, tiered:{ja:'{n}件を「{t}」に',en:'{n} set to “{t}”'},   ungrouped:{ja:'「{g}」を解きました',en:'Ungrouped “{g}”'}, made:{ja:'「{g}」を作りました',en:'Made “{g}”'}, nothingSel:{ja:'カードを選んでください',en:'Select some cards first'},
   allPlaced:{ja:'絶対行く場所はすべて日程に入っています',en:'Every must is on a day'}, nextMust:{ja:'どの日も ⚠ — いちばん近いのは {d}',en:'Every day breaks — {d} comes closest'},
   none2:{ja:'該当なし・絞り込みを外す',en:'Nothing matches: clear the filters'}, emptyT:{ja:'まだありません。カードの［{t}］で入ります',en:'None yet: tap [{t}] on a card'}, emptyG:{ja:'まだありません',en:'None yet'}, ss_maybe:{ja:'余裕',en:'If time'}, cSearch:{ja:'名前・キーワードで絞る',en:'Filter by name or keyword'}, };
 planner.collect=function(c){
@@ -33,9 +32,9 @@ planner.collect=function(c){
     return G?G.thumb(p,ph,1):`<span class="pl-glyph pl-thumb pl-g1 pl-band">${ph?`<img src="${esc(ph.src)}" alt="" width="3" height="2" loading="lazy" decoding="async" data-gi>`:''}<span class="pl-gfb">${ic(glyphOf(p))}</span></span>`; };
   /* note c2 */
   function card(p,pm){ const t=tierOf(p.id), g=groupOf(p.id), on=pm.get(p.id), R=focus===p.id?'':' tabindex="-1"';
-    return `<article class="pl-cc${sel.has(p.id)?' pl-csel':''}" data-id="${p.id}" data-tier="${t}" tabindex="${focus===p.id?0:-1}"><button type="button" class="pl-ccm" data-ca="open" data-id="${p.id}" tabindex="-1" aria-hidden="true">${(S.cardMedia||band)(p)}</button>
+    return `<article class="pl-cc${sel.has(p.id)?' pl-csel':''}" data-id="${p.id}" data-tier="${t}" tabindex="${focus===p.id?0:-1}"><button type="button" class="pl-ccm" data-ca="open" data-id="${p.id}" tabindex="-1" aria-hidden="true">${(S.cardMedia||band)(p)}</button>${selMode||sel.size?`<i class="pl-csk" aria-hidden="true">${sel.has(p.id)?ic('check','sm'):''}</i>`:''}
       <div class="pl-ccb"><button type="button" class="pl-ccn" data-ca="open" data-id="${p.id}"${nmLang(p)}${R}>${wbr(nm(p))}</button>
-      <small>${on!=null?`<span class="pl-ccd">${ic('calendar','xs')}${pt('inDay2',{d:dlabel(DB.days[on])})}</span>`:`<span>${tr(CAT,p.cat)}</span>`}${seeded(p.id)?`<span class="pl-ccs">${ic('bookmark','xs')}<span class="sr">${pt('fromSaved')}</span></span>`:''}${sel.has(p.id)?`<span class="sr">${pt('selN',{n:''})}</span>`:''}</small></div>
+      <small>${on!=null?`<span class="pl-ccd">${ic('calendar','xs')}${cf.mode==='group'?`<span class="sr">${pt('inDay2',{d:dlabel(DB.days[on])})}</span>`:pt('inDay2',{d:dlabel(DB.days[on])})}</span>`:`<span>${tr(CAT,p.cat)}</span>`}${seeded(p.id)?`<span class="pl-ccs">${ic('bookmark','xs')}<span class="sr">${pt('fromSaved')}</span></span>`:''}${sel.has(p.id)?`<span class="sr">${pt('selN',{n:''})}</span>`:''}</small></div>
       <div class="pl-tseg" role="group" aria-label="${esc(pt('tierOf',{name:nm(p)}))}">${T.map(k=>`<button type="button" data-ca="tier" data-t="${k}" data-id="${p.id}" aria-pressed="${t===k}"${R} title="${esc(pt('t_'+k))}">${k==='maybe'?`<span class="pl-tl">${pt('s_maybe')}</span><span class="pl-ts">${pt('ss_maybe')}</span>`:pt('s_'+k)}</button>`).join('')}</div></article>`; }
   const sec=(k,title,n,body,extra,shut)=>`<section class="pl-cs" data-k="${esc(k)}">${shut?'<details>':''}<${shut?'summary':'div'} class="pl-csh"><h3>${title}<small>${n}</small></h3>${extra||''}</${shut?'summary':'div'}><div class="pl-csl">${body}</div>${shut?'</details>':''}</section>`;
   function sections(list,pm){ const by=f=>{ const o=new Map(); list.forEach(p=>{ const k=f(p); if(!o.has(k)) o.set(k,[]); o.get(k).push(p); }); return o; };
@@ -49,9 +48,9 @@ planner.collect=function(c){
     const ch=(k,v,l,on)=>`<button type="button" class="pl-chip" data-ca="f" data-k="${k}" data-v="${v}" aria-pressed="${on}">${l}</button>`;
     return `<div class="pl-seg" role="group" aria-label="${esc(pt('sortBy2'))}">${['tier','group','area'].map(m=>`<button type="button" data-ca="mode" data-v="${m}" aria-pressed="${cf.mode===m}">${pt('by'+m[0].toUpperCase()+m.slice(1))}</button>`).join('')}</div>
       <div class="pl-chips">${ch('saved','1',pt('saved'),!!cf.saved)}${cats.map(k=>ch('cat',k,tr(CAT,k),cf.cat===k)).join('')}</div>`; }
-  function bar(){ const n=sel.size;
-    return n||selMode?`<div class="pl-cbar" role="toolbar" aria-label="${esc(pt('selN',{n}))}"><span>${pt('selN',{n})}</span>${T.map((k,i)=>`<button type="button" data-ca="bulk" data-t="${k}"><b>${'1230'[i]}</b> ${pt('s_'+k)}</button>`).join('')}
-      <button type="button" data-ca="group">${pt('toGroup')}</button><button type="button" data-ca="days">${pt('toDays')}</button><button type="button" data-ca="selx" aria-label="${esc(pt('selDone'))}">${ic('x','sm')}</button></div>`:''; }
+  /* the bulk bar (select mode) is drawn by planner-more (cbar), loaded when selecting starts */
+  const bar=()=>(sel.size||selMode)&&GM?GM.cbar(sel.size,T):'';
+  const withMore=f=>c.needMore().then(m=>{ GM=m; f(); render(true); });
   function render(force){
     const P=c.plan(), k=JSON.stringify([cf,S.trip,P.days,sel.size,selMode,ja(),S.hist.length>0,!!DB.photos,!!S.cardMedia]);
     if(skip&&!force){ skip=false; KEY=k; return; }
@@ -88,7 +87,7 @@ planner.collect=function(c){
     DB.days.forEach((d,i)=>{ const pv=c.sim().insertPlan(d,c.idsOf(d.date,P),[o[0].id],P,{deadline:S.dayEnd},null); if(pv&&(!best||(pv.breaks.length-best.b||pv.dDrive-best.v)<0)) best={i,b:pv.breaks.length,v:pv.dDrive}; });
     if(best){ setDay(best.i); if(best.b) toast(pt('nextMust',{d:dlabel(DB.days[best.i])})); }   /* the sheet's pills say the rest */
     openPlace(o[0].id); }
-  function toggle(id){ if(sel.has(id)) sel.delete(id); else sel.add(id); render(true); }
+  function toggle(id){ withMore(()=>{ if(sel.has(id)) sel.delete(id); else sel.add(id); }); }
   el.addEventListener('click',e=>{ const b=e.target.closest('[data-ca]'), cc=e.target.closest('.pl-cc');
     if(cc) focus=cc.dataset.id;
     if(!b){ if(cc&&(selMode||e.shiftKey||e.metaKey||e.ctrlKey)) toggle(cc.dataset.id); return; }
@@ -98,7 +97,7 @@ planner.collect=function(c){
       case 'open': if(selMode||e.shiftKey){ toggle(id); break; } openPlace(id); break;
       case 'mode': cf.mode=b.dataset.v; saveUI(); render(true); break;
       case 'f': { const k=b.dataset.k, v=b.dataset.v; cf[k]=cf[k]===v||(k==='saved'&&cf[k])?null:v; saveUI(); render(true); break; }
-      case 'selmode': selMode=!selMode; if(!selMode) sel.clear(); render(true); break;
+      case 'selmode': withMore(()=>{ selMode=!selMode; if(!selMode) sel.clear(); }); break;
       case 'selx': selMode=false; sel.clear(); render(true); break;
       case 'bulk': { const ids=[...sel]; setTier(ids,b.dataset.t,pt('tiered',{n:ids.length,t:pt('t_'+b.dataset.t)})); break; }
       case 'group': { const ids=targets(); if(!ids.length){ toast(pt('nothingSel')); break; } c.needMore().then(m=>m.groupSheet(ids)); break; }

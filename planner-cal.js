@@ -54,8 +54,8 @@ const t=k=>T[k][E],
       flush=()=>{ const ds=fold.filter(x=>x.slice(0,7)==mo),a=ds[0],z=ds[ds.length-1];
         if(a) h+=`<tr class="pl-cal-fold"><td colspan="7">${E?dn(a)+'–'+dn(z)+' '+en(f,{}).slice(0,3):f.getUTCMonth()+1+'月'+dn(a)+'–'+dn(z)+'日'}${ds.map(x=>mark(x)?` · ${dn(x)} ${wn(wd(x))} ${esc(mark(x))}`:'').join('')}</td></tr>`;
         fold=[]; };
-    let h='',fold=[],leg='',placed=0,total=0;
-    m.days.forEach(d=>{ by[d.date]=d; placed+=d.mustPlaced||0; total=d.mustTotal||total; });
+    let h='',fold=[],leg='';
+    m.days.forEach(d=>{ by[d.date]=d; });
     weeks(m.trip.start).forEach((wk,r)=>{
       if(!wk.some(x=>by[x])) return fold.push(...wk);
       flush();
@@ -66,7 +66,7 @@ const t=k=>T[k][E],
       }).join('')+'</tr>';
     });
     flush();
-    el.innerHTML=`<ol class="pl-cal-ls" data-g>${m.days.map((d,i)=>`<li>${btn(d,i,0)}</li>`).join('')}</ol><table class="pl-cal-mo" data-g><caption>${E?en(f,{year:'numeric'}):f.getUTCFullYear()+'年'+(f.getUTCMonth()+1)+'月'}${total?`<small>${t('mu')} ${placed}/${total}</small>`:''}</caption><colgroup>${[0,1,2,3,4,5,6].map(c=>`<col${m.days.some(d=>wd(d.date)==c)?'':' class="pl-cal-k"'}>`).join('')}</colgroup><thead><tr>${[0,1,2,3,4,5,6].map(c=>`<th scope="col"${we(c)}>${wn(c)}</th>`).join('')}</tr></thead><tbody>${h}</tbody></table>${leg?`<p class="pl-cal-mk">${leg.slice(3)}</p>`:''}`;
+    el.innerHTML=`<ol class="pl-cal-ls" data-g>${m.days.map((d,i)=>`<li>${btn(d,i,0)}</li>`).join('')}</ol><table class="pl-cal-mo" data-g><caption>${E?en(f,{year:'numeric'}):f.getUTCFullYear()+'年'+(f.getUTCMonth()+1)+'月'}</caption><colgroup>${[0,1,2,3,4,5,6].map(c=>`<col${m.days.some(d=>wd(d.date)==c)?'':' class="pl-cal-k"'}>`).join('')}</colgroup><thead><tr>${[0,1,2,3,4,5,6].map(c=>`<th scope="col"${we(c)}>${wn(c)}</th>`).join('')}</tr></thead><tbody>${h}</tbody></table>${leg?`<p class="pl-cal-mk">${leg.slice(3)}</p>`:''}`;
   },
   key=x=>x?(x.stops||[]).join('|'):'',
   /* the grid shows differences only: ＋/− stops against the active plan, a changed end, ⚠ */

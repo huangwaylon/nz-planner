@@ -6,7 +6,7 @@
 (function(){
 'use strict';
 if(typeof planner!=='function'||planner.more) return;
-const PTM={ already:{ja:'{n}件はすでに{d}に入っています',en:'{n} already on {d}'},
+const PTM={ selDone:{ja:'選択をやめる',en:'Stop selecting'}, toGroup:{ja:'グループへ',en:'To a group'}, toDays:{ja:'日程へ',en:'To the days'}, planList:{ja:'一覧',en:'All plans'}, inGroup:{ja:'→ {g}',en:'→ {g}'}, already:{ja:'{n}件はすでに{d}に入っています',en:'{n} already on {d}'},
 sleepQ:{ja:'この夜に泊まる',en:'Stay this night'}, sleepS:{ja:'{d}の夜は{name}に泊まります',en:'{name} for the night of {d}'}, sleptOn:{ja:'{d}の夜に泊まる予定',en:'Staying the night of {d}'}, unsleep:{ja:'泊まるのをやめる',en:'Don’t stay here'}, unslept:{ja:'{name}に泊まるのをやめました',en:'No longer staying at {name}'},
 bestDay:{ja:'最適 {d}',en:'Best {d}'}, placedN:{ja:'{n}/{of} 配置',en:'{n}/{of} placed'}, noDay:{ja:'⚠ どの日も崩れます',en:'⚠ breaks every day'}, grpSum:{ja:'約{d}・運転{m}',en:'about {d}, {m} driving'}, picks:{ja:'おすすめ',en:'Suggested'}, use:{ja:'使う',en:'Use'}, rename2:{ja:'名前を変える',en:'Rename'}, drop:{ja:'グループを解く',en:'Ungroup'}, noGroup:{ja:'グループなし',en:'Not in a group'},
 mine:{ja:'わたしのリスト',en:'My list'}, mAll:{ja:'すべて',en:'All'}, m_must:{ja:'絶対',en:'Must'}, m_want:{ja:'行きたい',en:'Want'}, m_maybe:{ja:'余裕',en:'If time'}, mGrp:{ja:'グループ：{g}',en:'Group: {g}'}, picksH:{ja:'おすすめ',en:'Suggestions'}, mineNone:{ja:'①で分けた場所とグループがここに出ます',en:'Places you sort in ① and your groups show here'},
@@ -150,8 +150,8 @@ planner.more=function(c){
     name=(name||'').trim().slice(0,40); if(!name){ nameState(); return; }
     pushHist();
     if(id){ S.versions=S.versions.map(x=>x.id===id?Object.assign({},x,{name,kind:undefined}):x); save(); toast(pt('renamed'),undo); }
-    else { const v=snapshot(plan(),name); save(); toast(pt('verSaved',{name:planName(v)}),undo); }
-    renderTop(); openPlans();
+    else { const v=snapshot(plan(),name); save(); toast(pt('verSaved',{name:planName(v)}),undo,{label:pt('planList'),fn:openPlans}); }
+    renderTop(); closeSheet();
   }
 
   /* ---------- compare, with 「この日を使う」 ---------- */
@@ -361,6 +361,9 @@ planner.more=function(c){
         ${x.c.id&&x.c.id!=='_imp'?`<p class="pl-clsum">${clusterSum(x.m)}${x.c.startAt?`　${pt('startAt',{t:x.c.startAt})}`:''}</p>`:''}
         ${x.m.map(id=>candRow(id,planned,day,null)).join('')}</section>`; })));
   }
+  /* ① select mode's bulk bar: the count, the four tiers, グループへ, 日程へ, ×, in one row */
+  const cbar=(n,T)=>`<div class="pl-cbar" role="toolbar" aria-label="${esc(pt('selN',{n}))}"><span>${pt('selN',{n})}</span>${T.map((k,i)=>`<button type="button" data-ca="bulk" data-t="${k}"><b>${'1230'[i]}</b> ${pt('s_'+k)}</button>`).join('')}
+      <button type="button" data-ca="group">${pt('toGroup')}</button><button type="button" data-ca="days">${pt('toDays')}</button><button type="button" data-ca="selx">${ic('x','sm')}<span class="sr">${pt('selDone')}</span></button></div>`;
   /* after グループへ the selection is spent */
   const unsel=()=>{ if(S.csel&&S.csel.size){ S.csel.clear(); const m=c.col(); if(m) m.render(true); } };
   /* ---------- ① by group (planner-collect asks for this): her groups, simulated (time on foot and road,
@@ -612,7 +615,8 @@ planner.more=function(c){
       ${G.length?galHTML(G,ph):ph}
       <div class="pl-ph">
         <div><h2 class="pl-sh-t" id="pl-sht-${slug}"${nmLang(p)}>${wbr(nm(p))}</h2><div class="pl-sh-s">${p.imp?pt(p.imp.src==='ig'?'fromIg':'fromGm')+(p.imp.regionJa||p.imp.region?'　'+esc(ja()?p.imp.regionJa||p.imp.region:p.imp.region):''):`${alt(p)?`<span${altLang(p)}>${esc(alt(p))}</span>　`:''}${tr(CAT,p.cat)}　${tr(AREA,p.area)}`}</div></div>${closeBtn()}</div>
-      ${p.badge||p.saved?`<p class="pl-sigline">${savedTag(p)}${p.badge?`<span class="pl-sig">${esc(p.badge[lang()]||p.badge.ja)}</span>`:''}</p>`:''}
+      ${(()=>{ const bd=p.badge&&!(p.igN&&/^IG\b/.test(p.badge.ja||''))&&(p.badge[lang()]||p.badge.ja);   /* the IG count lives on the IG button */
+        return bd||p.saved?`<p class="pl-sigline">${savedTag(p)}${bd?`<span class="pl-sig">${esc(bd)}</span>`:''}</p>`:''; })()}
       <div class="pl-links">${igBtn}<a class="pl-gmbtn" href="${esc(gmap)}" target="_blank" rel="noopener">${ic('map-pin','sm')}<span${latin(gmLabel)&&ja()?' lang="en"':''}>${esc(gmLabel)}</span><span class="sr">（${pt('gmaps')}）</span></a></div>
       ${p.vibe||p.vibeJa?`<p class="pl-vibe">${esc(ja()?(p.vibeJa||p.vibe):p.vibe)}</p>`:''}
       ${p.reels&&p.reels.length?`<div class="pl-reels"><div class="pl-plansep">${pt('imp')}</div>${p.reels.map(m=>`<a href="${esc(m.url)}" target="_blank" rel="noopener">${ic(m.src==='ig'?'instagram':'map-pin','sm')}<span>${esc(m.ig||m.name)}${m.note?` <small>${esc(m.note)}</small>`:''}</span></a>`).join('')}</div>`:''}
@@ -625,7 +629,8 @@ planner.more=function(c){
         ${p.best&&p.best!=='any'?`<div class="pl-fact"><dt>${pt('best')}</dt><dd>${bestText(p,day.date)}</dd></div>`:''}
         ${p.aesthetic?`<div class="pl-fact"><dt>${pt('aesthetic')}</dt><dd><span class="pl-meter" style="--v:${p.aesthetic}" aria-hidden="true"></span> ${p.aesthetic}/5<span class="sr">${pt('of5',{n:p.aesthetic})}</span></dd></div>`:''}
       </dl>
-      ${flagsOf(p).length?`<div class="pl-flags">${flagsOf(p).map(f=>c.flagT(f,p)?`<span class="pl-flag">${c.flagT(f,p)}</span>`:'').join('')}</div>`:''}`}
+      ${(()=>{ const fl=flagsOf(p).filter(f=>!(p.book&&/^book/.test(f))&&f!=='near-fully-booked');   /* booking is said once, by the 要予約 control */
+        return fl.length?`<div class="pl-flags">${fl.map(f=>c.flagT(f,p)?`<span class="pl-flag">${c.flagT(f,p)}</span>`:'').join('')}</div>`:''; })()}`}
       ${evid&&evid.length?`<section class="pl-why"><h3>${pt('why')}</h3>${ja()?`<p class="pl-whyja">${p.badge?esc(p.badge.ja):pt('whyJa',{n:evid.length})}</p>`:`<ul>${evid.map(x=>`<li lang="en">${esc(x.replace(/\s*—?\s*https?:\/\/\S+/g,''))}</li>`).join('')}</ul>`}
         ${(more.sources||[]).length?`<p class="pl-src">${[...new Set(more.sources.map(domain).filter(Boolean))].slice(0,5).map((dm,k)=>`<a href="${esc(more.sources.find(u=>domain(u)===dm))}" target="_blank" rel="noopener">${esc(dm)}</a>`).join('')}</p>`:''}</section>`:''}
       <p class="pl-coords"><span>${pt('coords')} <span lang="en">${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}</span></span><button type="button" class="pl-ab pl-lbl" data-act="copyc" data-v="${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}">${pt('copy')}</button></p>
@@ -660,9 +665,13 @@ planner.more=function(c){
       <button type="button" class="pl-btn pl-sec" data-act="forkover">${pt('forkOver')}</button></div>${doneBar()}`,'fork'); }
   function openPlans(){
     const cur=plan(), when=t=>{ const d=new Date(t); return (d.getMonth()+1)+'/'+d.getDate()+' '+pad(d.getHours())+':'+pad(d.getMinutes()); };
-    /* each version says how many musts it places */
-    const cv=id=>{ const P=findPlan(id), x=P&&c.cover(P); return x&&x.of?pt('mustN',{n:x.n,of:x.of})+'　':''; };
-    const opt=(id,name,sub)=>`<button type="button" class="pl-planopt" data-act="plan" data-id="${id}" aria-pressed="${cur.id===id}"><b>${esc(name)}</b><span>${esc(cv(id)+sub)}</span><i class="pl-chk"></i></button>`;
+    /* each plan is a tile: the photo of its most distinctive place (in the fewest presets), its name,
+       🚗 over the six days and ⚠; the blurb is the tile's title */
+    const fq={}; DB.presets.forEach(p=>new Set(Object.values(p.days).flat()).forEach(i=>{ fq[i]=(fq[i]||0)+1; }));
+    const opt=(id,name,sub)=>{ const P=findPlan(id); let d=0, w=0;
+      DB.days.forEach(x=>{ const sc=schedule(x,null,P); d+=sc.drive; w+=sc.rows.reduce((t,r)=>t+r.warns.length,0); });
+      const h=[...new Set(Object.values(P.days).flat())].filter(i=>DB.photos&&DB.photos[i]).sort((a,b)=>(fq[a]||0)-(fq[b]||0)||((place(b)||{}).aesthetic||0)-((place(a)||{}).aesthetic||0))[0], ph=h&&DB.photos[h];
+      return `<button type="button" class="pl-planopt pl-tile" data-act="plan" data-id="${id}" aria-pressed="${cur.id===id}" title="${esc(sub)}"><span class="pl-tim">${ph?`<img src="${esc(ph.src)}" srcset="${esc(ph.thumb||ph.src)} 208w, ${esc(ph.src)} 480w" sizes="200px" alt="" width="3" height="2" loading="lazy" decoding="async">`:ic('map')}</span><b>${esc(name)}</b><span>${ic('car','xs')}${Math.floor(d/60)}:${pad(Math.round(d%60))}${w?` · ${ic('alert','xs')}${w}`:''}</span><i class="pl-chk"></i></button>`; };
     openSheet(head(pt('planT'),pt('planS'))+`<div class="pl-plans">
         ${S.my?opt('my',planName(S.my),pt('basedOn',{name:presetName(S.my.from)})):''}
         ${S.versions.length?`<div class="pl-plansep">${pt('versions')}</div>`+S.versions.map(v=>`<div class="pl-verrow">${opt(v.id,planName(v),(v.at?when(v.at)+'　':'')+pt('basedOn',{name:presetName(v.from)}))}
@@ -685,7 +694,7 @@ planner.more=function(c){
   return {
     codeNow:()=>pack(payload()), moveFn,
     openBrowse, renderList, patchCand, openPlace, openPlans, dayPick, armPill, openMove, openStory, applyAdd, groupSheet, nameSheet, renderReview,
-    forkAsk, cGroups, openOrder, openVerName, saveVersionNamed, openCompare, openSwap, shareLink, importCode, codeOf,
+    forkAsk, cGroups, cbar, openOrder, openVerName, saveVersionNamed, openCompare, openSwap, shareLink, importCode, codeOf,
     nameState,
     click(act,b,kind,arg){
       const day=DB.days[S.day], date=day.date;
