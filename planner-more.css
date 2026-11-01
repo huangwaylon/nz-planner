@@ -134,10 +134,9 @@
 .pl-cmpl li.pl-diff::before{content:"";position:absolute;left:0;top:.5lh;width:8px;height:8px;border-radius:50%;background:var(--ink);}
 .pl-cmpend{margin-top:var(--pl-s-2);font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
 /* ③: heading, the versions to compare, then the calendar and the versions grid (planner-cal) */
-.pl-review .pl-cl-t{margin:0;font:600 var(--pl-fs-xl)/var(--pl-lh-xl) var(--pl-font);}
+
 .pl-rvh{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--pl-s-3) var(--pl-s-5);margin:0 0 var(--pl-s-5);}
 .pl-rvpin{flex:1 1 320px;margin:0;padding:0;align-items:center;}
-.pl-rvact{display:flex;gap:var(--pl-s-2);}
 .pl-rvpin .pl-hint{flex:none;margin:0 var(--pl-s-1) 0 0;white-space:nowrap;}
 /* the place's gallery */
 .pl-gal{position:relative;margin:0 0 var(--pl-s-3);--ar:16/9;}
@@ -169,8 +168,6 @@
 .pl-cbar button{min-height:var(--pl-h-m);padding:0 var(--pl-s-3);border:var(--pl-hair);border-radius:var(--pl-r-1);background:var(--surface);font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);color:var(--ink);}
 .pl-cbar b{color:var(--muted);}
 .pl-cc{position:relative;}
-.pl-csk{position:absolute;left:var(--pl-s-2);top:var(--pl-s-2);z-index:1;display:grid;place-items:center;width:var(--pl-i-l);height:var(--pl-i-l);border-radius:50%;background:var(--surface);outline:2px solid var(--ink);outline-offset:-2px;color:var(--surface);font-style:normal;pointer-events:none;}
-.pl-csel .pl-csk{background:var(--ink);}
 @media (pointer:coarse){ .pl-cbar b{display:none;} }
 /* the 「案」 menu: versions as photo rows, the current one ringed in ink, tools behind ⋯ */
 .pl-plans{display:block;}

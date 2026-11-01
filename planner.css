@@ -137,7 +137,7 @@ html.pl-failed .pl-skel{display:none;}
 .pl-card__title{margin:0;font:600 var(--pl-fs-l)/var(--pl-lh-l) var(--pl-font);color:var(--ink);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;}
 .pl-card__signal{min-height:var(--pl-lh-s);font:400 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pl-card>.pl-tier{margin-top:auto;padding:var(--pl-s-2);}
-.pl-card[aria-selected="true"],.pl-card.pl-csel{outline:2px solid var(--ink);outline-offset:-2px;}
+.pl-card[aria-selected="true"]{outline:2px solid var(--ink);outline-offset:-2px;}
 @container plan (min-width:640px){
   .pl-card__media{aspect-ratio:4/3;}
   .pl-card__title{min-height:calc(2 * var(--pl-lh-l));}
@@ -152,7 +152,6 @@ html.pl-failed .pl-skel{display:none;}
 .pl-tier button:nth-child(3)[aria-pressed="true"],.pl-tseg [data-t="maybe"][aria-pressed="true"]{background:var(--surface);outline:1px solid var(--ink);outline-offset:-1px;color:var(--ink);}
 .pl-tier button:nth-child(4)[aria-pressed="true"],.pl-tseg [data-t="skip"][aria-pressed="true"]{background:var(--surface);outline:1px dashed var(--muted);outline-offset:-1px;color:var(--muted);}
 .pl-tier button:focus-visible,.pl-tseg button:focus-visible{outline:var(--pl-focus);outline-offset:-3px;}
-.pl-tseg .pl-ts{display:none;}
 @media (hover:hover){ :is(.pl-tier,.pl-tseg) button:not([aria-pressed="true"]):hover{color:var(--ink);} }
 
 /* Badge: an ink pill with a figure; the ⚠ count in --pl-warn */
@@ -492,8 +491,8 @@ div.pl-armed{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex
   .pl-collect .pl-clist{grid-area:col;padding:0 0 calc(2 * var(--pl-s-7));}
 }
 @container plan (min-width:1600px){ .pl-shell{column-gap:var(--pl-s-6);} .v-plan[data-stage="collect"] .pl-shell{grid-template-columns:232px minmax(0,1fr) 560px;} }
-/* short screens (SE 1st gen): the zoom cluster goes sideways so it cannot meet the footer */
-@media (max-height:600px){ .pl-mapctl{flex-direction:row;} }
+/* shorter screens: four 44 buttons no longer fit the strip's height, so the zoom cluster goes sideways */
+@media (max-height:820px){ .pl-mapctl{flex-direction:row;} .pl-estnote{top:calc(var(--pl-s-2) + var(--pl-h-m) + var(--pl-s-1));} }
 /* 200% page zoom: icon-only map buttons, the numeral above the title */
 @container plan (max-width:300px){
   .pl-mapfoot .pl-btn span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
