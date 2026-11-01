@@ -20,10 +20,12 @@ const deferred = /afterPaint\(\(\)=>\{ loadPhotos\(\); loadFlags\(\);/.test(core
 if (!deferred) SHELL.push('data/nz/photos.json', 'data/nz/flags.json');
 ok(deferred, 'photos.json and flags.json load after the first paint (else they count in the first screen)');
 const plan2 = sum(SHELL.concat(['data/nz/land-lo.svg.html']));
-ok(plan2 <= 100 * KB, `phone ② first screen ${plan2} B gz (≤ 100 000)`);
+/* 1.5 KB under the line: gzip output differs by platform (CI's Linux measured 830 B more than macOS) */
+const ROOM = 1500;
+ok(plan2 <= 100 * KB - ROOM, `phone ② first screen ${plan2} B gz (≤ 98 500, 1.5 KB under 100 000)`);
 const collect = ['planner-collect.js', 'planner-collect.css'];
 const plan1 = sum(SHELL.concat(collect));
-ok(plan1 <= 100 * KB, `phone ① first screen ${plan1} B gz (≤ 100 000; coastline deferred)`);
+ok(plan1 <= 100 * KB - ROOM, `phone ① first screen ${plan1} B gz (≤ 98 500, 1.5 KB under 100 000; coastline deferred)`);
 /* the gallery (data and chunk) loads only from loadGallery(), which nothing on the boot path calls directly */
 const coreSrc = fs.readFileSync(path.join(ROOT, 'planner.js'), 'utf8');
 ok(!SHELL.concat(collect).some(f => /gallery/.test(f)) && (coreSrc.match(/'gallery\.json'/g) || []).length === 1 && /function loadLazy\(\)\{[^}]*loadGallery\(\)/.test(coreSrc),

@@ -1551,19 +1551,19 @@ const plannerFn=function planner(g){
   let MORE=null;
   /* places-more.json: the vibe lines, evidence and sources, off the critical path. The vibe joins
      its place record (and the search index) when it arrives. */
-  /* the curated clusters' names and blurbs (groups.json), merged onto the ids plans.json carries */
+  /* the curated clusters, whole, from groups.json (loaded with planner-more; the ① tier view never needs them) */
   let GROUPS=null;
   function loadGroups(){ return GROUPS||(GROUPS=fetch(SRC+'groups.json').then(r=>r.ok?r.json():{}).catch(()=>{ GROUPS=null; return {}; })
-    .then(j=>{ DB.clusters.forEach(c=>{ const w=j&&j[c.id]; if(w) Object.keys(w).forEach(k=>{ if(c[k]==null) c[k]=w[k]; }); }); return j; })); }
+    .then(j=>{ DB.clusters=Object.keys(j||{}).filter(k=>j[k]&&Array.isArray(j[k].ids)).map(k=>Object.assign({id:k},j[k])); return j; })); }
   function loadMore(){ return MORE||(MORE=fetch(SRC+'places-more.json').then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(j=>{ DB.more=j||{}; DB.base.forEach(p=>{ const m=DB.more[p.id]; if(m){ if(m.vibe&&!p.vibe) p.vibe=m.vibe; if(m.vibeJa&&!p.vibeJa) p.vibeJa=m.vibeJa; ['kw','ig','igTag'].forEach(k=>{ if(m[k]&&!p[k]) p[k]=m[k]; }); } delete p._s; }); return DB.more; })
+    .then(j=>{ DB.more=j||{}; DB.base.forEach(p=>{ const m=DB.more[p.id]; if(m){ if(m.vibe&&!p.vibe) p.vibe=m.vibe; if(m.vibeJa&&!p.vibeJa) p.vibeJa=m.vibeJa; ['kw','ig','igTag','cost','mapsAt','igN','badge'].forEach(k=>{ if(m[k]&&!p[k]) p[k]=m[k]; }); } delete p._s; }); return DB.more; })
     .catch(()=>{ MORE=null; return {}; })); }
   function init(res){
     const [list,plans]=res;
     /* Bases and ferry terminals ship in plans.json; a place record of the same id wins. */
     const have=new Set(list.map(p=>p.id)), places=list.concat((plans.basePlaces||[]).filter(p=>!have.has(p.id)));
     DB={base:places,baseMap:new Map(places.map(p=>[p.id,p])),places:null,list:null,impVer:0,days:plans.days,bases:new Set(plans.bases||[]),
-        presets:plans.plans,clusters:plans.clusters||[],ferries:Array.isArray(plans.ferries)?plans.ferries:[],walks:Array.isArray(plans.walks)?plans.walks.filter(w=>w&&w.a&&w.b&&w.min>=0):[],noRoad:plans.noRoad&&typeof plans.noRoad==='object'?plans.noRoad:{},
+        presets:plans.plans,clusters:[],ferries:Array.isArray(plans.ferries)?plans.ferries:[],walks:Array.isArray(plans.walks)?plans.walks.filter(w=>w&&w.a&&w.b&&w.min>=0):[],noRoad:plans.noRoad&&typeof plans.noRoad==='object'?plans.noRoad:{},
         tides:Object.fromEntries(Object.entries(plans.tides||LOW_TIDE).filter(([k])=>k[0]!=='_')),
         travel:{ids:[],min:[]},tIdx:{},routes:{},routesLoaded:false,photos:null,more:null};
     SIM=makeSim(DB); rebuildPlaces();

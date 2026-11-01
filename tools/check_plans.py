@@ -74,6 +74,11 @@ def load():
     plans = json.load(open(os.path.join(D, 'plans.json')))
     for b in plans.get('basePlaces', []):
         places.setdefault(b['id'], b)
+    # The curated clusters live whole in groups.json (tools/split_groups.py), off the first screen;
+    # the checker reads them back as plans['clusters'], in file order.
+    gp = os.path.join(D, 'groups.json')
+    if 'clusters' not in plans and os.path.exists(gp):
+        plans['clusters'] = [dict(v, id=k) for k, v in json.load(open(gp, encoding='utf-8')).items() if isinstance(v, dict) and v.get('ids')]
     t = json.load(open(os.path.join(D, 'travel.json')))
     idx = {k: i for i, k in enumerate(t['ids'])}
     return places, plans, t['min'], idx
@@ -284,15 +289,13 @@ def main():
                 hyg.append('U+FFFD in ' + f)
         hyg += ['%s: hours "always" on a %s' % (i, p['cat']) for i, p in s.places.items()
                 if p.get('cat') in ('cafe', 'food') and p.get('hours') == 'always']
-        # The clusters' words live in groups.json (tools/split_groups.py), so the first screen does
-        # not carry them; every cluster needs its entry there.
-        gp = os.path.join(D, 'groups.json')
-        gw = json.load(open(gp, encoding='utf-8')) if os.path.exists(gp) else {}
+        # The clusters live whole in groups.json (tools/split_groups.py), so the first screen does
+        # not carry them; plans.json must not, and every cluster needs ids and a name.
+        if 'clusters' in json.load(open(os.path.join(D, 'plans.json'), encoding='utf-8')):
+            hyg.append('plans.json still carries clusters (run tools/split_groups.py)')
         for c in s.plans.get('clusters', []):
-            if any(k in c for k in ('name', 'nameJa', 'blurb', 'blurbJa')):
-                hyg.append('cluster %s carries its words in plans.json (run tools/split_groups.py)' % c['id'])
-            elif not (gw.get(c['id']) or {}).get('nameJa'):
-                hyg.append('cluster %s has no name in groups.json' % c['id'])
+            if not c.get('nameJa') or not c.get('ids'):
+                hyg.append('cluster %s has no ids or no name in groups.json' % c['id'])
         # Every place flag needs a label in flags.json ({flag: {ja, en, level}}), or the app drops it
         # silently (safety flags went missing that way once). A flag matches whole, or by the part
         # before ':' ("track-closed:lion-rock-summit"). level is safety | info | hidden.

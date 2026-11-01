@@ -2,10 +2,11 @@
 """Splits data/nz/places.json into what the planner shows on first paint and what it shows only in
 a place sheet, and derives each place's one sourced signal ("badge") from its evidence.
 
-    data/nz/places.json        what first paint needs + badge {ja[,en]} + igN (follower count, e.g. "13K");
+    data/nz/places.json        what first paint needs;
                                book only when true, badge.en only when it differs from ja
     data/nz/places-more.json   {id: {vibe, vibeJa, kw, evidence:[...], sources:[...], + authoring notes}}
-                               loaded after first paint; the app merges kw/ig/igTag back into each place
+                               + badge {ja[,en]}, cost, mapsAt, igN (follower count, e.g. "13K"): place-sheet facts
+                               loaded after first paint; the app merges kw/ig/igTag/cost/mapsAt/igN/badge back into each place
     dropped: osmQuery, src, gmaps (the app links Google Maps by coordinates)
 
 Idempotent: if places.json was already split, the evidence is read back from places-more.json.
@@ -17,10 +18,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PL = os.path.join(ROOT, 'data', 'nz', 'places.json')
 MORE = os.path.join(ROOT, 'data', 'nz', 'places-more.json')
 DROP = ('evidence', 'sources', 'osmQuery', 'src', 'gmaps')
-# kw, ig and igTag are read by search, the place sheet, the import matcher and the story, each of which
-# awaits places-more first (the app merges them back into the place); the rest are authoring notes
+# kw, ig, igTag, cost, mapsAt and igN are read by search, the place sheet, the import matcher and the
+# story, each of which awaits places-more first (the app merges them back into the place); the rest are authoring notes
 # no screen reads. Moving them keeps the boot path inside its 100 KB budget.
-MOVE = ('vibe', 'vibeJa', 'kw', 'ig', 'igTag', 'coordNote', 'coordVerified', 'driveNote', 'driveMin', 'driveFromNewLynnMin',
+MOVE = ('vibe', 'vibeJa', 'kw', 'ig', 'igTag', 'cost', 'mapsAt', 'igN', 'badge', 'coordNote', 'coordVerified', 'driveNote', 'driveMin', 'driveFromNewLynnMin',
         'driveFromNewPlymouthMin', 'driveToMangoreiMin', 'hoursNote', 'notes', 'subarea')
 
 places = json.load(open(PL, encoding='utf-8'))
