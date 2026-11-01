@@ -71,5 +71,19 @@ const v2 = {v: 2, active: 'my', trip: {tier: {piha: 'must', karekare: 'skip', x:
 { const r = ST.read(J({v: 1, my: {id: 'my', days: {[D14]: ['three-sisters-elephant-rock']}}, versions: []}), env, J(v2));
   ok(J(r.my.days[D14]) === J(['three-sisters-elephant-rock']) && r.versions.some(v => v.kind === 'auto' && J(v.days[D12]) === J(['piha'])), 'both My plans survive'); }
 
+/* notes: a preset's own note is never hers (QA W1 P1-1) */
+const PRE = plans.plans.find(P => P.id === 'classic').notes, preK = 'pouakai-tarns', preV = PRE[preK], hutPiha = plans.plans.find(P => P.id === 'hut').notes.piha;
+{ const r = ST.read(J({v: 1, my: {id: 'my', from: 'classic', days: {}, notes: {[preK]: preV, piha: '水着を忘れずに'}}, versions: [{id: 'v-1', at: 5, days: {}, notes: {mokau: PRE.mokau}}]}), env);
+  ok(J(r.trip.notes) === J({piha: '水着を忘れずに'}), 'migration lifts only her own notes: ' + J(r.trip.notes));
+  ok(r.my.notes[preK] === preV && r.my.notes.piha == null, 'the preset note stays with My plan, hers moved up'); }
+/* the old-app guard: the old app forked classic (its notes copied into My plan); her v2 notes win */
+{ const old = J({v: 1, active: 'my', my: {id: 'my', from: 'classic', days: {[D12]: ['piha']}, notes: {piha: hutPiha, 'waitomo-glowworm-caves': 'preset text'}}, versions: []});
+  const broken = J(Object.assign({}, v2, {trip: {tier: {}, groups: [], notes: {piha: '水着を忘れずに', 'waitomo-glowworm-caves': '予約は10時'}}}));
+  const r = ST.read(old, env, broken);
+  ok(r.trip.notes.piha === '水着を忘れずに' && r.trip.notes['waitomo-glowworm-caves'] === '予約は10時', 'through the guard her notes survive: ' + J(r.trip.notes)); }
+/* a v2 save that already holds a preset note in the trip (lifted by an earlier build) is cleaned on read */
+{ const r = ST.read(J(Object.assign({}, v2, {trip: {tier: {}, groups: [], notes: {[preK]: preV, piha: 'towels'}}})), env);
+  ok(J(r.trip.notes) === J({piha: 'towels'}), 'preset notes leave the trip on read: ' + J(r.trip.notes)); }
+
 console.log(fails ? `${fails} of ${n} state checks failed` : `${n} state checks passed`);
 process.exit(fails ? 1 : 0);

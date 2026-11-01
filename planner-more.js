@@ -6,7 +6,10 @@
 (function(){
 'use strict';
 if(typeof planner!=='function'||planner.more) return;
-const PTM={ galT:{ja:'写真',en:'Photos'}, galZ:{ja:'写真を全体表示',en:'Show the whole photo'}, licSite:{ja:'公式サイト',en:'own site'}, galN:{ja:'{i} / {n}',en:'{i} of {n}'},
+const PTM={ bestDay:{ja:'最適 {d}',en:'Best {d}'}, placedN:{ja:'{n}/{of} 配置',en:'{n}/{of} placed'}, noDay:{ja:'⚠ どの日も崩れます',en:'⚠ breaks every day'}, grpSum:{ja:'約{d}・運転{m}',en:'about {d}, {m} driving'}, picks:{ja:'おすすめ',en:'Suggested'}, use:{ja:'使う',en:'Use'}, rename2:{ja:'名前を変える',en:'Rename'}, drop:{ja:'グループを解く',en:'Ungroup'}, noGroup:{ja:'グループなし',en:'Not in a group'},
+mine:{ja:'わたしのリスト',en:'My list'}, mAll:{ja:'すべて',en:'All'}, m_must:{ja:'絶対',en:'Must'}, m_want:{ja:'行きたい',en:'Want'}, m_maybe:{ja:'余裕',en:'If time'}, mGrp:{ja:'グループ：{g}',en:'Group: {g}'}, picksH:{ja:'おすすめ',en:'Suggestions'}, mineNone:{ja:'①で分けた場所とグループがここに出ます',en:'Places you sort in ① and your groups show here'},
+forkT:{ja:'マイプランに編集があります',en:'My plan has edits of its own'}, forkS:{ja:'「{name}」を編集すると、マイプランが置き換わります。',en:'Editing “{name}” replaces My plan.'}, forkOver:{ja:'マイプランを上書き',en:'Overwrite My plan'}, forkNew:{ja:'新しい案として保存',en:'Save as a new version'}, forkNewS:{ja:'今のマイプランは「{name}」として案に残ります',en:'Your current My plan stays as the version “{name}”'},
+galT:{ja:'写真',en:'Photos'}, galZ:{ja:'写真を全体表示',en:'Show the whole photo'}, licSite:{ja:'公式サイト',en:'own site'}, galN:{ja:'{i} / {n}',en:'{i} of {n}'},
 
   broke:{ja:'{name}：{w}',en:'{name}: {w}'}, moveOpen:{ja:'朝に移す',en:'Move to its open hours'}, movedOpen:{ja:'{name}を開いている時間へ移しました',en:'Moved {name} into its open hours'}, endsAt:{ja:'{t}着',en:'ends {t}'}, storySoon:{ja:'ストーリー画像は準備中です',en:'Story images are coming soon'}, moveT:{ja:'別の日へ移す',en:'Move to another day'}, moveS:{ja:'移した日の中で、いちばん遠回りにならない位置に入ります',en:'Goes where it adds the least time that day'}, movedTo:{ja:'{d} に移しました',en:'Moved to {d}'}, added:{ja:'{d} に追加しました',en:'Added to {d}'}, addedN:{ja:'{n}件を {d} に追加しました',en:'Added {n} to {d}'}, nothingAdded:{ja:'すべて予定済みです',en:'All already planned'}, reset:{ja:'マイプランを消す',en:'Delete My plan'}, resetDone:{ja:'「{name}」に戻しました',en:'Back to “{name}”'}, all:{ja:'すべて',en:'All'}, count:{ja:'{n}件',en:'{n} places'}, noMatch:{ja:'条件に合う候補はありません。絞り込みを外してください。',en:'No places match. Clear a filter.'}, copiedC:{ja:'座標をコピーしました',en:'Coordinates copied'}, verDeleted:{ja:'「{name}」を削除しました',en:'Deleted “{name}”'}, impDel:{ja:'この取り込みを削除',en:'Delete this import'}, openReel:{ja:'リールを見る',en:'Open reel'},
   rvS:{ja:'日付をタップするとその日を組み立てます。表は案ごとの違い',en:'Tap a day to plan it; the table compares versions'}, pinK:{ja:'くらべる案',en:'Compare with'}, nowUsing:{ja:'「{name}」にしました',en:'Now using “{name}”'},
@@ -222,14 +225,16 @@ planner.more=function(c){
   function payload(){
     const p=plan(), ids=new Set(DB.days.flatMap(d=>idsOf(d.date,p))), booked={}, notes={};
     Object.keys(S.booked).forEach(k=>{ if(ids.has(k)) booked[k]=true; });
-    Object.keys(p.notes||{}).forEach(k=>{ if(ids.has(k)) notes[k]=p.notes[k]; });
-    Object.keys(S.trip.notes).forEach(k=>{ if(ids.has(k)) notes[k]=S.trip.notes[k]; });
+    /* the version's own notes travel as notes; hers (the trip's) as tn, so a preset's never becomes hers */
+    const tn={}; Object.keys(p.notes||{}).forEach(k=>{ if(ids.has(k)) notes[k]=p.notes[k]; });
+    Object.keys(S.trip.notes).forEach(k=>{ if(ids.has(k)) tn[k]=S.trip.notes[k]; });
     const imp=S.imports.filter(m=>ids.has(m.id)&&m.lat!=null).map(m=>({id:m.id,src:m.src,name:m.name,lat:m.lat,lon:m.lon,url:m.url||''}));
     const o={v:2,from:p.from||p.id,name:planName(p),days:p.days,stay:p.stay||{},start:p.start||{},notes,booked};
     if(p.anchors) o.anchors=p.anchors;
     if(p.stayDay) o.stayDay=p.stayDay;
     if(p.titles) o.titles=p.titles;
     if(imp.length) o.imp=imp;
+    if(Object.keys(tn).length) o.tn=tn;
     /* v3: her tiers, and her groups as ids only (a group's name stays on her phone) */
     const t={}; Object.keys(S.trip.tier).forEach(k=>{ if(S.trip.tier[k]) t[k]=S.trip.tier[k]; });
     if(Object.keys(t).length) o.t=t;
@@ -275,7 +280,8 @@ planner.more=function(c){
       (Array.isArray(o.g)?o.g:[]).forEach(g=>{ if(!g||typeof g.id!=='string'||T.groups.some(x=>x.id===g.id)) return;
         const ids=(Array.isArray(g.ids)?g.ids:[]).filter(i=>typeof i==='string'&&DB.places.has(i)&&!grouped.has(i)); if(!ids.length) return;
         ids.forEach(i=>grouped.add(i)); T.groups.push({id:g.id,name:pt('sharedGroup',{n:T.groups.length+1}),ids}); });
-      Object.keys(notes).forEach(k=>{ if(!T.notes[k]) T.notes[k]=notes[k]; });
+      const tnx=o.tn&&typeof o.tn==='object'?o.tn:notes;
+      Object.keys(tnx).forEach(k=>{ const v=tnx[k]; if(typeof v==='string'&&v.trim()&&DB.places.has(k)&&!T.notes[k]&&!planner.state.pre({presets:DB.presets},k,v)) T.notes[k]=v.slice(0,300); });
       S.trip=T;
       if(o.booked&&typeof o.booked==='object'){ const nb=Object.assign({},S.booked); Object.keys(o.booked).forEach(k=>{ if(o.booked[k]===true&&seen.has(k)) nb[k]=true; }); S.booked=nb; }
       S.planId=v.id; save(); render(true); fitDay(); switchToMe();
@@ -330,14 +336,15 @@ planner.more=function(c){
     /* 見送り (skip) places stay out of the pool, but never leave a day they are on */
     const ok=DB.list.filter(p=>isCand(p)&&c.tierOf(p.id)!=='skip'&&(!S.f.cat||p.cat===S.f.cat)&&(!S.f.area||p.area===S.f.area)&&(!S.f.saved||p.saved)&&terms.every(w=>searchText(p).indexOf(w)>=0));
     E.sbody.querySelector('.pl-ccount').textContent=pt('count',{n:ok.length});
+    const mine=mineHTML(ok,planned,day);
     if(!ok.length){ box.innerHTML=`<div class="pl-none"><p>${pt('noMatch')}</p><button type="button" class="pl-btn pl-sec" data-act="clearf">${pt('clearFilters')}</button></div>`; return; }
     if(S.f.sort!=='trend'){       /* flat: nearest really is nearest */
       const sc=new Map(ok.map(p=>[p.id,S.f.sort==='near'?near(p):-((p.aesthetic||0)*10+(p.trend||0))]));
       const ids=ok.map(p=>p.id).sort((a,b)=>bySaved(a,b)||sc.get(a)-sc.get(b));
-      fill(box,[`<section class="pl-clus">${ids.map(id=>candRow(id,planned,day,S.f.sort==='near'?sc.get(id):null)).join('')}</section>`]); return;
+      fill(box,[mine.html,`<section class="pl-clus">${ids.map(id=>candRow(id,planned,day,S.f.sort==='near'?sc.get(id):null)).join('')}</section>`]); return;
     }
     const score=new Map(ok.map(p=>[p.id,-((p.trend||0)*10+(p.aesthetic||0))]));
-    const groups=[], used=new Set();
+    const groups=[], used=new Set(mine.ids);
     const imps=ok.filter(p=>p.imp).map(p=>p.id); imps.forEach(id=>used.add(id));
     if(imps.length) groups.push({c:{id:'_imp',name:pt('impGroup'),nameJa:pt('impGroup'),first:true},m:imps});
     DB.clusters.forEach(c=>{ const m=c.ids.filter(id=>score.has(id)&&!used.has(id)); m.forEach(id=>used.add(id)); if(m.length) groups.push({c,m}); });
@@ -345,12 +352,45 @@ planner.more=function(c){
     if(rest.length) groups.push({c:{id:'',name:pt('others'),nameJa:pt('others')},m:rest});
     groups.forEach(x=>{ x.m.sort((a,b)=>bySaved(a,b)||score.get(a)-score.get(b)); x.s=score.get(x.m[0]); x.sv=!!place(x.m[0]).saved; });
     groups.sort((a,b)=>(!!b.c.first)-(!!a.c.first)||(!a.c.id)-(!b.c.id)||b.sv-a.sv||a.s-b.s);
-    fill(box,groups.map(x=>{ const free=x.m.filter(id=>!planned.has(id)).length, cn=(ja()?x.c.nameJa:x.c.name)||x.c.name||x.c.id;
+    fill(box,[mine.html,mine.html&&groups.length?`<h3 class="pl-plansep pl-pickh">${pt('picksH')}</h3>`:''].concat(groups.map(x=>{ const free=x.m.filter(id=>!planned.has(id)).length, cn=(ja()?x.c.nameJa:x.c.name)||x.c.name||x.c.id;
       return `<section class="pl-clus"><div class="pl-clus-h"><h3>${esc(cn)}<small>${pt('count',{n:x.m.length})}</small></h3>
         ${x.c.id&&free>1?`<button type="button" class="pl-addall" data-act="addall" data-id="${x.c.id}" aria-expanded="false">${ic('plus','xs')}<span aria-hidden="true">${pt('addAll')}</span><span class="sr">${esc(pt('addAllN',{name:cn}))}</span></button>`:''}</div>
         ${x.c.id&&x.c.id!=='_imp'?`<p class="pl-clsum">${clusterSum(x.m)}${x.c.startAt?`　${pt('startAt',{t:x.c.startAt})}`:''}</p>`:''}
-        ${x.m.map(id=>candRow(id,planned,day,null)).join('')}</section>`; }));
+        ${x.m.map(id=>candRow(id,planned,day,null)).join('')}</section>`; })));
   }
+  /* after グループへ the selection is spent */
+  const unsel=()=>{ if(S.csel&&S.csel.size){ S.csel.clear(); const m=c.col(); if(m) m.render(true); } };
+  /* ---------- ① by group (planner-collect asks for this): her groups, simulated (time on foot and road,
+     the cheapest day each fits cleanly), the おすすめ to adopt, each with a cover picture, then the rest ---------- */
+  const BD=new Map();
+  function bestDay(g){ const P=plan(), k=JSON.stringify([g.ids,P.days,S.dayEnd]); if(BD.has(k)) return BD.get(k);
+    const pm=plannedMap(P), ids=g.ids.filter(i=>!pm.has(i)&&DB.places.has(i)); let best=null;
+    if(ids.length) DB.days.forEach((d,i)=>{ const pv=SIMc().insertPlan(d,idsOf(d.date,P),ids,P,{deadline:S.dayEnd},g); if(pv&&!pv.breaks.length&&(!best||pv.dDrive<best.v)) best={i,v:pv.dDrive}; });
+    const r=!ids.length?'':best?pt('bestDay',{d:dlabel(DB.days[best.i])}):pt('noDay'); BD.set(k,r); return r; }
+  function gsum(ids){ let m=0, d=0; ids.forEach((id,k)=>{ const p=place(id); m+=p.dur||60; if(k){ const x=SIMc().legAt(ids[k-1],id,600,DB.days[0].date,[]); m+=x.min; d+=x.drove; } });
+    return pt('grpSum',{d:dur(m),m:dur(d)}); }
+  function cGroups(sec,cards,o,pm,groupOf){ const used=new Set(S.trip.groups.map(g=>g.from).filter(Boolean));
+    const gs=S.trip.groups.map(g=>sec(g.id,esc(g.name),g.ids.length,cards(o.get(g.id)||[]),`<span class="pl-csm">${pt('placedN',{n:g.ids.filter(i=>pm.has(i)).length,of:g.ids.length})}　${gsum(g.ids)}　${bestDay(g)}</span><button type="button" class="pl-cbtn" data-ca="gname" data-id="${g.id}">${pt('rename2')}</button><button type="button" class="pl-cbtn" data-ca="gdrop" data-id="${g.id}">${pt('drop')}</button>`)).join('');
+    const cover=x=>{ const id=x.ids.find(i=>c.gal(place(i)).length||DB.photos&&DB.photos[i])||x.ids[0]; return thumb(place(id)).replace('pl-glyph','pl-glyph pl-pkc'); };
+    const picks=DB.clusters.filter(x=>!used.has(x.id)&&x.ids.some(i=>!groupOf(i))).map(x=>`<li>${cover(x)}<b>${esc((ja()?x.nameJa:x.name)||x.id)}</b><small>${esc(x.ids.map(i=>nm(place(i))+(groupOf(i)?' '+pt('inGroup',{g:groupOf(i).name}):'')).join('・'))}</small><button type="button" class="pl-cbtn" data-ca="guse" data-id="${x.id}">${pt('use')}</button></li>`).join('');
+    return gs+(picks?`<section class="pl-cs pl-picks"><details><summary class="pl-csh"><h3>${pt('picks')}<small>${DB.clusters.filter(x=>!used.has(x.id)).length}</small></h3></summary><ul>${picks}</ul></details></section>`:'')+sec('',pt('noGroup'),(o.get('')||[]).length,cards(o.get('')||[])); }
+  /* わたしのリスト: her tiered places (絶対 / 行きたい / 余裕, one filter), then each of her groups with
+     まとめて追加. The places listed here leave the おすすめ sections below. */
+  const TR=['must','want','maybe'];
+  function mineHTML(ok,planned,day){
+    const tf=S.f.tier||'', okS=new Set(ok.map(p=>p.id));
+    const ids=ok.filter(p=>{ const t=c.tierOf(p.id); return TR.indexOf(t)>=0&&(!tf||t===tf); }).map(p=>p.id)
+      .sort((a,b)=>TR.indexOf(c.tierOf(a))-TR.indexOf(c.tierOf(b))||(planned.has(a)-planned.has(b)));
+    const gs=S.trip.groups.map(g=>({g,m:g.ids.filter(i=>okS.has(i))})).filter(x=>x.m.length);
+    const seg=`<div class="pl-seg pl-mseg" role="group" aria-label="${esc(pt('mine'))}">${['',...TR].map(k=>`<button type="button" data-act="tf" data-v="${k}" aria-pressed="${tf===k}">${pt(k?'m_'+k:'mAll')}</button>`).join('')}</div>`;
+    if(!ids.length&&!gs.length&&!tf) return {html:'',ids:[]};
+    const html=`<section class="pl-clus pl-mine"><div class="pl-clus-h"><h3>${pt('mine')}<small>${pt('count',{n:ids.length})}</small></h3></div>${seg}
+        ${ids.map(id=>candRow(id,planned,day,null)).join('')||`<p class="pl-none">${pt('mineNone')}</p>`}</section>`+
+      gs.map(({g,m})=>{ const free=m.filter(id=>!planned.has(id)).length;
+        return `<section class="pl-clus pl-mine"><div class="pl-clus-h"><h3>${esc(pt('mGrp',{g:g.name}))}<small>${pt('count',{n:m.length})}</small></h3>
+        ${free>0?`<button type="button" class="pl-addall" data-act="addall" data-id="${g.id}" aria-expanded="false">${ic('plus','xs')}<span aria-hidden="true">${pt('addAll')}</span><span class="sr">${esc(pt('addAllN',{name:g.name}))}</span></button>`:''}</div>
+        <p class="pl-clsum">${clusterSum(m)}</p>${m.map(id=>candRow(id,planned,day,null)).join('')}</section>`; }).join('');
+    return {html,ids}; }
   /* The first screenful goes in now, the rest after the frame: the sheet opens without parsing
      ~170 rows in the tap. A newer list call cancels a pending tail. */
   let fillT=0;
@@ -375,12 +415,12 @@ planner.more=function(c){
   function clusterSum(ids){ let m=0, km=0; ids.forEach((id,k)=>{ const p=place(id); m+=p.dur||60; if(k){ const a=place(ids[k-1]), w=DB.walks.find(x=>(x.a===a.id&&x.b===id)||(x.b===a.id&&x.a===id)); if(w){ m+=w.a===a.id?w.min:w.down!=null?w.down:w.min; return; } const d=eqKm(a,p)*1.35; km+=d; m+=d/50*60; } });
     return pt('clusterSum',{d:dur(m),km:Math.round(km)+' km'}); }
   function patchCand(id){
-    const row=E.sbody.querySelector(`.pl-cand[data-id="${id}"]`); if(!row) return;
+    E.sbody.querySelectorAll(`.pl-cand[data-id="${id}"]`).forEach(row=>{
     const on=plannedMap().get(id), q=row.querySelector('.pl-dayq'); if(q) q.remove();
     const btn=row.querySelector('.pl-addbtn'); if(on==null||!btn) return;
     const s=document.createElement('span'); s.className='pl-inplan'; s.setAttribute('style',dayStyle(on));
     s.innerHTML=`<span class="sr">${esc(pt('inDay',{d:dlabel(DB.days[on])}))}</span><i aria-hidden="true">${+DB.days[on].date.slice(8)}</i>`;
-    btn.replaceWith(s);
+    btn.replaceWith(s); });
   }
 
 
@@ -589,6 +629,10 @@ planner.more=function(c){
     paint();
   }
 
+  /* a first edit on a preset while My plan holds its own edits: overwrite it, or keep it as a named version */
+  function forkAsk(){
+    openSheet(head(pt('forkT'),pt('forkS',{name:planName(plan())}))+`<div class="pl-sheet-acts pl-fork"><button type="button" class="pl-btn pl-pri" data-act="forknew">${pt('forkNew')}<small>${esc(pt('forkNewS',{name:planName(S.my)}))}</small></button>
+      <button type="button" class="pl-btn pl-sec" data-act="forkover">${pt('forkOver')}</button></div>${doneBar()}`,'fork'); }
   function openPlans(){
     const cur=plan(), when=t=>{ const d=new Date(t); return (d.getMonth()+1)+'/'+d.getDate()+' '+pad(d.getHours())+':'+pad(d.getMinutes()); };
     /* each version says how many musts it places */
@@ -616,13 +660,13 @@ planner.more=function(c){
   return {
     codeNow:()=>pack(payload()), moveFn,
     openBrowse, renderList, patchCand, openPlace, openPlans, dayPick, armPill, openMove, openStory, applyAdd, groupSheet, nameSheet, renderReview,
-    openOrder, openVerName, saveVersionNamed, openCompare, openSwap, shareLink, importCode, codeOf,
+    forkAsk, cGroups, openOrder, openVerName, saveVersionNamed, openCompare, openSwap, shareLink, importCode, codeOf,
     nameState,
     click(act,b,kind,arg){
       const day=DB.days[S.day], date=day.date;
       switch(act){
-        case 'cgto': intoGroup(arg.ids,b.dataset.id); closeSheet(); break;
-        case 'cgnew': intoGroup(arg.ids,null,((E.sbody.querySelector('.pl-cgname')||{}).value||'').trim()); closeSheet(); break;
+        case 'cgto': intoGroup(arg.ids,b.dataset.id); closeSheet(); unsel(); break;
+        case 'cgnew': intoGroup(arg.ids,null,((E.sbody.querySelector('.pl-cgname')||{}).value||'').trim()); closeSheet(); unsel(); break;
         case 'cgren': { const v=((E.sbody.querySelector('.pl-cgname')||{}).value||'').trim(); if(v) c.editTrip(x=>{ const g=x.groups.find(o=>o.id===arg.id); if(g) g.name=v.slice(0,40); },null); closeSheet(); break; }
         case 'back': openBrowse(); break;
         case 'plan': S.planId=b.dataset.id; save(); render(true); openPlans(); requestAnimationFrame(()=>fitDay()); break;
@@ -659,11 +703,13 @@ planner.more=function(c){
           add.forEach(patchCand); const q=b.closest('.pl-dayq'); if(q) q.remove(); break; }
         case 'clearf': S.f={q:'',cat:null,area:null,saved:null,sort:S.f.sort}; openBrowse(); break;
         case 'dayend': break;
+        case 'forknew': case 'forkover': c.forkGo(act==='forknew'); break;
         case 'gzoom': { const gl=b.closest('.pl-gal'), tr=gl.querySelector('.pl-gtrack'), i=[...tr.children].indexOf(b.parentNode);
           gl.style.setProperty('--ar',b.dataset.ar); gl.classList.toggle('pl-gfull'); tr.scrollLeft=i*tr.clientWidth; break; }
         case 'copyc': { const v=b.dataset.v; (navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast(pt('copiedC')),()=>toast(v)); break; }
         case 'f': { const k=b.dataset.k, v=b.dataset.v; S.f[k]=S.f[k]===v||!v?null:v;
           b.parentNode.querySelectorAll('.pl-chip').forEach(c=>c.setAttribute('aria-pressed',(S.f[c.dataset.k]||'')===c.dataset.v)); renderList(); break; }
+        case 'tf': S.f.tier=b.dataset.v||null; renderList(); break;
         case 'sort': S.f.sort=b.dataset.v; b.parentNode.querySelectorAll('button').forEach(c=>c.setAttribute('aria-pressed',c===b)); renderList(); break;
         case 'ord': if(kind==='order'&&reorder(arg.id,+b.dataset.d,false,null,b)!==false) afterRender(()=>openOrder(arg.id,b.dataset.d)); break;
         case 'ordto': if(kind==='order'){ const to=+b.dataset.to; if(reorder(arg.id,0,false,to,b)===false) break; closeSheet(); afterRender(()=>focusStop(to)); } break;

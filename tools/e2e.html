@@ -44,6 +44,8 @@
     q('.pl-browsebtn').click();
     const add = await until(() => qa('.pl-clist .pl-addbtn')[0]);
     ok(!!add, 'the candidate list opens');
+    const fs0 = q('.pl-clist > section');
+    ok(!!fs0 && fs0.classList.contains('pl-mine') && !!fs0.querySelector('[data-act="tf"][data-v="must"]'), '候補 opens on わたしのリスト with 絶対 / 行きたい / 余裕 filters');
     if (!add) {   /* say why, so a CI-only failure can be read from the log */
       const w = fr.contentWindow, d = w.document;
       lines.push('  diag ' + JSON.stringify({errs, more: !!(w.planner && w.planner.more),
@@ -127,7 +129,14 @@
     const myT13 = () => JSON.stringify((view()._pl.sim('my')[2].rows.find(r => r[2] === 'pouakai-tarns')));
     const plus = q('main .pl-row[data-id="pouakai-tarns"] [data-act="stay"][data-d="15"]');
     if (plus) { const b13 = t13();
+      const myBefore = JSON.parse(localStorage.getItem('plan:nz')).my, nv0 = JSON.parse(localStorage.getItem('plan:nz')).versions.length;
       plus.click(); await wait(400); if (/⚠/.test(toastTxt())) { q('main .pl-row[data-id="pouakai-tarns"] [data-act="stay"][data-d="15"]').click(); await wait(400); }
+      /* My plan holds edits of its own, so the first edit on the hut preset asks first — never silent */
+      const fk = await until(() => q('[data-act="forknew"]'), 3000);
+      ok(!!fk && JSON.stringify(JSON.parse(localStorage.getItem('plan:nz')).my) === JSON.stringify(myBefore), 'an edit on a preset asks before replacing an edited My plan, and changes nothing yet');
+      if (fk) { fk.click(); await wait(400); }
+      const st1 = JSON.parse(localStorage.getItem('plan:nz'));
+      ok(st1.versions.length === nv0 + 1 && st1.versions.some(v => !v.kind && JSON.stringify(v.days) === JSON.stringify(myBefore.days)), '新しい案として保存 keeps the old My plan as a named version');
       const saved = JSON.parse(localStorage.getItem('plan:nz')).my;
       ok(saved && saved.stayDay && saved.stayDay['2027-02-14'] && saved.stayDay['2027-02-14']['pouakai-tarns'] > 0 && (saved.stay || {})['pouakai-tarns'] === ((plans.plans.find(x => x.id === 'hut').stay || {})['pouakai-tarns']), 'stay ± writes stayDay for a place on two days');
       ok(myT13() === b13, 'the Feb 13 visit is unchanged');
@@ -205,6 +214,9 @@
     if (k1) { const kid = k1.dataset.id; k1.click(); k1.focus();
       wd().dispatchEvent(new KeyboardEvent('keydown', {code: 'Digit3', key: '3', bubbles: true}));
       ok(wv()._pl.tier(kid) === 'maybe', 'at 1440 key 3 sets 時間があれば on the focused card');
+      const ae = wd().activeElement, inb = ae && ae.closest && ae.closest('.pl-cs');
+      ok(ae && ae.classList.contains('pl-cc') && ae.dataset.id !== kid && inb && inb.dataset.k === '', 'after a tier key the focus walks on to the next inbox card');
+      ok(wq('.pl-clist .pl-cs').dataset.k === '' && wd().querySelectorAll('.pl-collect .pl-cc[tabindex="0"]').length === 1, '未仕分け comes first, and exactly one card is in the Tab order');
       ok(R('.pl-crail').right <= R('.pl-clist').left + 1, 'the filter rail sits left of the cards'); }
     else ok(false, '① cards at 1440');
     wq('.pl-stage[data-stage="plan"]').click(); await wait(500);
@@ -216,6 +228,8 @@
     await wait(120);
     const gtxt = (wq('.pl-dgh') || {}).textContent || '', at = (/着 ((?:翌)?\d\d:\d\d)/.exec(gtxt) || [])[1];
     ok(!!at, 'the ghost shows the arrival before the drop: ' + gtxt.slice(0, 60));
+    const opaque = el => { const b = el && wf.contentWindow.getComputedStyle(el).backgroundColor; return !!b && b !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(b); };
+    ok(opaque(wq('.pl-dgh')) && opaque(wq('.pl-armbar')), 'the drag ghost and the ⚠ bar have a solid background');
     pe(wf.contentWindow, 'pointerup', tl.x + 80, tl.bottom - 30); await wait(400);
     const armed = !wq('.pl-armbar').hidden;
     if (armed) { ok(/⚠/.test(wq('.pl-armbar').textContent), 'a breaking drop lands armed with its reason'); wd().dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true})); await wait(400); }
@@ -225,6 +239,17 @@
     wf.style.width = '1920px'; wf.style.height = '1080px';
     ok(await until(() => wv().classList.contains('pl-6') && wd().querySelectorAll('.pl-bc').length === 6, 4000), 'at 1920 the 6-day board shows six columns');
     ok(wq('svg.pl-map') === mapNode && wd().querySelectorAll('.pl-alld path').length > 0, 'the one map node draws every day');
+    /* 6日: a stop dragged down its own lane onto the next row's lower half lands right after that row */
+    const lane = [...wd().querySelectorAll('.pl-bc')].find(c => c.querySelectorAll('.pl-bs').length >= 3);
+    if (lane) { const bs = [...lane.querySelectorAll('.pl-bs')], a0 = bs[0].dataset.id, b0 = bs[1].dataset.id, r0 = bs[0].getBoundingClientRect(), r1 = bs[1].getBoundingClientRect();
+      const ty = r1.top + r1.height / 2 + 4, tx = r1.left + 20;
+      pe(bs[0], 'pointerdown', r0.left + 20, r0.top + 8);
+      for (let i = 1; i <= 6; i++) { pe(wf.contentWindow, 'pointermove', r0.left + 20, r0.top + 8 + (ty - r0.top - 8) * i / 6); await wait(40); }
+      await wait(120); pe(wf.contentWindow, 'pointerup', tx, ty); await wait(400);
+      if (!wq('.pl-armbar').hidden) { wd().dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true})); await wait(400); }
+      const ids = wv()._pl.sim('my')[+lane.dataset.day].rows.map(r => r[2]);
+      ok(ids.indexOf(b0) >= 0 && ids.indexOf(a0) === ids.indexOf(b0) + 1, '6日: a same-day downward drag lands right after the row it was dropped on'); }
+    else ok(false, '6日: a lane with three stops');
     ok(wd().documentElement.scrollWidth <= wf.contentWindow.innerWidth, 'no sideways scroll at 1920');
     wf.remove();
 

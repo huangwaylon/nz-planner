@@ -44,7 +44,7 @@ const PT={
   noteN:{ja:'メモ：{name}',en:'Note for {name}'}, notePh:{ja:'メモ（ふたりで共有）',en:'A note for both of you'},
   orderN:{ja:'並べ替え：{name}',en:'Reorder {name}'},     focus:{ja:'地図で見る：{name}',en:'Show {name} on the map'}, emptyDay:{ja:'この日はまだ空いています。',en:'Nothing planned yet.'}, addHere:{ja:'この日に追加',en:'Add to this day'},
   prevDay:{ja:'前の日',en:'Previous day'}, nextDay:{ja:'次の日',en:'Next day'}, story:{ja:'ストーリー画像',en:'Story image'},           reordered:{ja:'順番を変えました',en:'Reordered'},
-  removed:{ja:'{name} を外しました',en:'Removed {name}'},       undo:{ja:'元に戻す',en:'Undo'}, forked:{ja:'マイプランに保存',en:'Saved to My plan'}, keptAs:{ja:'前のマイプランは「{name}」に残しています',en:'your previous My plan is kept as “{name}”'},
+  removed:{ja:'{name} を外しました',en:'Removed {name}'},       undo:{ja:'元に戻す',en:'Undo'}, forked:{ja:'マイプランに保存',en:'Saved to My plan'}, overMy:{ja:'マイプランを上書きしました',en:'My plan overwritten'}, keptAs:{ja:'前のマイプランは「{name}」に残しています',en:'your previous My plan is kept as “{name}”'},
   editedName:{ja:'{name}（編集）',en:'{name} (edited)'},
                     creditBook:{ja:'写真：旅のしおり',en:'Photo: travel book'}, saved:{ja:'保存済み',en:'Saved'}, savedS:{ja:'Google マップに保存済み',en:'Saved in Google Maps'},               gmaps:{ja:'Google マップ',en:'Google Maps'},       loadFail:{ja:'データを読み込めませんでした。再読み込みしてください。',en:'Could not load the data. Reload the page.'},
   close:{ja:'閉じる',en:'Close'}, done:{ja:'完了',en:'Done'},
@@ -373,9 +373,12 @@ const ST={
       if(typeof g.from==='string') x.from=g.from; groups.push(x); });
     Object.entries(ST.obj(o.notes)).forEach(([k,v])=>{ if(typeof v==='string'&&v.trim()) notes[k]=v.slice(0,300); });
     return {tier,groups,notes}; },
-  /* v1 -> v2: notes move up to the trip, from My plan first, then the newest version that has them */
-  lift(r){ const notes={}, add=o=>Object.keys(o||{}).forEach(k=>{ if(notes[k]==null) notes[k]=o[k]; });
-    if(r.my){ add(r.my.notes); r.my.notes={}; }
+  /* a preset's own note for that place (any preset): it stays with its version, never the trip's */
+  pre(env,k,v){ return ((env&&env.presets)||[]).some(P=>P.notes&&P.notes[k]===v); },
+  /* v1 -> v2: her notes move up to the trip, from My plan first, then the newest version that has
+     them; a note a preset wrote stays where it is */
+  lift(r,env){ const notes={}, add=o=>Object.keys(o||{}).forEach(k=>{ if(notes[k]==null&&!ST.pre(env,k,o[k])) notes[k]=o[k]; });
+    if(r.my){ add(r.my.notes); Object.keys(notes).forEach(k=>{ delete r.my.notes[k]; }); }
     r.versions.slice().sort((a,b)=>(b.at||0)-(a.at||0)).forEach(v=>add(v.notes));
     r.trip={tier:{},groups:[],notes}; },
   /* An old cached app reads a v2 save as broken, keeps it in plan:<slug>:broken and writes v1 over
@@ -385,7 +388,8 @@ const ST={
     Object.keys(t.tier).forEach(k=>{ if(r.trip.tier[k]==null) r.trip.tier[k]=t.tier[k]; });
     const have=new Set(r.trip.groups.flatMap(g=>g.ids));
     t.groups.forEach(g=>{ if(!r.trip.groups.some(x=>x.id===g.id)) r.trip.groups.push(Object.assign({},g,{ids:g.ids.filter(i=>!have.has(i))})); });
-    Object.keys(t.notes).forEach(k=>{ if(r.trip.notes[k]==null) r.trip.notes[k]=t.notes[k]; });
+    /* her v2 notes win over what the old app lifted */
+    Object.keys(t.notes).forEach(k=>{ if(r.migrated||r.trip.notes[k]==null) r.trip.notes[k]=t.notes[k]; });
     if(!r.my&&b.my) r.my=b.my; else if(b.my&&r.my&&JSON.stringify(b.my.days)!==JSON.stringify(r.my.days)) r.versions.unshift(Object.assign({},b.my,{id:'v-k'+Date.now().toString(36),kind:'auto',at:Date.now()}));
     b.versions.forEach(v=>{ if(!r.versions.some(x=>x.id===v.id)) r.versions.push(v); });
     b.imports.forEach(m=>{ if(!r.imports.some(x=>x.id===m.id)) r.imports.push(m); });
@@ -408,7 +412,8 @@ const ST={
     r.imports=Array.isArray(saved.imports)?saved.imports.filter(m=>m&&typeof m.id==='string'&&typeof m.name==='string'&&(m.lat==null?m.lon==null:isFinite(m.lat)&&isFinite(m.lon))):[];
     Object.keys(ST.obj(saved.booked)).forEach(k=>{ if(saved.booked[k]===true) r.booked[k]=true; });
     r.active=typeof saved.active==='string'?saved.active:null;
-    if(saved.v===2) r.trip=ST.trip(saved.trip); else { ST.lift(r); r.migrated=true; }
+    if(saved.v===2){ r.trip=ST.trip(saved.trip); const n=r.trip.notes; Object.keys(n).forEach(k=>{ if(ST.pre(env,k,n[k])) delete n[k]; }); }
+    else { ST.lift(r,env); r.migrated=true; }
   }
 };
 const TIERS=['must','want','maybe','skip'];
@@ -533,7 +538,7 @@ const plannerFn=function planner(g){
     if(kind==='auto'){ let n=0; list=list.filter(x=>x.kind!=='auto'||++n<=10); }      /* the newest 10 autosaves */
     S.versions=list; return v;
   }
-  function keepMy(){ if(S.my&&!S.versions.some(v=>bodyOf(v)===bodyOf(S.my))) return snapshot(S.my,'','auto'); return null; }
+  function keepMy(named){ if(S.my&&!S.versions.some(v=>bodyOf(v)===bodyOf(S.my))) return snapshot(S.my,named?planName(S.my)+' '+nowHM().slice(0,-3):'',named?'':'auto'); return null; }
   const state=()=>({planId:S.planId,my:S.my?clone(S.my):null,versions:S.versions,imports:S.imports,booked:S.booked,trip:S.trip});
   /* Trip edits (tiers, groups, notes) share the one undo stack and never fork a preset into My plan.
      S.trip is replaced, never mutated, so a history entry can keep the old one. */
@@ -574,14 +579,19 @@ const plannerFn=function planner(g){
       toast('⚠ '+breakLine(bs)+' — '+pt('tapAgainDo')); return false; }
     ARM=null; return edit(fn,msg,opt);
   }
+  /* A first edit on a preset or version, when My plan holds edits of its own, asks first (planner-more forkAsk) */
+  let PEND=null;
+  const myEdited=()=>S.my&&bodyOf(S.my)!==bodyOf(findPlan(S.my.from)||{days:{}});
+  function forkGo(keep){ const p=PEND; PEND=null; closeSheet(); if(p) edit(p.fn,p.msg,Object.assign({},p.opt,{fork:keep?2:1})); }
   function edit(fn,msg,opt){
     if(DRAG) DRAG.cancel();
+    if(S.planId!=='my'&&myEdited()&&!(opt&&opt.fork)){ PEND={fn,msg,opt}; needMore().then(m=>m.forkAsk()); return false; }
     const before=state(); let forked=false;
     try{
       if(S.planId!=='my'||!S.my){
         /* Editing a preset or a saved/received version makes My plan a copy of it. A version's copy
            is named 「〇〇（編集）」, and the My plan it replaces is kept as an autosave: never silent. */
-        const src=plan(), kept=keepMy(), fromVer=src.id.startsWith('v-');
+        const src=plan(), kept=opt&&opt.fork===1?null:keepMy(opt&&opt.fork===2), fromVer=src.id.startsWith('v-');
         S.my=Object.assign({id:'my',from:src.from||src.id,days:clone(src.days)},emptyPlanBits(),
           {stay:clone(src.stay||{}),start:clone(src.start||{}),notes:clone(src.notes||{})}, src.anchors?{anchors:clone(src.anchors)}:{}, src.titles?{titles:clone(src.titles)}:{}, src.stayDay?{stayDay:clone(src.stayDay)}:{});
         if(fromVer) S.my.name=pt('editedName',{name:planName(src)});
@@ -595,7 +605,7 @@ const plannerFn=function planner(g){
     S.lastBreaks=bs; if(bs.length&&msg) msg+=' — ⚠ '+breakLine(bs);
     save();
     if(opt&&opt.quick&&S.sc) patchDay(); else renderSoon();
-    if(msg) toast(S.saveFail?msg:forked&&forked.kept?msg+' — '+pt('keptAs',{name:planName(forked.kept)}):forked?msg+' — '+pt('forked'):msg,undo);
+    if(msg) toast(S.saveFail?msg:forked&&forked.kept?msg+' — '+pt('keptAs',{name:planName(forked.kept)}):forked?msg+' — '+pt(opt&&opt.fork===1?'overMy':'forked'):msg,undo);
     if(opt&&opt.focus!=null) afterRender(()=>focusStop(opt.focus));
     return true;
   }
@@ -1398,6 +1408,7 @@ const plannerFn=function planner(g){
     E.sbody.addEventListener('keydown',e=>{
       if(e.key!=='Enter') return;
       if(e.target.closest('.pl-nom')){ e.preventDefault(); const b=e.target.closest('.pl-trow').querySelector('[data-act="nomgo"]'); b&&b.click(); return; }
+      if(e.target.classList.contains('pl-cgname')){ e.preventDefault(); const b=E.sbody.querySelector('[data-act="cgnew"],[data-act="cgren"]'); if(b) b.click(); return; }
       if(e.target.classList.contains('pl-vname')){ e.preventDefault(); const id=sheetArg&&sheetArg.id; needMore().then(m=>m.saveVersionNamed(id,e.target.value)); }
       if(e.target.classList.contains('pl-paste')){ e.preventDefault(); needMore().then(m=>m.click('pastego',e.target,sheetKind,sheetArg)); }
     });
@@ -1469,7 +1480,7 @@ const plannerFn=function planner(g){
   function ctx(){ return {S,DB,E,view,svg,slug,SRC,pt,esc,ic,head,doneBar,openSheet,closeSheet,toast,undo,pushHist,save,render,edit,plan,findPlan,planName,presetName,
     idsOf,schedule,dayStyle,dlabel,dayTitle,dur,hm,nm,nmLang,wbr,place,bodyOf,snapshot,renderTop,fitDay,isCand,plannedMap,FAMILY,thumb,tr,CAT,AREA,
     unverifiedHours,reorder,focusStop,afterRender,okHM,clone,switchToMe,hav,mapState,saveUI,select,unprj,ja,showCands,stopPlacing,impChanged,
-    savedTag,sigLine,warnText,breakText,guard,trial,breakLine,keepMy,armed,legSegments,geom,arc,pathD,g,main,heroOf,thumb,glyphOf,ic,col:()=>CM,gal:p=>GX?GX.gal(p):[],gx:()=>GX,loadGallery,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,loadCss,loadJs,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:(o,soft)=>Object.keys(o).forEach(k=>{ if(!soft||!PT[k]) PT[k]=o[k]; })}; }
+    savedTag,sigLine,warnText,breakText,guard,trial,breakLine,keepMy,forkGo,armed,legSegments,geom,arc,pathD,g,main,heroOf,thumb,glyphOf,ic,col:()=>CM,gal:p=>GX?GX.gal(p):[],gx:()=>GX,loadGallery,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,loadCss,loadJs,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:(o,soft)=>Object.keys(o).forEach(k=>{ if(!soft||!PT[k]) PT[k]=o[k]; })}; }
   const openOrder=id=>needMore().then(m=>m.openOrder(id));
   const openSwap=id=>needMore().then(m=>m.openSwap(id));
   const openCompare=(a,b)=>needMore().then(m=>m.openCompare(a,b));

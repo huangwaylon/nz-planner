@@ -125,5 +125,5 @@
 .pl-map .pl-alld .pl-leg-walk,.pl-map .pl-alld .pl-leg-ferry{stroke-dasharray:0 calc(6px / var(--z));}
 .pl-map .pl-alld .pl-dim{opacity:.15;}
 .pl-map .pl-cands [data-t="must"] .pl-mk{fill:var(--ink);stroke:var(--surface);}
-.pl-map .pl-cands [data-t="want"] .pl-mk{fill:color-mix(in srgb,var(--ink) 55%,var(--surface));}
+.pl-map .pl-cands [data-t="want"] .pl-mk{fill:color-mix(in srgb,var(--ink) 68%,var(--surface));}
 .pl-map .pl-cands [data-t="skip"]{opacity:.35;}

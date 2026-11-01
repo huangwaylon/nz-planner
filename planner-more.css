@@ -166,3 +166,15 @@
 .pl-gdots i{width:6px;height:6px;border-radius:50%;background:var(--muted);opacity:.45;}
 .pl-gdots i.pl-on{background:var(--ink);opacity:1;}
 .pl-gal:has(.pl-gf)>.pl-gfb,.pl-gal:not(:has(.pl-gf))>:is(.pl-gtrack,.pl-gdots){display:none;}
+.pl-fork{grid-template-columns:1fr;}
+.pl-fork .pl-btn{flex-direction:column;height:auto;min-height:52px;padding:10px 16px;}
+.pl-fork small{font-size:12.5px;font-weight:500;opacity:.85;}
+.pl-mseg{margin:2px 0 8px;}
+.pl-pickh{margin:18px 0 4px;}
+/* ① by group: おすすめ to adopt, each with a cover */
+.pl-picks ul{list-style:none;margin:0;padding:0;}
+.pl-picks li{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line-strong);}
+.pl-picks .pl-pkc{grid-row:1 / span 2;width:64px;height:64px;border-radius:12px;}
+.pl-picks b{font:600 15px/1.4 var(--pl-serif);grid-column:2;}
+.pl-picks small{font-size:12px;color:var(--muted);grid-column:2;}
+.pl-picks .pl-cbtn{grid-row:1 / span 2;grid-column:3;}

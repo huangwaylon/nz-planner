@@ -102,7 +102,7 @@ planner.desk=function(c){
     else if(k==='Escape'&&CM.sel.size){ CM.sel.clear(); CM.render(true); } }
   /* ---------- the drag controller ---------- */
   let D=null, moved=false;
-  const mk=k=>{ const x=document.createElement('div'); x.className=k; x.hidden=true; document.body.appendChild(x); return x; }, gh=mk('pl-dgh'), ar=mk('pl-armbar pl-layer'); ar.setAttribute('role','alertdialog');
+  const mk=k=>{ const x=document.createElement('div'); x.className=k; x.hidden=true; c.g.appendChild(x); return x; }, gh=mk('pl-dgh pl-layer'), ar=mk('pl-armbar pl-layer'); ar.setAttribute('role','alertdialog');
   /* what is being dragged: ids, the day it comes from (a stop), or a group block */
   function payload(s){ const [k,a,b]=s.split(':'); if(k==='g'){ const g=S.trip.groups.find(x=>x.id===a), pm=plannedMap(plan()); return g&&{ids:g.ids.filter(i=>!pm.has(i)&&DB.places.has(i)),group:g,label:g.name}; }
     if(k==='s') return {ids:[b],from:a,label:nm(place(b))}; return {ids:[a],label:nm(place(a))}; }
@@ -119,9 +119,10 @@ planner.desk=function(c){
     if(t.kind==='sec'){ const k=t.el.dataset.k, isT=S.cf.mode!=='group'; return {trip:x=>{ p.ids.forEach(id=>{ if(isT) x.tier[id]=k; else { x.groups.forEach(g=>{ g.ids=g.ids.filter(i=>i!==id); }); const g=x.groups.find(g=>g.id===k); if(g) g.ids.push(id); } }); },
       text:isT?pt('t_'+k):(S.trip.groups.find(g=>g.id===k)||{name:'—'}).name}; }
     if(t.kind==='cal') return {cal:true,text:''};
-    const day=DB.days[t.day], fn=m=>{ if(p.from){ const a=m.days[p.from], i=a.indexOf(p.ids[0]); if(i>=0) a.splice(i,1); }
+    /* the slot was measured with the dragged row still in place: moving down its own day, it counts once too many */
+    const day=DB.days[t.day], fn=m=>{ let own=-1; if(p.from){ const a=m.days[p.from], i=a.indexOf(p.ids[0]); if(i>=0){ a.splice(i,1); if(p.from===day.date) own=i; } }
       const l=(m.days[day.date]=m.days[day.date]||[]).filter(x=>p.ids.indexOf(x)<0); m.days[day.date]=l;
-      if(t.kind==='slot'&&!p.group) l.splice(Math.min(t.slot,l.length),0,...p.ids);
+      if(t.kind==='slot'&&!p.group) l.splice(Math.min(t.slot-(own>=0&&own<t.slot?1:0),l.length),0,...p.ids);
       else { const pv=sim().insertPlan(day,l,p.ids,m,o(),p.group||null); if(pv){ m.days[day.date]=pv.list.concat(l.filter(x=>!DB.places.has(x))); if(pv.start){ m.start=m.start||{}; m.start[day.date]=pv.start; } } } };
     const m=clone({id:'t',days:P.days,stay:P.stay||{},start:P.start||{},stayDay:P.stayDay||{},anchors:P.anchors||{}}); fn(m);
     const sc=sim().schedule(day,null,m,o()), base=sim().schedule(day,null,P,o()), r=sc.rows.find(x=>x.id===p.ids[0]), bs=c.trial(fn)||[];
