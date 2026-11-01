@@ -23,6 +23,8 @@ function fakeEl() {
     addEventListener(t, f) { L[t] = f; }, L};
 }
 /* every element with data-act in the HTML, as {tag, attrs} with the dataset the browser would give */
+/* a cell's VoiceOver name: its leading .sr text (the visible parts are aria-hidden) */
+const srName = (html, b) => { const m = /^<button[^>]*><span class="sr">([^<]*)<\/span>/.exec(html.slice(b.at)); return m && m[1]; };
 function buttons(html) {
   return [...html.matchAll(/<button([^>]*)>/g)].map(m => {
     const a = {}; for (const x of m[1].matchAll(/([\w-]+)="([^"]*)"/g)) a[x[1]] = x[2];
@@ -64,7 +66,7 @@ for (const b of mb) {
   ok(b.dataset.drop === 'day', `${b.dataset.date} is a drop target (data-drop="day")`);
 }
 { const sat = mb.find(b => b.dataset.date === '2027-02-13');
-  ok(sat.a['aria-label'] === '2月13日 土曜日, 4か所, 注意1', `VoiceOver label: ${sat.a['aria-label']}`);
+  ok(srName(mo, sat) === '2月13日 土曜日, 4か所, 注意1', `VoiceOver label: ${srName(mo, sat)}`);
   // Feb 11 is in the second row (row 1), the Thursday column (4); Feb 14 is row 2, column 0
   ok(sat.dataset.r === '1' && sat.dataset.c === '6', `Feb 13 sits at row 1, column 6: ${sat.dataset.r},${sat.dataset.c}`);
   ok(mb.find(b => b.dataset.date === '2027-02-14').dataset.c === '0', 'Feb 14 is a Sunday, column 0'); }
@@ -113,7 +115,7 @@ ok(JSON.stringify(got) === '[["take","cafes","2027-02-14"],["day","2027-02-16"],
 /* 5. language: langchange re-renders every mounted element */
 document.documentElement.lang = 'en'; docL.langchange();
 ok(/February 2027/.test(el.innerHTML) && /<th scope="col" class="pl-cal-we">Sun<\/th>/.test(el.innerHTML), 'langchange re-renders the month in English');
-ok(buttons(el.innerHTML).find(b => b.dataset.date === '2027-02-13').a['aria-label'] === 'Saturday 13 February, 4 stops, 1 warning', 'English VoiceOver label');
+ok(srName(el.innerHTML, buttons(el.innerHTML).find(b => b.dataset.date === '2027-02-13')) === 'Saturday 13 February, 4 stops, 1 warning', 'English VoiceOver label');
 ok(/Take this day/.test(ve.innerHTML) && /= same/.test(ve.innerHTML), 'and the versions grid');
 
 console.log(`${checks - fails}/${checks} checks passed`);

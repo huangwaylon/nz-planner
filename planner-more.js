@@ -231,7 +231,8 @@ planner.more=function(c){
     const tn={}; Object.keys(p.notes||{}).forEach(k=>{ if(ids.has(k)) notes[k]=p.notes[k]; });
     Object.keys(S.trip.notes).forEach(k=>{ if(ids.has(k)) tn[k]=S.trip.notes[k]; });
     const imp=S.imports.filter(m=>ids.has(m.id)&&m.lat!=null).map(m=>({id:m.id,src:m.src,name:m.name,lat:m.lat,lon:m.lon,url:m.url||''}));
-    const o={v:2,from:p.from||p.id,name:planName(p),days:p.days,stay:p.stay||{},start:p.start||{},notes,booked};
+    const o={v:2,from:p.from||p.id,name:p.id==='my'&&!p.name?'':planName(p),   /* an unnamed My plan arrives as 「共有された案」, not as the receiver's マイプラン */
+      days:p.days,stay:p.stay||{},start:p.start||{},notes,booked};
     if(p.anchors) o.anchors=p.anchors;
     if(p.stayDay) o.stayDay=p.stayDay;
     if(p.titles) o.titles=p.titles;
@@ -461,7 +462,7 @@ planner.more=function(c){
         else if(b.dataset.rv==='cmp') openCompare(plan().id); else shareLink(); }); }
     el.querySelector('.pl-rvpin').innerHTML=`<span class="pl-hint">${pt('pinK')}</span>`+all.filter(x=>x.id!==cur.id).map(x=>`<button type="button" class="pl-chip" data-rv="pin" data-id="${x.id}" aria-pressed="${pin.has(x.id)}">${esc(planName(x))}</button>`).join('');
     const opts={
-      onDay:date=>{ c.setStage('plan'); c.setDay(DB.days.findIndex(d=>d.date===date)); },
+      onDay:date=>{ const k=DB.days.findIndex(d=>d.date===date); c.setStage('plan'); c.setDay(k); requestAnimationFrame(()=>{ const b=E.days.querySelector(`.pl-daybtn[data-day="${k}"]`); if(b) b.focus({preventScroll:true}); }); },
       onUseVersion:id=>{ if(!findPlan(id)) return; pushHist(); S.planId=id; save(); render(true); toast(pt('nowUsing',{name:planName(findPlan(id))}),undo); },
       onTakeDay:(id,date)=>{ const P=findPlan(id), d=DB.days.find(x=>x.date===date), btn=el.querySelector(`.pl-cal-c[data-v="${CSS.escape(id)}"][data-date="${date}"]`);
         if(P&&d) c.guard(btn,'take'+id+date,takeFn(P,date),pt('usedDayIn',{name:planName(P),d:dlabel(d),into:planName(S.my||{id:'my'})})); },

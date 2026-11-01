@@ -42,7 +42,7 @@ planner.desk=function(c){
     return x?`<span class="pl-glyph pl-thumb pl-plate"><img src="${esc(x.thumb||x.src)}" srcset="${esc(x.thumb||x.src)} 208w, ${esc(x.src)} 480w${x.src2x?`, ${esc(x.src2x)} 960w`:''}" sizes="(min-width:1024px) 300px, 44px" width="3" height="2" alt="" loading="lazy" decoding="async">${x.credit?`<small class="pl-cred">${esc(cred(x))}</small>`:''}</span>`
       :`<span class="pl-glyph pl-plate pl-noph">${ic(glyphOf(p))}<small>${esc(tr(AREA,p.area))}</small></span>`; };
   const tn=(p,n)=>{ const x=ph(p), g=gal(p)[0];
-    return `<span class="pl-tn pl-g1">${g?gimg(g,n+'px',320):''}${x?`<img src="${esc(x.thumb||x.src)}" alt="" width="${n}" height="${n}" loading="lazy" decoding="async" data-gi>`:''}<span class="pl-gfb">${ic(glyphOf(p),'xs')}</span></span>`; };
+    return `<span class="pl-tn pl-g1">${x?`<img src="${esc(x.thumb||x.src)}" alt="" width="${n}" height="${n}" loading="lazy" decoding="async" data-gi>`:''}${g?gimg(g,n+'px',120):''}<span class="pl-gfb">${ic(glyphOf(p),'xs')}</span></span>`; };
   /* a board leg in the 1日 timeline's terms: on foot, by ferry, by road */
   const legT=l=>!l?'':l.kind==='ferry'?'⛴ '+dur(l.sail)+(l.d1+l.d2?' 🚗 '+dur(l.d1+l.d2):''):l.combo?[l.wa&&'🥾 '+dur(l.wa),l.sub&&legT(l.sub),l.wb&&'🥾 '+dur(l.wb)].filter(Boolean).join(' '):l.kind==='walk'?'🥾 '+dur(l.min):'🚗 '+dur(l.min);
   /* ---------- the 1日|6日 toggle: 6日 only from 1760 wide (six 180 px lanes), on by default there ---------- */
@@ -55,7 +55,7 @@ planner.desk=function(c){
       return `<div class="pl-pg" data-drag="g:${g.id}"><b>${esc(g.name)}</b><small>${n}/${g.ids.length}</small>${g.ids.filter(i=>!pm.has(i)&&DB.places.has(i)).map(i=>item(place(i))).join('')}</div>`; }).join('');
     const tierList=t=>DB.list.filter(p=>isCand(p)&&!pm.has(p.id)&&!seen.has(p.id)&&!groupOf(p.id)&&tierOf(p.id)===t&&f(p));
     const sec=(h,body,n)=>body?`<h3 class="pl-ph3">${h}<small>${n}</small></h3>${body}`:'';
-    E.palette.innerHTML=`<label class="pl-search"><span class="sr">${pt('filt')}</span><input class="pl-pq" type="search" value="${esc(q)}" placeholder="${esc(pt('filt'))}"></label>`+
+    E.palette.innerHTML=`<label class="pl-search"><span class="sr">${pt('filt')}</span><input class="pl-pq" name="pq" type="search" value="${esc(q)}" placeholder="${esc(pt('filt'))}"></label>`+
       (cv.of&&!cv.open.length?`<h3 class="pl-ph3">${pt('mustOpen')}<small>0</small><em class="pl-ok">✓ ${pt('allIn')}</em></h3>`:sec(pt('mustOpen'),open.map(item).join(''),open.length))+
       sec(pt('grps'),gs,S.trip.groups.length)+
       ['want','maybe'].map(t=>{ const l=tierList(t); return sec(pt('t_'+t),l.slice(0,60).map(item).join('')+(l.length>60?`<button type="button" class="pl-pmore" data-pq>${pt('more2',{n:l.length-60})}</button>`:''),l.length); }).join(''); }
@@ -65,7 +65,7 @@ planner.desk=function(c){
       const head=`<button type="button" class="pl-bh" data-bday="${k}">${x?`<img class="pl-bhi" src="${esc(x.src)}" alt="" width="3" height="2" ${k===S.day?'':'loading="lazy" fetchpriority="low"'} decoding="async">`:''}
         <b>${+d.date.slice(8)}</b><span>${c.wdName(d.date)}</span><small>${esc(pt('sleepAt',{p:e.id==='akl'?'✈':nm(sl).replace(/\s*[(（].*?[)）]/g,'')}))}<br>🚗${dur(sc.drive)}　${pt('depart2',{t:hm(s.dep)})} → ${pt('arrive2',{t:hm(e.arr)})}</small>${sc.warns?`<em>⚠ ${sc.warns}</em>`:''}</button>`;
       const rows=sc.rows.slice(1,-1).map((r,i)=>(i?`<p class="pl-bl">${legT(r.leg)}</p>`:'')+`<button type="button" class="pl-bs${r.warns.length?' pl-bad':''}" data-drag="s:${d.date}:${r.id}" data-id="${r.id}">${tn(place(r.id),40)}<span>${hm(r.begin)}</span><b${nmLang(place(r.id))} title="${esc(nm(place(r.id)))}">${esc(nm(place(r.id)))}</b></button>`).join('');
-      return `<section class="pl-bc${k===S.day?' pl-cur':''}" data-dz="day" data-day="${k}" style="${dayStyle(k)}">${head}${rows||`<p class="pl-be">${pt('emptyDay')}</p>`}</section>`; }).join(''); }
+      return `<section class="pl-bc${k===S.day?' pl-cur':''}" data-dz="day" data-day="${k}" style="${dayStyle(k)}" role="group" aria-label="${esc(dlabel(d))}">${head}${rows||`<p class="pl-be">${pt('emptyDay')}</p>`}</section>`; }).join(''); }
   /* every day's route at once, each in its day colour */
   function allDays(on){ const g=svg.querySelector('.pl-alld'); svg.classList.toggle('pl-all',on); if(!on){ g.innerHTML=''; return; } const P=plan();
     g.innerHTML=DB.days.map((d,k)=>`<g data-day="${k}" style="${dayStyle(k)}">${legSegments(sim().schedule(d,null,P,o())).map(s=>{ const gm=s.kind==='drive'&&geom(s.a,s.b);
@@ -79,7 +79,8 @@ planner.desk=function(c){
     view.classList.toggle('pl-6',b); if(b!==was){ was=b; requestAnimationFrame(()=>c.fitDay()); } if(!wide) return;
     tg.innerHTML=`<button type="button" data-dt="0" aria-pressed="${!b}">${pt('d1')}</button><button type="button" data-dt="1" aria-pressed="${b}">${pt('d6')}</button>`;
     if(S.stage==='plan'){ palette(); if(b) renderBoard(); fitK=''; }
-    allDays(b&&S.stage==='plan');
+    /* the all-days map in its own task, so the board's first paint is not one long one */
+    const ad=b&&S.stage==='plan'; if(ad) setTimeout(()=>allDays(view.classList.contains('pl-6')&&S.stage==='plan')); else allDays(false);
     svg.classList.toggle('pl-show-cands',S.stage==='collect'||S.browsing);
     if(S.stage==='collect'){ svg.querySelectorAll('.pl-cands .pl-pin').forEach(p=>p.setAttribute('data-t',tierOf(p.dataset.id))); fitCards(); } }
   tg.addEventListener('click',e=>{ const b=e.target.closest('[data-dt]'); if(!b) return; S.board=b.dataset.dt==='1'; c.saveUI(); render(); });
@@ -142,9 +143,9 @@ planner.desk=function(c){
     if(pv.cal){ t.el.dispatchEvent(new CustomEvent('pl-drop',{bubbles:true,detail:{ids:D0.ids,from:D0.from,group:D0.group&&D0.group.id}})); return; }
     if(edit(pv.fn,pt('dropped',{name:D0.label,d:dlabel(pv.day)}))&&pv.day!==DB.days[S.day]&&!view.classList.contains('pl-6')) setDay(DB.days.indexOf(pv.day)); }
   let D0=null, ARMED=null;
-  function arm(pv,t){ ARMED={pv,t}; ar.hidden=false; ar.innerHTML=`<p>⚠ ${esc(breakLine(pv.bs,pv.day))}</p><div><button type="button" class="pl-btn pl-sec" data-ar="0">${pt('stop2')} <kbd>Esc</kbd></button><button type="button" class="pl-btn pl-pri" data-ar="1">${pt('goIn')} <kbd>⏎</kbd></button></div>`;
+  function arm(pv,t,src){ ARMED={pv,t,src}; ar.hidden=false; ar.innerHTML=`<p>⚠ ${esc(breakLine(pv.bs,pv.day))}</p><div><button type="button" class="pl-btn pl-sec" data-ar="0">${pt('stop2')} <kbd>Esc</kbd></button><button type="button" class="pl-btn pl-pri" data-ar="1">${pt('goIn')} <kbd>⏎</kbd></button></div>`;
     const r=t.el.getBoundingClientRect(); ar.style.left=Math.max(8,Math.min(innerWidth-360,r.left))+'px'; ar.style.top=Math.min(innerHeight-140,r.top+20)+'px'; ar.querySelector('[data-ar="1"]').focus(); }
-  function disarm(go){ const a=ARMED; ARMED=null; ar.hidden=true; if(go&&a) commit(a.pv,a.t); }
+  function disarm(go){ const a=ARMED; ARMED=null; ar.hidden=true; if(go&&a) commit(a.pv,a.t); else if(a&&a.src&&a.src.isConnected) a.src.focus({preventScroll:true}); }
   ar.addEventListener('click',e=>{ const b=e.target.closest('[data-ar]'); if(b) disarm(b.dataset.ar==='1'); });
   document.addEventListener('keydown',e=>{ if(ARMED&&(e.key==='Escape'||e.key==='Enter')){ e.preventDefault(); e.stopPropagation(); disarm(e.key==='Enter'); return; }
     /* Alt+←/→: the focused stop to the day before or after, checked like any move */
@@ -163,8 +164,10 @@ planner.desk=function(c){
   const end=go=>{ if(!D) return; const d=D; D=null; cancelAnimationFrame(d.raf); gh.hidden=true; view.classList.remove('pl-dragging'); d.src.classList.remove('pl-lift');
     document.querySelectorAll('.pl-dzon').forEach(x=>x.classList.remove('pl-dzon')); setTimeout(()=>{ moved=false; },0);
     if(!go||!d.on||!d.pv) return; D0=d.p;
-    if(d.pv.bs&&d.pv.bs.length) arm(d.pv,d.t); else commit(d.pv,d.t); };
+    if(d.pv.bs&&d.pv.bs.length) arm(d.pv,d.t,d.src); else commit(d.pv,d.t); };
   addEventListener('pointerup',()=>end(1)); addEventListener('pointercancel',()=>end(0));
+  /* the drop zones were measured for this layout: a resize mid-drag cancels rather than drop on a lane that moved */
+  addEventListener('resize',()=>{ if(D&&D.on) end(0); if(ARMED) disarm(false); });
   /* ---------- hover: rows, stops and cards light their pin; a lane fits its day ---------- */
   if(fine){ view.addEventListener('pointerover',e=>{ const x=e.target.closest('[data-id]'), id=x&&x.dataset.id;
       view.querySelectorAll('.pl-hot').forEach(y=>y.classList.remove('pl-hot')); if(!id) return;

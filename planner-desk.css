@@ -32,7 +32,7 @@
   .pl-collect .pl-cc :is(.pl-ccb,.pl-tseg){margin-inline:12px;}
   .pl-collect .pl-ccn{font-size:var(--pl-fs-m);}
   .pl-cred{display:block;position:absolute;right:6px;bottom:6px;max-width:calc(100% - 12px);padding:2px 8px;border-radius:999px;
-    background:rgba(var(--pl-scrim),.55);color:var(--pl-on-photo);font:400 var(--pl-fs-s)/1.4 var(--pl-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    background:rgba(var(--pl-scrim),.64);color:var(--pl-on-photo);font:400 var(--pl-fs-s)/1.4 var(--pl-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .v-plan[data-stage="collect"] .pl-map .pl-legs{display:none;}
   .v-plan[data-stage="collect"] :focus-visible{outline-color:var(--ink);}
 }

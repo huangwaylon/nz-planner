@@ -809,7 +809,7 @@ const plannerFn=function planner(g){
   /* gallery.json and its chunk, on first need, never on the first screen (docs/FOLD.md "Gallery") */
   let GAL=null, GX=null;
   function loadGallery(){ return GAL||(GAL=Promise.all([fetch(SRC+'gallery.json').then(r=>r.ok?r.json():{}),loadCss('pl-gal',view.dataset.galleryCss||'planner-gallery.css'),planner.gallery?0:loadJs(view.dataset.gallerySrc||'planner-gallery.js')])
-    .then(([j])=>{ DB.gallery=j&&typeof j==='object'?j:{}; GX=planner.gallery(ctx()); if(CM) CM.render(1); if(!DRAG) renderSoon(); if(sheetKind==='place'&&DB.gallery[sheetArg.id]) refreshSheet(); return DB.gallery; },()=>{ GAL=null; return {}; })); }
+    .then(([j])=>{ DB.gallery=j&&typeof j==='object'?j:{}; GX=planner.gallery(ctx()); if(CM) CM.media(); if(!DRAG) renderSoon(); if(sheetKind==='place'&&DB.gallery[sheetArg.id]) refreshSheet(); return DB.gallery; },()=>{ GAL=null; return {}; })); }
   const thumb=p=>{ const ph=p&&DB.photos&&DB.photos[p.id]; if(GX&&GX.gal(p).length) return GX.thumb(p,ph);
     return ph?`<span class="pl-glyph pl-thumb"><img src="${esc(ph.thumb||ph.src)}" alt="" loading="lazy" decoding="async" width="40" height="40"></span>`:`<span class="pl-glyph">${ic(glyphOf(p))}</span>`; };
   const photoHTML=(p,cls,eager)=>{ const ph=p&&DB.photos&&DB.photos[p.id]; if(!ph) return '';
@@ -838,7 +838,7 @@ const plannerFn=function planner(g){
     const s=rows[0], e=rows[rows.length-1], sp=place(s.id), ep=place(e.id), d=+day.date.slice(8), w=wdOf(day.date);
     const hero=heroOf(sc);
     const head=`<header class="pl-dayhead">
-        <div class="pl-dayband">${hero?photoHTML(hero,'pl-dayphoto',true):colorCard(n?place(rows[1].id):null,'pl-daycard')}
+        <div class="pl-dayband">${hero?photoHTML(hero,'pl-dayphoto',S.stage==='plan'):colorCard(n?place(rows[1].id):null,'pl-daycard')}
           <button type="button" class="pl-storybtn" data-act="story">${ic('camera','sm')}${pt('story')}</button></div>
         <div class="pl-dh-row"><span class="pl-dh-num" aria-hidden="true">${d}</span>
         <div class="pl-dh-txt">
@@ -1533,7 +1533,8 @@ const plannerFn=function planner(g){
   /* new minutes: the candidates list re-ranks, but an open day picker keeps its place and only re-simulates */
   function refreshPicks(){ if(sheetKind==='browse') renderList(); }
   function loadLazy(){
-    loadGallery();
+    /* a phone on ① waits for its first scroll (or a sheet) before the 56 KB gallery */
+    if(S.stage!=='collect'||view.clientWidth>=1024) loadGallery(); else addEventListener('scroll',()=>loadGallery(),{once:true,passive:true});
     if(!MOREP) needMore(true).catch(()=>{});      /* the drawer and the other sheets, before the first tap on them */
     if(!lazy.land){ lazy.land=true; idle(()=>fetch(SRC+'land.svg.html').then(r=>r.ok?r.text():'').then(putLand).catch(()=>{ lazy.land=false; }),4000); }
     if(!lazy.travel) fetch(SRC+'travel.json').then(r=>r.ok?r.json():null).then(t=>{

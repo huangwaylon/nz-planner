@@ -47,7 +47,7 @@ const t=k=>T[k][E],
       ln('',[t('dr')+' '+dur(d.driveMin),b.total&&`${t('bk')} ${b.done}/${b.total}`])+
       ln(l&&mins(d.endTime)>mins(l.time)?' pl-cal-w':'',['~'+tm(d.endTime),l&&`<span class="pl-cal-lim">/ ${L(l.label)?esc(L(l.label))+' ':''}${tm(l.time)}</span>`])+
       ln(' pl-cal-sun',['↑'+tm(d.sunrise),'↓'+tm(d.sunset)]); },
-  btn=(d,r,c)=>`<button type="button" class="pl-cal-d" data-act="day" data-drop="day" data-date="${d.date}" data-r="${r}" data-c="${c}" style="--c:var(${d.colorVar});--ci:var(${d.inkVar})" aria-label="${esc(aria(d))}" title="${esc((d.warn||[]).map(x=>x.text).join('\n'))}"><span class="pl-cal-h"><b class="pl-cal-n">${dn(d.date)}</b><span${we(wd(d.date))}>${wn(wd(d.date))}</span></span><span class="pl-cal-x">${det(d)}</span></button>`,
+  btn=(d,r,c)=>`<button type="button" class="pl-cal-d" data-act="day" data-drop="day" data-date="${d.date}" data-r="${r}" data-c="${c}" style="--c:var(${d.colorVar});--ci:var(${d.inkVar})" title="${esc((d.warn||[]).map(x=>x.text).join('\n'))}"><span class="sr">${esc(aria(d))}</span><span class="pl-cal-h" aria-hidden="true"><b class="pl-cal-n">${dn(d.date)}</b><span${we(wd(d.date))}>${wn(wd(d.date))}</span></span><span class="pl-cal-x" aria-hidden="true">${det(d)}</span></button>`,
   month=(el,m)=>{
     const by={},M=m.marks||MK,mo=m.trip.start.slice(0,7),f=ymd(mo+'-01'),seen={},
       mark=x=>(M.find(a=>a[0]<=x&&x<=a[1])||[])[2+E]||'',

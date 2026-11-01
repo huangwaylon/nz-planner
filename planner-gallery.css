@@ -3,3 +3,4 @@
 .pl-g1{position:relative;}
 .pl-g1>img:not(:first-of-type),.pl-g1:has(img)>.pl-gfb,.pl-gn{display:none;}
 .pl-cc .pl-gn{display:block;position:absolute;right:2px;bottom:2px;padding:0 4px;border-radius:7px;background:rgba(var(--pl-scrim),.72);color:var(--pl-on-photo);font:600 var(--pl-fs-s)/var(--pl-fs-m) var(--pl-font);font-style:normal;}
+.pl-g1:not(:has(img))>.pl-gn{display:none;}

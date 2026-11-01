@@ -117,8 +117,11 @@ planner.collect=function(c){
   let qf=0;
   el.addEventListener('input',e=>{ if(!e.target.classList.contains('pl-cq')) return; cf.q=e.target.value; clearTimeout(qf);
     qf=setTimeout(()=>{ const pos=e.target.selectionStart; render(true); const i=el.querySelector('.pl-cq'); if(i){ i.focus(); try{ i.setSelectionRange(pos,pos); }catch(x){} } },120); });
+  /* the gallery arrived: swap each card's picture in, a few dozen per frame, not one long re-render */
+  function media(){ const cs=[...el.querySelectorAll('.pl-ccm')]; let i=0;
+    const step=()=>{ cs.slice(i,i+24).forEach(m=>{ const p=place(m.dataset.id); if(p) m.innerHTML=(S.cardMedia||thumb)(p); }); i+=24; if(i<cs.length) requestAnimationFrame(step); }; step(); }
   return {
-    render,
+    render, media,
     /* for planner-desk's keys (J K 1 2 3 0 ⌫ X ⌘A G Enter): the selection, the focused card, the moves */
     sel, setTier, targets, toggle, focus:id=>{ if(id!==undefined) focus=id; return focus; }
   };
