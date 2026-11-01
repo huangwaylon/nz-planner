@@ -38,4 +38,4 @@
 .pl-nom{margin-top:var(--pl-s-2);}
 .pl-nom .pl-btn{min-height:var(--pl-h-s);margin-right:var(--pl-s-1);padding:0 var(--pl-s-3);}
 .pl-nomhit{display:flex;align-items:flex-start;gap:var(--pl-s-2);width:100%;min-height:var(--pl-h-m);padding:var(--pl-s-2) 0;border:0;border-bottom:var(--pl-hair);background:none;text-align:left;font:400 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);}
-.pl-nomhit .ic{color:var(--acc);}
+.pl-nomhit .pl-ico{color:var(--acc);}
