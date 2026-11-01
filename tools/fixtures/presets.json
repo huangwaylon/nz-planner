@@ -1,0 +1,857 @@
+{
+ "_why": "The 8 curated versions no longer ship (owner: no premade plans). They stay as the test fixture that exercises ferries, tides, walks, anchors, hut nights and hours in tools/check_plans.py and tools/sim.test.js.",
+ "plans": [
+  {
+   "id": "classic",
+   "name": "Taranaki classic",
+   "nameJa": "タラナキ王道",
+   "blurb": "Waitomo 12:00 tour, Pouākai Tarns at sunrise (leave New Plymouth 03:00; 2 h 45 up, tarns 06:13–07:03, 2 h 15 down), Three Sisters at low tide, breaks at Mokau, Te Kūiti and Hamilton on the way home, Valentine's dinner at Deco near home. Feb 13 and 14 each drive over 4 h 30. Book: cave tour, New Plymouth bed, Waiheke ferry, Ahi.",
+   "blurbJa": "ワイトモ12:00の回、ポウアカイ・ターンズの日の出（ニュープリマス03:00発、登り2時間45分、湖沼06:13〜07:03、下り2時間15分）、干潮のスリーシスターズ、帰路はモカウ、テ・クイティ、ハミルトンで休憩、バレンタインは家の近くのデコで夕食。13日・14日は運転4時間30分超。要予約：洞窟ツアー、ニュープリマスの宿、ワイヘキのフェリー、Ahi。",
+   "days": {
+    "2027-02-11": [
+     "maungakiekie",
+     "daily-bread-new-lynn",
+     "night-market-henderson"
+    ],
+    "2027-02-12": [
+     "kitekite-falls",
+     "piha",
+     "piha-store",
+     "mercer-bay-loop",
+     "muriwai-gannets"
+    ],
+    "2027-02-13": [
+     "parnell-farmers-market",
+     "waitomo-glowworm-caves",
+     "huhu-waitomo",
+     "te-rewa-rewa-bridge"
+    ],
+    "2027-02-14": [
+     "mangorei-trailhead",
+     "pouakai-tarns",
+     "three-sisters-elephant-rock",
+     "mokau",
+     "te-kuiti",
+     "hayes-common",
+     "deco-titirangi"
+    ],
+    "2027-02-15": [
+     "waiheke-te-ara-hura",
+     "wai-kitchen-waiheke",
+     "onetangi",
+     "island-gelato-waiheke",
+     "amano-britomart"
+    ],
+    "2027-02-16": [
+     "bestie-kroad",
+     "karangahape-road",
+     "maungawhau-mt-eden",
+     "ponsonby-central",
+     "silo-park-wynyard",
+     "commercial-bay",
+     "ahi-commercial-bay"
+    ]
+   },
+   "stay": {
+    "waitomo-glowworm-caves": 95,
+    "huhu-waitomo": 45,
+    "hayes-common": 30,
+    "mangorei-trailhead": 10,
+    "pouakai-tarns": 50,
+    "three-sisters-elephant-rock": 45,
+    "wai-kitchen-waiheke": 65,
+    "onetangi": 135,
+    "island-gelato-waiheke": 35
+   },
+   "start": {
+    "2027-02-13": "07:30",
+    "2027-02-14": "03:00"
+   },
+   "notes": {
+    "pouakai-tarns": "02:35にMetService（エグモント国立公園）で判断。山頂に雲なら中止し、夜明けのテ・レワレワ橋へ。ヘッドランプ、防寒着、雨具、水1.5 L/人。 / Go/no-go 02:35 on MetService Egmont NP. Cloud on the summit: sleep in, Te Rewa Rewa at dawn instead. Headlamps, warm layer, rain shell, 1.5 L water each.",
+    "mokau": "ここで昼食、運転交代。2時間ごとに休憩。 / Lunch here, swap drivers. Stop every 2 h.",
+    "te-kuiti": "休憩20分。日曜午後のボンベイ〜南部高速は+20〜40分。 / 20-min break. Sunday afternoon SH1 Bombay → Southern Motorway adds 20–40 min.",
+    "hayes-common": "ハミルトンでコーヒー休憩（日曜15:30閉店）。 / Coffee break in Hamilton (Sun closes 15:30).",
+    "waitomo-glowworm-caves": "12:00の回を予約、11:30までにチェックイン（遅刻は無効）。 / Book the 12:00 tour, check in by 11:30 (late = forfeited).",
+    "waiheke-te-ara-hura": "島内は車なし：ATバス50番、約30分間隔。区間は車の時間で表示。 / No car on the island: AT bus 50, ~30-min headway; legs shown as car times.",
+    "piha": "遊泳はライフガードの旗の間だけ。 / Swim only between the flags."
+   },
+   "titles": {
+    "2027-02-11": {
+     "ja": "火山とナイトマーケット",
+     "en": "A cone and a night market"
+    },
+    "2027-02-12": {
+     "ja": "滝と黒い砂浜",
+     "en": "Waterfall and black sand"
+    },
+    "2027-02-13": {
+     "ja": "土ボタルの洞窟",
+     "en": "Glowworm cave day"
+    },
+    "2027-02-14": {
+     "ja": "逆さタラナキの朝",
+     "en": "Taranaki in the tarn"
+    },
+    "2027-02-15": {
+     "ja": "ワイヘキの海",
+     "en": "Waiheke by the sea"
+    },
+    "2027-02-16": {
+     "ja": "Kロードと火口",
+     "en": "K Road and the crater"
+    }
+   }
+  },
+  {
+   "id": "hut",
+   "name": "Pouākai Hut night",
+   "nameJa": "ポウアカイ小屋泊",
+   "blurb": "Night in Pouākai Hut instead of New Plymouth: Waitomo 12:00 tour, lunch at Huhu, hut food at Woolworths, at the Mangorei trailhead 16:44, 2 h 30 up (DOC) to the hut, sunset at the tarns 20:28, sunrise there 06:49, 2 h 15 down. Home rested for Valentine's dinner at Ahi. Hut must be booked (DOC: near full); bring sleeping bags, stove and gas bought in Auckland. Feb 13 and 14 each drive over 4 h 30.",
+   "blurbJa": "ニュープリマス泊の代わりにポウアカイ小屋泊。ワイトモ12:00の回、昼食はフフ、小屋の食料はウールワース、16:44にマンゴレイ登山口、小屋まで登り2時間30分（DOC）、湖沼で20:28の夕日と06:49の朝日、下り2時間15分。休んだ体でバレンタインはAhiで夕食。小屋は要予約（DOC：ほぼ満室）、寝袋・コンロ・オークランドで買うガス持参。13日・14日は運転4時間30分超。",
+   "days": {
+    "2027-02-11": [
+     "maungakiekie",
+     "daily-bread-new-lynn",
+     "night-market-henderson"
+    ],
+    "2027-02-12": [
+     "kitekite-falls",
+     "piha",
+     "piha-store",
+     "mercer-bay-loop",
+     "muriwai-gannets"
+    ],
+    "2027-02-13": [
+     "parnell-farmers-market",
+     "waitomo-glowworm-caves",
+     "huhu-waitomo",
+     "np-woolworths",
+     "mangorei-trailhead",
+     "pouakai-hut",
+     "pouakai-tarns"
+    ],
+    "2027-02-14": [
+     "pouakai-tarns",
+     "mangorei-trailhead",
+     "three-sisters-elephant-rock",
+     "mokau",
+     "te-kuiti",
+     "hayes-common",
+     "ahi-commercial-bay"
+    ],
+    "2027-02-15": [
+     "waiheke-te-ara-hura",
+     "wai-kitchen-waiheke",
+     "onetangi",
+     "island-gelato-waiheke",
+     "amano-britomart"
+    ],
+    "2027-02-16": [
+     "bestie-kroad",
+     "karangahape-road",
+     "maungawhau-mt-eden",
+     "ponsonby-central",
+     "silo-park-wynyard",
+     "commercial-bay",
+     "hello-beasty"
+    ]
+   },
+   "stay": {
+    "waitomo-glowworm-caves": 95,
+    "huhu-waitomo": 45,
+    "hayes-common": 30,
+    "mangorei-trailhead": 10,
+    "pouakai-tarns": 34,
+    "three-sisters-elephant-rock": 45,
+    "wai-kitchen-waiheke": 65,
+    "onetangi": 135,
+    "island-gelato-waiheke": 35,
+    "np-woolworths": 20,
+    "pouakai-hut": 15
+   },
+   "start": {
+    "2027-02-13": "07:30"
+   },
+   "anchors": {
+    "2027-02-13": {
+     "end": {
+      "id": "pouakai-hut",
+      "time": "21:30"
+     }
+    },
+    "2027-02-14": {
+     "start": {
+      "id": "pouakai-hut",
+      "time": "06:10"
+     }
+    }
+   },
+   "notes": {
+    "waiheke-te-ara-hura": "島内は車なし：ATバス50番、約30分間隔。区間は車の時間で表示。 / No car on the island: AT bus 50, ~30-min headway; legs shown as car times.",
+    "piha": "遊泳はライフガードの旗の間だけ。 / Swim only between the flags.",
+    "waitomo-glowworm-caves": "小屋の予約は？ コンロ＋オークランドで買ったガス、寝袋、食料、トイレットペーパー、ヘッドランプ。12:00の回、11:30チェックイン。 / Hut booked? Stove + gas bought in Auckland, sleeping bags, food, toilet paper, headlamps. 12:00 tour, check in 11:30.",
+    "np-woolworths": "小屋の夕食・朝食と水。 / Dinner and breakfast for the hut, water.",
+    "pouakai-tarns": "13日：日没20:28まで湖沼、ヘッドランプで小屋へ15分。14日：06:59までに湖沼を出て、そのままトンガポルトゥへ。 / Feb 13: tarns until the 20:28 sunset, 15 min back to the hut by headlamp. Feb 14: off the tarns by 06:59, straight to Tongapōrutu.",
+    "mangorei-trailhead": "登りの前にトイレ。車は駐車場に一晩。 / Toilet before the climb; the car stays overnight in the car park.",
+    "mokau": "ここで昼食、運転交代。2時間ごとに休憩。 / Lunch here, swap drivers. Stop every 2 h.",
+    "te-kuiti": "休憩20分。日曜午後のボンベイ〜南部高速は+20〜40分。 / 20-min break. Sunday afternoon SH1 Bombay → Southern Motorway adds 20–40 min.",
+    "hayes-common": "ハミルトンでコーヒー休憩（日曜15:30閉店）。 / Coffee break in Hamilton (Sun closes 15:30)."
+   },
+   "titles": {
+    "2027-02-11": {
+     "ja": "火山とナイトマーケット",
+     "en": "A cone and a night market"
+    },
+    "2027-02-12": {
+     "ja": "滝と黒い砂浜",
+     "en": "Waterfall and black sand"
+    },
+    "2027-02-13": {
+     "ja": "山小屋への登り",
+     "en": "Up to the hut"
+    },
+    "2027-02-14": {
+     "ja": "湖沼の朝焼け",
+     "en": "Sunrise at the tarns"
+    },
+    "2027-02-15": {
+     "ja": "ワイヘキの海",
+     "en": "Waiheke by the sea"
+    },
+    "2027-02-16": {
+     "ja": "Kロードと火口",
+     "en": "K Road and the crater"
+    }
+   }
+  },
+  {
+   "id": "hobbit",
+   "name": "Hobbiton and Blue Spring",
+   "nameJa": "ホビット村とブルースプリング",
+   "blurb": "Hobbiton 11:30 tour (check in 11:10, lunch at The Shire's Rest), then Blue Spring after the midday crowd; night in Cambridge. Valentine's Day: Hamilton Gardens, Raglan, dinner at Ahi. No mountain, no drive over 4 h 30. Book: Hobbiton (summer weekends sell out), Cambridge bed, Ahi.",
+   "blurbJa": "ホビット村11:30の回（11:10チェックイン、昼食はシャイアズ・レスト）、昼の混雑後のブルースプリング、ケンブリッジ泊。バレンタインはハミルトン・ガーデンズ、ラグラン、夕食はAhi。山なし、運転は毎日4時間30分以内。要予約：ホビット村（夏の週末は満席）、ケンブリッジの宿、Ahi。",
+   "days": {
+    "2027-02-11": [
+     "maungakiekie",
+     "daily-bread-new-lynn",
+     "night-market-henderson"
+    ],
+    "2027-02-12": [
+     "kitekite-falls",
+     "piha",
+     "piha-store",
+     "mercer-bay-loop",
+     "muriwai-gannets"
+    ],
+    "2027-02-13": [
+     "parnell-farmers-market",
+     "hobbiton",
+     "blue-spring-te-waihou"
+    ],
+    "2027-02-14": [
+     "hayes-common",
+     "hamilton-gardens",
+     "the-shack-raglan",
+     "bridal-veil-falls-raglan",
+     "ahi-commercial-bay"
+    ],
+    "2027-02-15": [
+     "waiheke-te-ara-hura",
+     "wai-kitchen-waiheke",
+     "onetangi",
+     "island-gelato-waiheke",
+     "amano-britomart"
+    ],
+    "2027-02-16": [
+     "bestie-kroad",
+     "karangahape-road",
+     "maungawhau-mt-eden",
+     "ponsonby-central",
+     "silo-park-wynyard",
+     "commercial-bay",
+     "hello-beasty"
+    ]
+   },
+   "stay": {
+    "wai-kitchen-waiheke": 65,
+    "onetangi": 135,
+    "island-gelato-waiheke": 35,
+    "hobbiton": 210
+   },
+   "start": {
+    "2027-02-13": "07:30"
+   },
+   "anchors": {
+    "2027-02-13": {
+     "end": {
+      "id": "cambridge-stay"
+     }
+    },
+    "2027-02-14": {
+     "start": {
+      "id": "cambridge-stay",
+      "time": "08:15"
+     }
+    }
+   },
+   "notes": {
+    "waiheke-te-ara-hura": "島内は車なし：ATバス50番、約30分間隔。区間は車の時間で表示。 / No car on the island: AT bus 50, ~30-min headway; legs shown as car times.",
+    "piha": "遊泳はライフガードの旗の間だけ。 / Swim only between the flags.",
+    "hobbiton": "11:30の回を予約、20分前までにシャイアズ・レストで受付。 / Book the 11:30 tour; report to The Shire's Rest 20 min before."
+   },
+   "titles": {
+    "2027-02-11": {
+     "ja": "火山とナイトマーケット",
+     "en": "A cone and a night market"
+    },
+    "2027-02-12": {
+     "ja": "滝と黒い砂浜",
+     "en": "Waterfall and black sand"
+    },
+    "2027-02-13": {
+     "ja": "ホビット村と青い泉",
+     "en": "The Shire and the spring"
+    },
+    "2027-02-14": {
+     "ja": "庭園とサーフタウン",
+     "en": "Gardens and a surf town"
+    },
+    "2027-02-15": {
+     "ja": "ワイヘキの海",
+     "en": "Waiheke by the sea"
+    },
+    "2027-02-16": {
+     "ja": "Kロードと火口",
+     "en": "K Road and the crater"
+    }
+   }
+  },
+  {
+   "id": "taupo",
+   "name": "Taupō loop",
+   "nameJa": "タウポ周遊",
+   "blurb": "The book's alternative: Tīrau, Orakei Korako by boat, Craters of the Moon, Spa Park hot stream (head above water); Huka Falls at 08:00 before the car park fills; Hamilton Gardens, lunch at Hayes Common, Valentine's dinner at Ahi. Book: Taupō bed, Ahi.",
+   "blurbJa": "旅のしおりの代案：ティラウ、船で渡るオラケイコラコ、クレーターズ・オブ・ザ・ムーン、スパパークの温泉の川（頭はお湯につけない）。駐車場が混む前、08:00のフカ滝。ハミルトン・ガーデンズ、昼食はヘイズ・コモン、バレンタインはAhiで夕食。要予約：タウポの宿、Ahi。",
+   "days": {
+    "2027-02-11": [
+     "maungakiekie",
+     "daily-bread-new-lynn",
+     "night-market-henderson"
+    ],
+    "2027-02-12": [
+     "kitekite-falls",
+     "piha",
+     "piha-store",
+     "mercer-bay-loop",
+     "muriwai-gannets"
+    ],
+    "2027-02-13": [
+     "parnell-farmers-market",
+     "tirau-corrugated-dog",
+     "orakei-korako",
+     "craters-of-the-moon",
+     "spa-park-hot-stream"
+    ],
+    "2027-02-14": [
+     "huka-falls",
+     "paddock-cambridge",
+     "hamilton-gardens",
+     "hayes-common",
+     "ahi-commercial-bay"
+    ],
+    "2027-02-15": [
+     "waiheke-te-ara-hura",
+     "wai-kitchen-waiheke",
+     "onetangi",
+     "island-gelato-waiheke",
+     "amano-britomart"
+    ],
+    "2027-02-16": [
+     "bestie-kroad",
+     "karangahape-road",
+     "maungawhau-mt-eden",
+     "ponsonby-central",
+     "silo-park-wynyard",
+     "commercial-bay",
+     "hello-beasty"
+    ]
+   },
+   "stay": {
+    "wai-kitchen-waiheke": 65,
+    "onetangi": 135,
+    "island-gelato-waiheke": 35,
+    "tirau-corrugated-dog": 45
+   },
+   "start": {
+    "2027-02-13": "07:30"
+   },
+   "anchors": {
+    "2027-02-13": {
+     "end": {
+      "id": "taupo-stay"
+     }
+    },
+    "2027-02-14": {
+     "start": {
+      "id": "taupo-stay",
+      "time": "08:00"
+     }
+    }
+   },
+   "notes": {
+    "waiheke-te-ara-hura": "島内は車なし：ATバス50番、約30分間隔。区間は車の時間で表示。 / No car on the island: AT bus 50, ~30-min headway; legs shown as car times.",
+    "piha": "遊泳はライフガードの旗の間だけ。 / Swim only between the flags.",
+    "tirau-corrugated-dog": "ティラウのカフェで早めの昼食。 / Early lunch in Tīrau's cafes.",
+    "spa-park-hot-stream": "頭をお湯につけない（アメーバ性髄膜炎）。 / Keep your head above the water (amoebic meningitis)."
+   },
+   "titles": {
+    "2027-02-11": {
+     "ja": "火山とナイトマーケット",
+     "en": "A cone and a night market"
+    },
+    "2027-02-12": {
+     "ja": "地熱の谷と温泉の川",
+     "en": "Steam valley, hot stream"
+    },
+    "2027-02-13": {
+     "ja": "ティラウからタウポ",
+     "en": "Tīrau to Taupō"
+    },
+    "2027-02-14": {
+     "ja": "朝のフカ滝",
+     "en": "Huka Falls at eight"
+    },
+    "2027-02-15": {
+     "ja": "ワイヘキの海",
+     "en": "Waiheke by the sea"
+    },
+    "2027-02-16": {
+     "ja": "Kロードと火口",
+     "en": "K Road and the crater"
+    }
+   }
+  },
+  {
+   "id": "rotorua",
+   "name": "Rotorua hot pools",
+   "nameJa": "ロトルア温泉",
+   "blurb": "Tīrau stop and lunch, Wai-O-Tapu (last entry 15:00), Redwoods Treewalk, Polynesian Spa until the evening; Blue Lake swim, the luge, Punnet on the way home, Valentine's dinner at Ahi. Book: Rotorua bed, Ahi.",
+   "blurbJa": "ティラウで休憩と昼食、ワイオタプ（最終入場15:00）、レッドウッズ・ツリーウォーク、夕方までポリネシアン・スパ。翌朝ブルーレイクで泳ぎ、リュージュ、帰路にパネット、バレンタインはAhiで夕食。要予約：ロトルアの宿、Ahi。",
+   "days": {
+    "2027-02-11": [
+     "maungakiekie",
+     "daily-bread-new-lynn",
+     "night-market-henderson"
+    ],
+    "2027-02-12": [
+     "kitekite-falls",
+     "piha",
+     "piha-store",
+     "mercer-bay-loop",
+     "muriwai-gannets"
+    ],
+    "2027-02-13": [
+     "parnell-farmers-market",
+     "tirau-corrugated-dog",
+     "wai-o-tapu",
+     "redwoods-treewalk",
+     "polynesian-spa"
+    ],
+    "2027-02-14": [
+     "blue-lake-tikitapu",
+     "skyline-rotorua-luge",
+     "punnet-tamahere",
+     "ahi-commercial-bay"
+    ],
+    "2027-02-15": [
+     "waiheke-te-ara-hura",
+     "wai-kitchen-waiheke",
+     "onetangi",
+     "island-gelato-waiheke",
+     "amano-britomart"
+    ],
+    "2027-02-16": [
+     "bestie-kroad",
+     "karangahape-road",
+     "maungawhau-mt-eden",
+     "ponsonby-central",
+     "silo-park-wynyard",
+     "commercial-bay",
+     "hello-beasty"
+    ]
+   },
+   "stay": {
+    "wai-kitchen-waiheke": 65,
+    "onetangi": 135,
+    "island-gelato-waiheke": 35,
+    "tirau-corrugated-dog": 45
+   },
+   "start": {
+    "2027-02-13": "07:30"
+   },
+   "anchors": {
+    "2027-02-13": {
+     "end": {
+      "id": "rotorua-stay"
+     }
+    },
+    "2027-02-14": {
+     "start": {
+      "id": "rotorua-stay",
+      "time": "08:30"
+     }
+    }
+   },
+   "notes": {
+    "waiheke-te-ara-hura": "島内は車なし：ATバス50番、約30分間隔。区間は車の時間で表示。 / No car on the island: AT bus 50, ~30-min headway; legs shown as car times.",
+    "piha": "遊泳はライフガードの旗の間だけ。 / Swim only between the flags.",
+    "tirau-corrugated-dog": "ティラウのカフェで昼食（ワイオタプにもカフェあり）。 / Lunch in Tīrau (Wai-O-Tapu also has a cafe).",
+    "wai-o-tapu": "最終入場15:00。 / Last entry 15:00."
+   },
+   "titles": {
+    "2027-02-11": {
+     "ja": "火山とナイトマーケット",
+     "en": "A cone and a night market"
+    },
+    "2027-02-12": {
+     "ja": "滝と黒い砂浜",
+     "en": "Waterfall and black sand"
+    },
+    "2027-02-13": {
+     "ja": "地熱の色と森の湯",
+     "en": "Geothermal colour, spa"
+    },
+    "2027-02-14": {
+     "ja": "青い湖とリュージュ",
+     "en": "Blue Lake and the luge"
+    },
+    "2027-02-15": {
+     "ja": "ワイヘキの海",
+     "en": "Waiheke by the sea"
+    },
+    "2027-02-16": {
+     "ja": "Kロードと火口",
+     "en": "K Road and the crater"
+    }
+   }
+  },
+  {
+   "id": "west",
+   "name": "Wild west coast",
+   "nameJa": "西海岸ワイルド",
+   "blurb": "No night away. Kitekite, Piha, Mercer Bay, Wainamu dunes, Bethells at sunset near low water (Feb 12), Zion Hill at low water (Feb 13, Parnell dropped), Muriwai, Whatipu at low water and Karekare on Valentine's Day, then Ahi. Kuataika and Te Henga. Swim only between the flags. Book: Ahi.",
+   "blurbJa": "外泊なし。キテキテ滝、ピハ、マーサー湾、ワイナム砂丘、干潮近くの夕日のベセルズ（12日）、干潮のザイオン・ヒル（13日、パーネルは省略）、ムリワイ、バレンタインは干潮のファティプとカレカレ、夕食はAhi。クアタイカとテ・ヘンガ。遊泳は旗の間だけ。要予約：Ahi。",
+   "days": {
+    "2027-02-11": [
+     "arataki",
+     "daily-bread-new-lynn",
+     "night-market-henderson"
+    ],
+    "2027-02-12": [
+     "kitekite-falls",
+     "piha-store",
+     "piha",
+     "mercer-bay-loop",
+     "lake-wainamu",
+     "bethells-beach"
+    ],
+    "2027-02-13": [
+     "zion-hill-loop",
+     "piha-store",
+     "muriwai-gannets"
+    ],
+    "2027-02-14": [
+     "whatipu",
+     "omanawanui",
+     "deco-titirangi",
+     "karekare",
+     "ahi-commercial-bay"
+    ],
+    "2027-02-15": [
+     "mt-atkinson-coffee",
+     "cascade-kauri",
+     "kuataika",
+     "te-henga-walkway"
+    ],
+    "2027-02-16": [
+     "mother-westmere",
+     "fairy-falls",
+     "ponsonby-central",
+     "silo-park-wynyard",
+     "maungawhau-mt-eden",
+     "hello-beasty"
+    ]
+   },
+   "stay": {
+    "kitekite-falls": 105,
+    "piha": 120,
+    "lake-wainamu": 150,
+    "bethells-beach": 75,
+    "muriwai-gannets": 150,
+    "deco-titirangi": 60,
+    "silo-park-wynyard": 90
+   },
+   "start": {
+    "2027-02-12": "09:30",
+    "2027-02-13": "07:30"
+   },
+   "anchors": {
+    "2027-02-13": {
+     "end": {
+      "id": "new-lynn"
+     }
+    },
+    "2027-02-14": {
+     "start": {
+      "id": "new-lynn",
+      "time": "08:00"
+     }
+    }
+   },
+   "notes": {
+    "piha": "遊泳はライフガードの旗の間だけ。 / Swim only between the flags.",
+    "bethells-beach": "夕方はライフガードなし。足を浸すだけ、泳がない。 / Evening: no lifeguards. Paddle only, don't swim.",
+    "zion-hill-loop": "干潮09:07。弁当と水2 L/人。 / Low water 09:07. Packed lunch, 2 L water each.",
+    "whatipu": "未舗装路（レンタカー規約を確認）。弁当と水2 L/人。 / Gravel road: check the rental terms. Packed lunch, 2 L water each.",
+    "omanawanui": "尾根で弁当の昼食。 / Packed lunch on the ridge.",
+    "kuataika": "急登。弁当と水2 L/人。 / Steep. Packed lunch, 2 L water each.",
+    "fairy-falls": "下部区間は閉鎖、滝まで行けない可能性。 / Lower section closed; the falls may not be reachable.",
+    "karekare": "離岸流。遊泳は旗の間だけ。 / Rips. Swim only between the flags."
+   },
+   "titles": {
+    "2027-02-11": {
+     "ja": "アラタキの展望台",
+     "en": "Arataki lookout"
+    },
+    "2027-02-12": {
+     "ja": "砂丘と夕日のベセルズ",
+     "en": "Dunes, Bethells sunset"
+    },
+    "2027-02-13": {
+     "ja": "ザイオン・ヒル縦走",
+     "en": "Over Zion Hill"
+    },
+    "2027-02-14": {
+     "ja": "ファティプとカレカレ",
+     "en": "Whatipu and Karekare"
+    },
+    "2027-02-15": {
+     "ja": "カウリとクアタイカ",
+     "en": "Kauri and Kuataika"
+    },
+    "2027-02-16": {
+     "ja": "最後の滝と港",
+     "en": "Last falls, the harbour"
+    }
+   }
+  },
+  {
+   "id": "islands",
+   "name": "Island hopping",
+   "nameJa": "島めぐり",
+   "blurb": "Tiritiri Matangi (Fri), Rangitoto on the one weekday sailing (Mon 09:30, back 15:30), Waiheke on the last day; Taranaki as in the classic, with breaks at Mokau, Te Kūiti and Hamilton and Valentine's dinner at Deco near home. Book: Tiritiri and Rangitoto ferries (no walk-on), cave tour, New Plymouth bed. Feb 13 and 14 each drive over 4 h 30.",
+   "blurbJa": "ティリティリ・マタンギ（金）、平日1便のランギトト（月09:30発・15:30帰）、最終日にワイヘキ。タラナキは王道と同じ、帰路はモカウ、テ・クイティ、ハミルトンで休憩、バレンタインは家の近くのデコで夕食。要予約：ティリティリとランギトトのフェリー（当日券なし）、洞窟ツアー、ニュープリマスの宿。13日・14日は運転4時間30分超。",
+   "days": {
+    "2027-02-11": [
+     "dulcie-devonport",
+     "devonport-mt-victoria",
+     "maungauika",
+     "takapuna-fossil-forest",
+     "takapuna-beach-cafe"
+    ],
+    "2027-02-12": [
+     "tiritiri-matangi",
+     "ahi-commercial-bay"
+    ],
+    "2027-02-13": [
+     "parnell-farmers-market",
+     "waitomo-glowworm-caves",
+     "huhu-waitomo",
+     "te-rewa-rewa-bridge"
+    ],
+    "2027-02-14": [
+     "mangorei-trailhead",
+     "pouakai-tarns",
+     "three-sisters-elephant-rock",
+     "mokau",
+     "te-kuiti",
+     "hayes-common",
+     "deco-titirangi"
+    ],
+    "2027-02-15": [
+     "rangitoto-summit",
+     "amano-britomart"
+    ],
+    "2027-02-16": [
+     "waiheke-te-ara-hura",
+     "wai-kitchen-waiheke",
+     "onetangi",
+     "island-gelato-waiheke",
+     "commercial-bay"
+    ]
+   },
+   "stay": {
+    "waitomo-glowworm-caves": 95,
+    "huhu-waitomo": 45,
+    "hayes-common": 30,
+    "mangorei-trailhead": 10,
+    "pouakai-tarns": 50,
+    "three-sisters-elephant-rock": 45,
+    "wai-kitchen-waiheke": 65,
+    "onetangi": 135,
+    "island-gelato-waiheke": 35,
+    "tiritiri-matangi": 240
+   },
+   "start": {
+    "2027-02-13": "07:30",
+    "2027-02-14": "03:00"
+   },
+   "notes": {
+    "pouakai-tarns": "02:35にMetService（エグモント国立公園）で判断。山頂に雲なら中止し、夜明けのテ・レワレワ橋へ。ヘッドランプ、防寒着、雨具、水1.5 L/人。 / Go/no-go 02:35 on MetService Egmont NP. Cloud on the summit: sleep in, Te Rewa Rewa at dawn instead. Headlamps, warm layer, rain shell, 1.5 L water each.",
+    "mokau": "ここで昼食、運転交代。2時間ごとに休憩。 / Lunch here, swap drivers. Stop every 2 h.",
+    "te-kuiti": "休憩20分。日曜午後のボンベイ〜南部高速は+20〜40分。 / 20-min break. Sunday afternoon SH1 Bombay → Southern Motorway adds 20–40 min.",
+    "hayes-common": "ハミルトンでコーヒー休憩（日曜15:30閉店）。 / Coffee break in Hamilton (Sun closes 15:30).",
+    "waitomo-glowworm-caves": "12:00の回を予約、11:30までにチェックイン（遅刻は無効）。 / Book the 12:00 tour, check in by 11:30 (late = forfeited).",
+    "waiheke-te-ara-hura": "島内は車なし：ATバス50番、約30分間隔。区間は車の時間で表示。 / No car on the island: AT bus 50, ~30-min headway; legs shown as car times.",
+    "tiritiri-matangi": "フェリー要予約。弁当と水。島に売店なし。 / Ferry booked. Packed lunch and water; nothing to buy on the island.",
+    "rangitoto-summit": "フェリー予約済み（時間指定）。水2 L/人、昼食、日焼け止め。15:20までに埠頭へ。 / Ferry booked (time-specific). 2 L water each, lunch, sunscreen. At the wharf by 15:20."
+   },
+   "titles": {
+    "2027-02-11": {
+     "ja": "ノースショアと化石の森",
+     "en": "North Shore, fossil forest"
+    },
+    "2027-02-12": {
+     "ja": "鳥の島ティリティリ",
+     "en": "Tiritiri, the bird island"
+    },
+    "2027-02-13": {
+     "ja": "土ボタルの洞窟",
+     "en": "Glowworm cave day"
+    },
+    "2027-02-14": {
+     "ja": "逆さタラナキの朝",
+     "en": "Taranaki in the tarn"
+    },
+    "2027-02-15": {
+     "ja": "溶岩の島ランギトト",
+     "en": "Rangitoto lava island"
+    },
+    "2027-02-16": {
+     "ja": "ワイヘキと最後の夜",
+     "en": "Waiheke, last night"
+    }
+   }
+  },
+  {
+   "id": "cafes",
+   "name": "More cafes",
+   "nameJa": "カフェ巡り多め",
+   "blurb": "Two to four cafes a day and one walk, summit or swim; no night away. Monday picks open on Mondays, Tuesday picks on Tuesdays. Takapuna fossil forest at low water (Feb 13). Valentine's dinner at Ahi after Piha. Book: Ahi.",
+   "blurbJa": "1日2〜4軒のカフェと散歩・山頂・海のどれかひとつ。外泊なし。月曜・火曜は営業日で選んだ店。干潮のタカプナ化石の森（13日）。バレンタインはピハの後にAhiで夕食。要予約：Ahi。",
+   "days": {
+    "2027-02-11": [
+     "best-ugly-bagels",
+     "maungawhau-mt-eden",
+     "small-mercies"
+    ],
+    "2027-02-12": [
+     "honey-sundays",
+     "karangahape-road",
+     "bestie-kroad",
+     "slow-koi",
+     "maungakiekie",
+     "giapo",
+     "silo-park-wynyard"
+    ],
+    "2027-02-13": [
+     "parnell-farmers-market",
+     "vaniye-parnell",
+     "devonport-mt-victoria",
+     "dulcie-devonport",
+     "maungauika",
+     "takapuna-beach-cafe",
+     "takapuna-fossil-forest"
+    ],
+    "2027-02-14": [
+     "fort-greene",
+     "kitekite-falls",
+     "piha-store",
+     "piha",
+     "ahi-commercial-bay"
+    ],
+    "2027-02-15": [
+     "allpress-roastery",
+     "waiheke-te-ara-hura",
+     "wai-kitchen-waiheke",
+     "onetangi",
+     "island-gelato-waiheke"
+    ],
+    "2027-02-16": [
+     "beabeas-bakery",
+     "mibo-wynyard",
+     "maungarei",
+     "onda-newmarket",
+     "marus-house",
+     "amano-britomart",
+     "britomart",
+     "hello-beasty"
+    ]
+   },
+   "stay": {
+    "wai-kitchen-waiheke": 65,
+    "onetangi": 105,
+    "island-gelato-waiheke": 35,
+    "devonport-mt-victoria": 180,
+    "maungauika": 120,
+    "takapuna-beach-cafe": 60,
+    "britomart": 120,
+    "piha": 150
+   },
+   "anchors": {
+    "2027-02-13": {
+     "end": {
+      "id": "new-lynn"
+     }
+    },
+    "2027-02-14": {
+     "start": {
+      "id": "new-lynn",
+      "time": "08:00"
+     }
+    }
+   },
+   "notes": {
+    "waiheke-te-ara-hura": "島内は車なし：ATバス50番、約30分間隔。区間は車の時間で表示。 / No car on the island: AT bus 50, ~30-min headway; legs shown as car times.",
+    "piha": "遊泳はライフガードの旗の間だけ。 / Swim only between the flags."
+   },
+   "titles": {
+    "2027-02-11": {
+     "ja": "イーデン山とドーナツ",
+     "en": "Mt Eden and doughnuts"
+    },
+    "2027-02-12": {
+     "ja": "Kロードと抹茶",
+     "en": "K Road and matcha"
+    },
+    "2027-02-13": {
+     "ja": "マルシェとデボンポート",
+     "en": "Market and Devonport"
+    },
+    "2027-02-14": {
+     "ja": "ピハの浜とAhi",
+     "en": "Piha, then Ahi"
+    },
+    "2027-02-15": {
+     "ja": "ワイヘキのカフェ",
+     "en": "Waiheke cafes"
+    },
+    "2027-02-16": {
+     "ja": "抹茶と最後の夜",
+     "en": "Matcha, last night"
+    }
+   }
+  }
+ ]
+}

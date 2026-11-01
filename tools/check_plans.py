@@ -79,6 +79,11 @@ def load():
     gp = os.path.join(D, 'groups.json')
     if 'clusters' not in plans and os.path.exists(gp):
         plans['clusters'] = [dict(v, id=k) for k, v in json.load(open(gp, encoding='utf-8')).items() if isinstance(v, dict) and v.get('ids')]
+    # The curated versions no longer ship (plans.json `plans` is empty); they are the fixture that
+    # exercises ferries, tides, walks, anchors and hours here and in tools/sim.test.js.
+    fx = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures', 'presets.json')
+    if not plans.get('plans') and os.path.exists(fx):
+        plans['plans'] = json.load(open(fx, encoding='utf-8'))['plans']
     t = json.load(open(os.path.join(D, 'travel.json')))
     idx = {k: i for i, k in enumerate(t['ids'])}
     return places, plans, t['min'], idx
