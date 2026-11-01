@@ -605,6 +605,8 @@ const plannerFn=function planner(g){
     S.lastBreaks=bs; if(bs.length&&msg) msg+=' — ⚠ '+breakLine(bs);
     save();
     if(opt&&opt.quick&&S.sc) patchDay(); else renderSoon();
+    /* the day's set of stops changed: the map refits it */
+    const dk=DB.days[S.day].date; if(!was||String((was.days||{})[dk])!==String(S.my.days[dk]||[])) (soon?afterRender:raf)(()=>fitDay());
     if(msg) toast(S.saveFail?msg:forked&&forked.kept?msg+' — '+pt('keptAs',{name:planName(forked.kept)}):forked?msg+' — '+pt(opt&&opt.fork===1?'overMy':'forked'):msg,undo);
     if(opt&&opt.focus!=null) afterRender(()=>focusStop(opt.focus));
     return true;

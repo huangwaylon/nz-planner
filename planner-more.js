@@ -6,7 +6,8 @@
 (function(){
 'use strict';
 if(typeof planner!=='function'||planner.more) return;
-const PTM={ bestDay:{ja:'最適 {d}',en:'Best {d}'}, placedN:{ja:'{n}/{of} 配置',en:'{n}/{of} placed'}, noDay:{ja:'⚠ どの日も崩れます',en:'⚠ breaks every day'}, grpSum:{ja:'約{d}・運転{m}',en:'about {d}, {m} driving'}, picks:{ja:'おすすめ',en:'Suggested'}, use:{ja:'使う',en:'Use'}, rename2:{ja:'名前を変える',en:'Rename'}, drop:{ja:'グループを解く',en:'Ungroup'}, noGroup:{ja:'グループなし',en:'Not in a group'},
+const PTM={ sleepQ:{ja:'この夜に泊まる',en:'Stay this night'}, sleepS:{ja:'{d}の夜は{name}に泊まります',en:'{name} for the night of {d}'}, sleptOn:{ja:'{d}の夜に泊まる予定',en:'Staying the night of {d}'}, unsleep:{ja:'泊まるのをやめる',en:'Don’t stay here'}, unslept:{ja:'{name}に泊まるのをやめました',en:'No longer staying at {name}'},
+bestDay:{ja:'最適 {d}',en:'Best {d}'}, placedN:{ja:'{n}/{of} 配置',en:'{n}/{of} placed'}, noDay:{ja:'⚠ どの日も崩れます',en:'⚠ breaks every day'}, grpSum:{ja:'約{d}・運転{m}',en:'about {d}, {m} driving'}, picks:{ja:'おすすめ',en:'Suggested'}, use:{ja:'使う',en:'Use'}, rename2:{ja:'名前を変える',en:'Rename'}, drop:{ja:'グループを解く',en:'Ungroup'}, noGroup:{ja:'グループなし',en:'Not in a group'},
 mine:{ja:'わたしのリスト',en:'My list'}, mAll:{ja:'すべて',en:'All'}, m_must:{ja:'絶対',en:'Must'}, m_want:{ja:'行きたい',en:'Want'}, m_maybe:{ja:'余裕',en:'If time'}, mGrp:{ja:'グループ：{g}',en:'Group: {g}'}, picksH:{ja:'おすすめ',en:'Suggestions'}, mineNone:{ja:'①で分けた場所とグループがここに出ます',en:'Places you sort in ① and your groups show here'},
 forkT:{ja:'マイプランに編集があります',en:'My plan has edits of its own'}, forkS:{ja:'「{name}」を編集すると、マイプランが置き換わります。',en:'Editing “{name}” replaces My plan.'}, forkOver:{ja:'マイプランを上書き',en:'Overwrite My plan'}, forkNew:{ja:'新しい案として保存',en:'Save as a new version'}, forkNewS:{ja:'今のマイプランは「{name}」として案に残ります',en:'Your current My plan stays as the version “{name}”'},
 galT:{ja:'写真',en:'Photos'}, galZ:{ja:'写真を全体表示',en:'Show the whole photo'}, licSite:{ja:'公式サイト',en:'own site'}, galN:{ja:'{i} / {n}',en:'{i} of {n}'},
@@ -545,7 +546,21 @@ planner.more=function(c){
   /* 「どの日に入れる？」: six day buttons, each simulated before it is shown: the added driving and
      the day's end, ⚠ when the add breaks something (closes, past the day's end or the flight, after
      dark, ferry, tide). A ⚠ day, or a partly closed place, takes a second tap; the first says why. */
+  /* a camp or a hut is somewhere to sleep, not a 12-hour stop: the pills set the night's end anchor
+     (and the next morning's start there), each simulated: arrival at the camp, ⚠ with the reason */
+  const sleeps=p=>p&&p.cat==='camp';
+  const sleepFn=(id,k)=>m=>{ const d=DB.days[k], n=DB.days[k+1]; m.anchors=m.anchors||{};
+    DB.days.forEach(x=>{ const l=m.days[x.date]; if(l&&l.indexOf(id)>=0) l.splice(l.indexOf(id),1); });
+    m.anchors[d.date]=Object.assign({},m.anchors[d.date],{end:{id}}); if(n) m.anchors[n.date]=Object.assign({},m.anchors[n.date],{start:{id}}); };
+  const sleptK=id=>{ const P=plan(); return DB.days.findIndex(d=>((P.anchors||{})[d.date]||{}).end&&P.anchors[d.date].end.id===id); };
+  function sleepPick(id,cls){ const P=plan(), k0=sleptK(id);
+    const pills=DB.days.slice(0,-1).map((d,k)=>{ const fn=sleepFn(id,k), bs=k===k0?[]:c.trial(fn)||[], m=clone({id:'t',days:P.days,stay:P.stay||{},start:P.start||{},stayDay:P.stayDay||{},anchors:P.anchors||{}}); fn(m);
+      const e=SIMc().schedule(d,null,m,{deadline:S.dayEnd}).end, why=bs.length?c.breakLine(bs,d):'';
+      return `<button type="button" class="pl-dq${k===S.day?' pl-cur':''}${bs.length?' pl-nofit':''}" style="${dayStyle(k)}" data-act="sleep" data-id="${esc(id)}" data-day="${k}"${why?` data-why="${esc(dlabel(d)+'：'+why)}"`:''}${k===k0?' disabled':''}><b>${+d.date.slice(8)}</b><small>${bs.length?'⚠':''}${hm(e)}</small><span class="sr">${esc(pt('sleepS',{d:dlabel(d),name:nm(place(id))}))}${why?esc('：'+why):''}</span></button>`; }).join('');
+    return `<div class="pl-dayq ${cls||''}" role="group" aria-label="${esc(pt('sleepQ'))}"><span class="pl-dayqk">${pt('sleepQ')}${k0>=0?`<small>${esc(pt('sleptOn',{d:dlabel(DB.days[k0])}))}</small>`:''}</span>
+      <span class="pl-dayqb">${pills}</span>${k0>=0?`<button type="button" class="pl-btn pl-ghost" data-act="unsleep" data-id="${esc(id)}" data-day="${k0}">${pt('unsleep')}</button>`:''}<span class="pl-dayqm" role="status" aria-live="polite"></span></div>`; }
   function dayPick(id,cls,c){
+    if(!c&&sleeps(place(id))) return sleepPick(id,cls);
     const ids=addIds(c,id), many=!!c, shut=ids.filter(x=>closure(place(x)));
     const pills=DB.days.map((d,k)=>{ const pv=ids.length?preview(k,ids,c):null, br=pv?pv.breaks:[], warn=br.length>0||shut.length>0;
       const why=[...new Set(br.map(b=>breakText(b,d)).concat(shut.map(x=>nm(place(x))+'：'+pt('closureAsk'))))].join('・');
@@ -575,7 +590,8 @@ planner.more=function(c){
     const at=p.mapsAt&&isFinite(p.mapsAt.lat)?p.mapsAt:p, gmap=`https://www.google.com/maps/search/?api=1&query=${(+at.lat).toFixed(5)},${(+at.lon).toFixed(5)}`;
     const gmLabel=p.mapsAt&&p.mapsAt.label?(ja()?p.mapsAt.labelJa||p.mapsAt.label:p.mapsAt.label):nm(p);
     let action='';
-    if(!isBase){
+    if(sleeps(p)) action=sleepPick(id,'pl-dayq-big');
+    else if(!isBase){
       if(on===S.day) action=`<button type="button" class="pl-btn pl-ghost" data-act="unplan" data-id="${id}">${ic('x','sm')}${pt('removeFrom',{d:dlabel(day)})}</button>`;
       else if(on!=null) action=`<button type="button" class="pl-btn pl-pri" data-act="movehere" data-id="${id}">${ic('calendar','sm')}${pt('moveHere',{d:dlabel(day)})}</button><div class="pl-sh-s pl-center">${pt('inDay',{d:dlabel(DB.days[on])})}</div>`;
       else action=dayPick(id,'pl-dayq-big');
@@ -688,6 +704,10 @@ planner.more=function(c){
           if(ex){ ex.remove(); break; }
           row.insertAdjacentHTML('beforeend',dayPick(b.dataset.id)); b.setAttribute('aria-expanded','true');
           const c=row.querySelector('.pl-dq.pl-cur'); if(c) c.focus(); break; }
+        case 'sleep': { const id=b.dataset.id, k=+b.dataset.day; if(armPill(b)) break;
+          if(edit(sleepFn(id,k),pt('sleepS',{d:dlabel(DB.days[k]),name:nm(place(id))}))){ if(kind==='place') openPlace(id,arg.back); else { const q=b.closest('.pl-dayq'); if(q) q.remove(); } } break; }
+        case 'unsleep': { const id=b.dataset.id, k=+b.dataset.day, d=DB.days[k], n=DB.days[k+1];
+          if(edit(m=>{ const a=m.anchors||{}; if(a[d.date]) delete a[d.date].end; if(n&&a[n.date]&&a[n.date].start&&a[n.date].start.id===id) delete a[n.date].start; },pt('unslept',{name:nm(place(id))}))&&kind==='place') openPlace(id,arg.back); break; }
         case 'addday': { const id=b.dataset.id, k=+b.dataset.day; if(armPill(b)||!applyAdd(k,[id],null)) break;
           if(kind==='place') openPlace(id,arg.back); else patchCand(id); break; }
         case 'unplan': { const id=b.dataset.id, back=arg.back; if(c.guard(b,'un'+id,m=>{ const l=m.days[date], k=l.indexOf(id); if(k>=0) l.splice(k,1); },pt('removed',{name:nm(place(id))}))) openPlace(id,back); break; }

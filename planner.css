@@ -426,12 +426,13 @@ html.pl-failed .pl-skel{display:none;}
 }
 @container plan (min-width:1024px){
   /* one 64 px header row: the plan menu and the tools at its ends, the stepper over its middle */
-  .pl-shell{grid-template-columns:var(--pl-pal-w,248px) minmax(360px,440px) minmax(0,1fr);grid-template-rows:64px;grid-template-areas:"hdr hdr hdr" "days days days" "pal note map" "pal main map" "rev rev rev";}
+  .pl-shell{grid-template-columns:var(--pl-pal-w,248px) minmax(360px,440px) minmax(0,1fr);grid-template-rows:64px;grid-template-areas:"hdr hdr hdr" "pal days map" "pal note map" "pal main map" "rev rev rev";}
   .pl-bar,.pl-stages{grid-area:hdr;align-self:center;}
   .pl-stages{justify-self:center;width:min(560px,48%);z-index:1;}
   .pl-stage{min-height:44px;column-gap:6px;grid-template-columns:auto auto auto;}
   .pl-stc{grid-column:auto;}
-  .pl-mapcard{top:76px;} .pl-mapcard .pl-mapbox{height:calc(100vh - 100px);height:calc(100dvh - 100px);}
+  /* the map fits under the header at rest (it starts beside the day strip) and when stuck */
+  .pl-mapcard{top:76px;margin-top:0;} .pl-mapcard .pl-mapbox{height:calc(100vh - 160px);height:calc(100dvh - 160px);}
   .v-plan[data-stage="plan"] .pl-palette{display:block;grid-area:pal;position:sticky;top:76px;max-height:calc(100dvh - 92px);overflow:auto;}
   /* ①: a filter rail, the cards, the map */
   .v-plan[data-stage="collect"] .pl-shell{grid-template-columns:208px minmax(0,1fr) 420px;grid-template-areas:"hdr hdr hdr" "rail col map";}

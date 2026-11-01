@@ -55,8 +55,9 @@
         online: w.navigator.onLine}));
       throw new Error('stop: no candidate list');
     }
-    add.click();
-    const pill = await until(() => q('.pl-dayq .pl-dq[data-day="1"]'));
+    /* a camp's row offers nights, not adds: take the first row that adds */
+    let pill = null;
+    for (const b of qa('.pl-clist .pl-addbtn').slice(0, 8)) { b.click(); pill = await until(() => q('.pl-dayq .pl-dq[data-act="addday"][data-day="1"]'), 1500); if (pill) break; if (q('.pl-dayq')) b.click(); }
     ok(!!pill && /\d/.test(pill.textContent), 'the day pill shows its simulated cost');
     pill.click(); if (pill.dataset.why && pill.isConnected) pill.click();
     ok(await until(() => rows().length === n0 + 1, 3000), 'adding to a day that holds an import works');
@@ -196,6 +197,14 @@
     G[gid] = [bad(2), bad(3)]; view()._pl.open(gid);
     ok(await until(() => q('.pl-gal') && !q('.pl-gal .pl-gf') && getComputedStyle(q('.pl-gal .pl-gfb')).display !== 'none', 6000), 'with every gallery URL broken the photo or colour card shows');
     G[gid] = g0; doc().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await wait(300);
+    /* a camp is a night, not a 12-hour stop */
+    view()._pl.open('belt-road-holiday-park');
+    const sp = await until(() => qa('[data-act="sleep"]')[1], 4000);
+    ok(!!sp && !q('[data-act="addday"][data-id="belt-road-holiday-park"]'), 'a camp offers この夜に泊まる, not an add');
+    if (sp) { sp.click(); await wait(300); if (sp.isConnected && sp.classList.contains('pl-armed')) { sp.click(); await wait(300); }
+      const fk = q('[data-act="forkover"]'); if (fk) { fk.click(); await wait(400); }
+      ok(view()._pl.sim('my')[1].rows.slice(-1)[0][2] === 'belt-road-holiday-park' && view()._pl.sim('my')[2].rows[0][2] !== undefined, 'the camp becomes that night\'s end'); }
+    doc().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await wait(300);
     /* the phone never asked for the desktop chunk */
     ok(!fr.contentWindow.performance.getEntriesByType('resource').some(e => /planner-desk/.test(e.name)), 'a 393-wide planner never loads planner-desk');
     /* ---------- wide: 1440 then 1920, in a second frame ---------- */

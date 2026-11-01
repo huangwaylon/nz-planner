@@ -2,7 +2,8 @@
    skeleton that a wide first paint needs is in planner.css. Everything answers @container plan. */
 .v-plan{--pl-pal-w:248px;}
 .pl-dtog{display:none;margin-left:auto;}
-@container plan (min-width:1360px){ .v-plan[data-stage="plan"] .pl-dtog{display:flex;} }
+/* 6日 only where six lanes get 180 px each beside the palette and a 360 px map */
+@container plan (min-width:1760px){ .v-plan[data-stage="plan"] .pl-dtog{display:flex;} }
 
 /* ---------- ① the rail, photo plates, credits on the picture ---------- */
 @container plan (min-width:1024px){
@@ -73,26 +74,21 @@
   text-align:left;color:var(--ink);cursor:grab;box-shadow:0 1px 0 var(--line);}
 .pl-bs .pl-tn{width:40px;height:40px;grid-row:span 2;}
 .pl-bs>span{font:600 12px/1.4 var(--pl-num);color:var(--muted);font-variant-numeric:tabular-nums;}
-.pl-bs>b{font:600 13.5px/1.45 var(--pl-serif);overflow-wrap:anywhere;}
+.pl-bs>b{font:600 13.5px/1.4 var(--pl-sans);overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;}
 .pl-bs.pl-bad>span{color:var(--pl-warn);}
 .pl-bs:focus-visible{outline:2.5px solid var(--ci);outline-offset:-2.5px;}
 .pl-be{display:grid;place-items:center;min-height:120px;margin:8px 0;border-radius:12px;outline:1.5px dashed var(--line-strong);outline-offset:-6px;font:500 13.5px/1.5 var(--pl-sans);color:var(--muted);text-align:center;padding:12px;}
-@container plan (max-width:1599px){ .pl-bs{grid-template-columns:minmax(0,1fr);} .pl-bs .pl-tn{display:none;} .pl-bl{margin-left:6px;} }
-@container plan (min-width:1360px){
-  .v-plan.pl-6[data-stage="plan"] .pl-shell{height:calc(100vh - var(--pl-bottom,0px));height:calc(100dvh - var(--pl-bottom,0px));overflow:hidden;
-    grid-template-columns:var(--pl-pal-w) minmax(0,1fr) 360px;grid-template-rows:64px minmax(0,1fr);grid-template-areas:"hdr hdr hdr" "pal brd map";}
+/* one scroll context: the lanes grow with their stops and the page scrolls; the palette and the map
+   stay at viewport height beside them, and the day heads stick to the top */
+@container plan (min-width:1760px){
+  .v-plan.pl-6[data-stage="plan"] .pl-shell{grid-template-columns:var(--pl-pal-w) minmax(1080px,1fr) minmax(360px,860px);grid-template-rows:64px auto;grid-template-areas:"hdr hdr hdr" "pal brd map";align-items:start;}
   .v-plan.pl-6[data-stage="plan"] :is(.pl-main,.pl-notice,.pl-days){display:none;}
-  .v-plan.pl-6[data-stage="plan"] .pl-board{display:grid;grid-area:brd;align-items:stretch;height:100%;min-height:0;}
-  .v-plan.pl-6[data-stage="plan"] :is(.pl-palette,.pl-mapcard){height:100%;min-height:0;max-height:none;margin:0;position:relative;top:0;}
+  .v-plan.pl-6[data-stage="plan"] .pl-board{display:grid;grid-area:brd;grid-template-columns:repeat(6,minmax(180px,1fr));align-items:stretch;}
+  .v-plan.pl-6[data-stage="plan"] :is(.pl-palette,.pl-mapcard){position:sticky;top:0;height:calc(100vh - var(--pl-bottom,0px));height:calc(100dvh - var(--pl-bottom,0px));min-height:0;max-height:none;margin:0;}
   .v-plan.pl-6[data-stage="plan"] .pl-palette{overflow:auto;overscroll-behavior:contain;}
   .v-plan.pl-6[data-stage="plan"] .pl-mapcard .pl-mapbox{height:100%;}
-  .v-plan.pl-6 .pl-bc{display:flex;flex-direction:column;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;}
+  .v-plan.pl-6 .pl-bc{display:flex;flex-direction:column;}
   .v-plan.pl-6 .pl-bh{position:sticky;top:0;z-index:1;}
-}
-/* the map takes what the lanes do not need: lanes floored at 168, the map up to 860 */
-@container plan (min-width:1760px){
-  .v-plan.pl-6[data-stage="plan"] .pl-shell{grid-template-columns:var(--pl-pal-w) minmax(1008px,1fr) minmax(360px,860px);}
-  .pl-bs>b{font-size:15px;}
 }
 @container plan (min-width:2400px){ .v-plan{--pl-pal-w:280px;} }
 
@@ -127,3 +123,5 @@
 .pl-map .pl-cands [data-t="must"] .pl-mk{fill:var(--ink);stroke:var(--surface);}
 .pl-map .pl-cands [data-t="want"] .pl-mk{fill:color-mix(in srgb,var(--ink) 68%,var(--surface));}
 .pl-map .pl-cands [data-t="skip"]{opacity:.35;}
+/* the palette and board thumbs: the first picture that loads, else the glyph (before the gallery chunk too) */
+.pl-tn.pl-g1>img:not(:first-of-type),.pl-tn.pl-g1:has(img)>.pl-gfb{display:none;}

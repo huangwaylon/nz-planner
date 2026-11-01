@@ -1,7 +1,7 @@
 /* PLANNER DESK: the wide layouts (docs/WORKFLOW.md), loaded only when the planner itself is ≥1024 wide,
    after paint, so a phone never downloads it. planner.desk(ctx) adds:
    - ② a palette (unplaced musts, groups as blocks, then wants and if-times, each with its photo) and,
-     from 1360, the 「6日」 board: six full-height lanes headed by the day's photo and its facts, the map
+     from 1760, the 「6日」 board: six lanes of at least 180 px headed by the day's photo and its facts, the map
      beside them drawing every day in its colour; hovering a lane fits its day;
    - ① photo plates on the cards (srcset, the ratio reserved, the credit on the picture), the key
      handling (J K ↑ ↓, 1 2 3 0, ⌫, X, ⌘A, G, Enter) and a map fitted to the cards in view;
@@ -43,9 +43,11 @@ planner.desk=function(c){
       :`<span class="pl-glyph pl-plate pl-noph">${ic(glyphOf(p))}<small>${esc(tr(AREA,p.area))}</small></span>`; };
   const tn=(p,n)=>{ const x=ph(p), g=gal(p)[0];
     return `<span class="pl-tn pl-g1">${g?gimg(g,n+'px',320):''}${x?`<img src="${esc(x.thumb||x.src)}" alt="" width="${n}" height="${n}" loading="lazy" decoding="async" data-gi>`:''}<span class="pl-gfb">${ic(glyphOf(p),'xs')}</span></span>`; };
-  /* ---------- the 1日|6日 toggle: 6日 from 1360 wide, the default from 1600 ---------- */
+  /* a board leg in the 1日 timeline's terms: on foot, by ferry, by road */
+  const legT=l=>!l?'':l.kind==='ferry'?'⛴ '+dur(l.sail)+(l.d1+l.d2?' 🚗 '+dur(l.d1+l.d2):''):l.combo?[l.wa&&'🥾 '+dur(l.wa),l.sub&&legT(l.sub),l.wb&&'🥾 '+dur(l.wb)].filter(Boolean).join(' '):l.kind==='walk'?'🥾 '+dur(l.min):'🚗 '+dur(l.min);
+  /* ---------- the 1日|6日 toggle: 6日 only from 1760 wide (six 180 px lanes), on by default there ---------- */
   const tg=document.createElement('div'); tg.className='pl-seg pl-dtog'; view.querySelector('.pl-tools').before(tg);
-  const board=()=>view.clientWidth>=1360&&(S.board!=null?S.board:view.clientWidth>=1600);
+  const board=()=>view.clientWidth>=1760&&(S.board!=null?S.board:true);
   /* ---------- palette ---------- */
   function palette(){ const P=plan(), pm=plannedMap(P), seen=new Set(), f=x=>!q||(x.name+' '+(x.nameJa||'')).toLowerCase().indexOf(q)>=0;
     const item=p=>{ seen.add(p.id); return `<button type="button" class="pl-pi" data-drag="p:${p.id}" data-id="${p.id}">${tn(p,32)}<span${nmLang(p)}>${esc(nm(p))}</span></button>`; };
@@ -62,7 +64,7 @@ planner.desk=function(c){
     E.board.innerHTML=DB.days.map((d,k)=>{ const sc=sim().schedule(d,null,P,o()), s=sc.rows[0], e=sc.rows[sc.rows.length-1], h=c.heroOf(sc), x=ph(h), n=sc.rows.length-2, sl=place(e.id);
       const head=`<button type="button" class="pl-bh" data-bday="${k}">${x?`<img class="pl-bhi" src="${esc(x.src)}" alt="" width="3" height="2" ${k===S.day?'':'loading="lazy" fetchpriority="low"'} decoding="async">`:''}
         <b>${+d.date.slice(8)}</b><span>${c.wdName(d.date)}</span><small>${esc(pt('sleepAt',{p:e.id==='akl'?'✈':nm(sl).replace(/\s*[(（].*?[)）]/g,'')}))}　${pt('stops',{n})}<br>🚗${dur(sc.drive)}　~${hm(e.arr)}${e.limit?` / ${hm(e.limit)}`:''}</small>${sc.warns?`<em>${pt('warnN',{n:sc.warns})}</em>`:''}</button>`;
-      const rows=sc.rows.slice(1,-1).map((r,i)=>(i?`<p class="pl-bl">🚗 ${dur(r.leg.min)}</p>`:'')+`<button type="button" class="pl-bs${r.warns.length?' pl-bad':''}" data-drag="s:${d.date}:${r.id}" data-id="${r.id}">${tn(place(r.id),40)}<span>${hm(r.begin)}</span><b${nmLang(place(r.id))}>${esc(nm(place(r.id)))}</b></button>`).join('');
+      const rows=sc.rows.slice(1,-1).map((r,i)=>(i?`<p class="pl-bl">${legT(r.leg)}</p>`:'')+`<button type="button" class="pl-bs${r.warns.length?' pl-bad':''}" data-drag="s:${d.date}:${r.id}" data-id="${r.id}">${tn(place(r.id),40)}<span>${hm(r.begin)}</span><b${nmLang(place(r.id))} title="${esc(nm(place(r.id)))}">${esc(nm(place(r.id)))}</b></button>`).join('');
       return `<section class="pl-bc${k===S.day?' pl-cur':''}" data-dz="day" data-day="${k}" style="${dayStyle(k)}">${head}<p class="pl-bt">${pt('depart2',{t:hm(s.dep)})}</p>${rows||`<p class="pl-be">${pt('emptyDay')}</p>`}<p class="pl-bt">${pt('arrive2',{t:hm(e.arr)})}</p></section>`; }).join(''); }
   /* every day's route at once, each in its day colour */
   function allDays(on){ const g=svg.querySelector('.pl-alld'); svg.classList.toggle('pl-all',on); if(!on){ g.innerHTML=''; return; } const P=plan();
