@@ -42,7 +42,7 @@ process.on('SIGINT', () => bye(130)); process.on('SIGTERM', () => bye(143));
   ws.addEventListener('message', e => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } });
   const send = (method, params) => new Promise(r => { const k = ++id; pending.set(k, r); ws.send(JSON.stringify({id: k, method, params})); });
   await send('Emulation.setCPUThrottlingRate', {rate: 4});
-  await send('Page.navigate', {url: `http://127.0.0.1:${PORT}/tools/perf.html?${qs}`});
+  await send('Page.navigate', {url: `http://127.0.0.1:${PORT}/tools/perf.html?${qs}${process.env.CI ? '&ci=1' : ''}`});
   const t0 = Date.now(); let out = '', shown = 0;
   while (Date.now() - t0 < 600000) {
     await wait(1000);

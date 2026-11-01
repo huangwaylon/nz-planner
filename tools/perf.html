@@ -36,7 +36,9 @@
 <script>
 const STRESS_FAILS = true;   /* the P0 fixes are in (docs/DESIGN.md "Gate") */
 const WORST = 50;   /* a drag's worst frame, ms: the lift and the first preview, which p95 cannot see */
-const GUARD = 1.25, QUANTUM = 16;   /* one 60 Hz frame of slack on top of the ratio */
+const GUARD = 1.25, QUANTUM = 16;
+const CAL_REF = 75;           /* calibration ms (4x CPU) of the machine the DESIGN.md targets were set on */
+const CI = /[?&]ci=1/.test(location.search);
 (async () => {
   const P = new URLSearchParams(location.search), N = Math.max(1, +P.get('n') || 5), ONLY = P.get('case') || '', RECORD = P.has('record');
   const out = document.getElementById('out'), lines = [];
@@ -228,8 +230,14 @@ const GUARD = 1.25, QUANTUM = 16;   /* one 60 Hz frame of slack on top of the ra
       row.status = !b ? 'skip' : ms <= row.gate ? 'pass' : 'fail';
       if (row.status === 'fail') fails++;
     } else {
-      row.gate = gate; row.ratio = ratio;
-      row.status = ms < gate ? 'pass' : STRESS_FAILS ? 'fail' : 'warn';
+      /* Stress gates compare calibration-normalised ms (ratio x CAL_REF), so a slow machine is not
+         judged as a slow app. CI's headless Linux paints in software, which the calibration does
+         not capture, so there a case may run to 1.5x its target as a warning; past that it fails
+         (the 5-10x blowups this gate exists for are 300+ ms). Locally the target is strict. */
+      /* frame times are display-bound (16.7 ms at 60 Hz), so a drag is judged on raw ms */
+      const norm = name === 'board_drag' ? ms : r1(ratio * CAL_REF), slack = CI ? 1.5 : 1;
+      row.gate = gate; row.ratio = ratio; row.norm = norm;
+      row.status = norm < gate ? 'pass' : (norm < gate * slack || !STRESS_FAILS) ? 'warn' : 'fail';
       if (row.status === 'fail') fails++;
     }
     row.cal = r1(cal); row.runs = xs.map(r1);
