@@ -155,3 +155,14 @@ code carries `/* note N … */` where each applies.
 5. plans — Three kinds, one shape {id,days,stay,start,notes,anchors?}: presets (plans.json), saved versions (frozen, ids "v-…") and My plan, the one working copy. Editing a preset or a version forks it into My plan, and the My plan it replaces is kept as an autosave first: nothing is overwritten. Plans hold place ids, minutes, HH:MM and the travellers' own notes only.
 6. zoom and pan — Every move — a gesture, the +/− buttons, a fit — moves .pl-world by a CSS transform and writes viewBox and --z once, when it ends, so no frame restyles the pins. --z is screen px per map unit; `scale(1/--z)` on each pin's inner group holds pins, labels and strokes at screen size.
 7. reorder: drag the handle (pointer events, iOS has no HTML5 DnD), or tap it for the 上へ/下へ/位置 sheet, which is also the VoiceOver and glove path. Transforms only while moving, layout measured once, one recompute per frame at most, and nothing re — renders under the finger. ----------
+8. the trip, shared by every version: tiers (must|want|maybe|skip; '' = back to the inbox, no key = not sorted yet, which for her saved places reads as want), groups (one outing each, a place in at most one) and notes about places
+9. An old cached app reads a v2 save as broken, keeps it in plan:<slug>:broken and writes v1 over it. The new app takes back what that cost: the trip, My plan if the old app had none, every version, import and booking.
+
+## Collect notes
+
+Explanations moved out of `planner-collect.js` (its bytes count against the phone's first screen); the code carries `/* note cN */`.
+
+- c1: the phone card leads with a photo band: our photo by width, then the gallery's, then the glyph
+- c2: one card: the place, where it already is, and the four tier buttons (44 px each, the word always shown)
+- c3: the gallery arrived: swap each card's picture in, a few dozen per frame, not one long re-render
+- c4: for planner-desk's keys (J K 1 2 3 0 ⌫ X ⌘A G Enter): the selection, the focused card, the moves

@@ -19,8 +19,9 @@ planner.gallery = function (c) {
   const gimg = (x, sizes, w) => `<img src="${esc(gw(x.u, w || 640))}"${isWM(x.u) ? ` srcset="${[120, 250, 330, 500].map(w => esc(gw(x.u, w)) + ' ' + w + 'w').join(', ')}, ${esc(x.u)} 960w" sizes="${sizes || '100vw'}" crossorigin="anonymous"` : ''} width="${x.w || 3}" height="${x.h || 2}" alt="${esc((ja() ? x.altJa : x.alt) || x.alt || '')}" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-gi>`;
   /* the small picture: the self-hosted thumb first (small, ours), then up to three gallery candidates
      (Commons by width; other hosts are full size, so they come last), then the glyph */
-  const thumb = (p, ph) => { const g = gal(p);
-    return `<span class="pl-glyph pl-thumb pl-g1">${ph ? `<img src="${esc(ph.thumb || ph.src)}" alt="" loading="lazy" decoding="async" width="40" height="40" data-gi>` : ''}${g.slice(0, 3).map(x => gimg(x, '64px', 250)).join('')}<span class="pl-gfb">${ic(glyphOf(p))}</span>${g.length > 1 ? `<i class="pl-gn">+${g.length - 1}</i>` : ''}</span>`; };
+  /* big: the phone ① card's photo band, our photo by width and the gallery's at full width */
+  const thumb = (p, ph, big) => { const g = gal(p);
+    return `<span class="pl-glyph pl-thumb pl-g1${big ? ' pl-band' : ''}">${ph ? `<img src="${esc(big ? ph.src : ph.thumb || ph.src)}"${big && ph.src2x ? ` srcset="${esc(ph.src)} 480w, ${esc(ph.src2x)} 960w" sizes="100vw"` : ''} alt="" loading="lazy" decoding="async" width="${big ? 3 : 40}" height="${big ? 2 : 40}" data-gi>` : ''}${g.slice(0, 3).map(x => gimg(x, big ? '100vw' : '64px', big ? 500 : 250)).join('')}<span class="pl-gfb">${ic(glyphOf(p))}</span>${g.length > 1 ? `<i class="pl-gn">+${g.length - 1}</i>` : ''}</span>`; };
   if (!planner.gallery.on) { planner.gallery.on = 1;
     document.addEventListener('error', e => { const t = e.target; if (t && t.hasAttribute && t.hasAttribute('data-gi')) (t.closest('[data-gw]') || t).remove(); }, true); }
   return {gal, gimg, gw, isWM, thumb};

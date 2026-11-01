@@ -12,14 +12,12 @@ const PTC={
   byTier:{ja:'ティア',en:'Tier'}, byGroup:{ja:'グループ',en:'Group'}, byArea:{ja:'エリア',en:'Area'}, sortBy2:{ja:'並べ方',en:'Arrange by'},
   fromSaved:{ja:'保存済みから',en:'from your saves'}, tierOf:{ja:'{name} の行きたさ',en:'How much for {name}'},
   sel:{ja:'選択',en:'Select'}, selN:{ja:'{n}件選択',en:'{n} selected'}, selDone:{ja:'選択をやめる',en:'Stop selecting'},
-  toGroup:{ja:'グループへ',en:'To a group'}, toDays:{ja:'日程へ',en:'To the days'}, handoff:{ja:'日程に組む →',en:'Plan the days →'},
-    make:{ja:'作る',en:'Create'},
-  inGroup:{ja:'→ {g}',en:'→ {g}'}, inDay2:{ja:'{d}に配置',en:'on {d}'}, tiered:{ja:'{n}件を「{t}」に',en:'{n} set to “{t}”'},   ungrouped:{ja:'「{g}」を解きました',en:'Ungrouped “{g}”'}, made:{ja:'「{g}」を作りました',en:'Made “{g}”'}, nothingSel:{ja:'カードを選んでください',en:'Select some cards first'},
+  toGroup:{ja:'グループへ',en:'To a group'}, toDays:{ja:'日程へ',en:'To the days'}, handoff:{ja:'日程に組む →',en:'Plan the days →'}, inDay2:{ja:'{d}に配置',en:'on {d}'}, tiered:{ja:'{n}件を「{t}」に',en:'{n} set to “{t}”'},   ungrouped:{ja:'「{g}」を解きました',en:'Ungrouped “{g}”'}, made:{ja:'「{g}」を作りました',en:'Made “{g}”'}, nothingSel:{ja:'カードを選んでください',en:'Select some cards first'},
   allPlaced:{ja:'絶対行く場所はすべて日程に入っています',en:'Every must is on a day'}, nextMust:{ja:'どの日も ⚠ — いちばん近いのは {d}',en:'Every day breaks — {d} comes closest'},
   none2:{ja:'該当なし・絞り込みを外す',en:'Nothing matches: clear the filters'}, emptyT:{ja:'まだありません。カードの［{t}］で入ります',en:'None yet: tap [{t}] on a card'}, emptyG:{ja:'まだありません',en:'None yet'}, ss_maybe:{ja:'余裕',en:'If time'}, cSearch:{ja:'名前・キーワードで絞る',en:'Filter by name or keyword'}, };
 planner.collect=function(c){
   const {S,DB,E,pt,esc,ic,head,doneBar,openSheet,closeSheet,toast,editTrip,tierOf,seeded,place,nm,nmLang,wbr,thumb,tr,CAT,AREA,
-    plannedMap,dlabel,dur,ja,fold,isCand,cover,setStage,setDay,openPlace,saveUI,clone}=c;
+    plannedMap,dlabel,dur,ja,fold,isCand,cover,setStage,setDay,openPlace,saveUI,clone,glyphOf}=c;
   c.addStrings(PTC,1);   /* soft: the desktop's own copy (planner-desk) wins whichever loads first */
   const el=E.collect;
   let focus=null, selMode=false, KEY='', skip=false, GM=null;
@@ -30,9 +28,12 @@ planner.collect=function(c){
   function pool(){ const q=fold((cf.q||'').trim());
     return DB.list.filter(p=>isCand(p)&&(!cf.cat||p.cat===cf.cat)&&(!cf.saved||p.saved)&&(!q||sText(p).indexOf(q)>=0))
       .sort((a,b)=>(!!b.saved)-(!!a.saved)||(b.trend||0)*10+(b.aesthetic||0)-(a.trend||0)*10-(a.aesthetic||0)); }
-  /* one card: the place, where it already is, and the four tier buttons (44 px each, the word always shown) */
+  /* note c1 */
+  const band=p=>{ const ph=DB.photos&&DB.photos[p.id], G=c.gx();
+    return G?G.thumb(p,ph,1):`<span class="pl-glyph pl-thumb pl-g1 pl-band">${ph?`<img src="${esc(ph.src)}" alt="" width="3" height="2" loading="lazy" decoding="async" data-gi>`:''}<span class="pl-gfb">${ic(glyphOf(p))}</span></span>`; };
+  /* note c2 */
   function card(p,pm){ const t=tierOf(p.id), g=groupOf(p.id), on=pm.get(p.id), R=focus===p.id?'':' tabindex="-1"';
-    return `<article class="pl-cc${sel.has(p.id)?' pl-csel':''}" data-id="${p.id}" data-tier="${t}" tabindex="${focus===p.id?0:-1}"><button type="button" class="pl-ccm" data-ca="open" data-id="${p.id}" tabindex="-1" aria-hidden="true">${(S.cardMedia||thumb)(p)}</button>
+    return `<article class="pl-cc${sel.has(p.id)?' pl-csel':''}" data-id="${p.id}" data-tier="${t}" tabindex="${focus===p.id?0:-1}"><button type="button" class="pl-ccm" data-ca="open" data-id="${p.id}" tabindex="-1" aria-hidden="true">${(S.cardMedia||band)(p)}</button>
       <div class="pl-ccb"><button type="button" class="pl-ccn" data-ca="open" data-id="${p.id}"${nmLang(p)}${R}>${wbr(nm(p))}</button>
       <small>${on!=null?`<span class="pl-ccd">${ic('calendar','xs')}${pt('inDay2',{d:dlabel(DB.days[on])})}</span>`:`<span>${tr(CAT,p.cat)}</span>`}${seeded(p.id)?`<span class="pl-ccs">${ic('bookmark','xs')}<span class="sr">${pt('fromSaved')}</span></span>`:''}${sel.has(p.id)?`<span class="sr">${pt('selN',{n:''})}</span>`:''}</small></div>
       <div class="pl-tseg" role="group" aria-label="${esc(pt('tierOf',{name:nm(p)}))}">${T.map(k=>`<button type="button" data-ca="tier" data-t="${k}" data-id="${p.id}" aria-pressed="${t===k}"${R} title="${esc(pt('t_'+k))}">${k==='maybe'?`<span class="pl-tl">${pt('s_maybe')}</span><span class="pl-ts">${pt('ss_maybe')}</span>`:pt('s_'+k)}</button>`).join('')}</div></article>`; }
@@ -117,12 +118,12 @@ planner.collect=function(c){
   let qf=0;
   el.addEventListener('input',e=>{ if(!e.target.classList.contains('pl-cq')) return; cf.q=e.target.value; clearTimeout(qf);
     qf=setTimeout(()=>{ const pos=e.target.selectionStart; render(true); const i=el.querySelector('.pl-cq'); if(i){ i.focus(); try{ i.setSelectionRange(pos,pos); }catch(x){} } },120); });
-  /* the gallery arrived: swap each card's picture in, a few dozen per frame, not one long re-render */
+  /* note c3 */
   function media(){ const cs=[...el.querySelectorAll('.pl-ccm')]; let i=0;
-    const step=()=>{ cs.slice(i,i+24).forEach(m=>{ const p=place(m.dataset.id); if(p) m.innerHTML=(S.cardMedia||thumb)(p); }); i+=24; if(i<cs.length) requestAnimationFrame(step); }; step(); }
+    const step=()=>{ cs.slice(i,i+24).forEach(m=>{ const p=place(m.dataset.id); if(p) m.innerHTML=(S.cardMedia||band)(p); }); i+=24; if(i<cs.length) requestAnimationFrame(step); }; step(); }
   return {
     render, media,
-    /* for planner-desk's keys (J K 1 2 3 0 ⌫ X ⌘A G Enter): the selection, the focused card, the moves */
+    /* note c4 */
     sel, setTier, targets, toggle, focus:id=>{ if(id!==undefined) focus=id; return focus; }
   };
 };

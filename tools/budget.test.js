@@ -14,6 +14,11 @@ let fails = 0;
 const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) fails++; };
 
 const SHELL = ['index.html', 'host.js', 'planner.js', 'planner.css', 'poc.css', 'data/nz/places.json', 'data/nz/plans.json'];
+/* photos.json and flags.json count too unless the boot defers them past the first paint */
+const core0 = fs.readFileSync(path.join(ROOT, 'planner.js'), 'utf8');
+const deferred = /afterPaint\(\(\)=>\{ loadPhotos\(\); loadFlags\(\); \}\)/.test(core0) && (core0.match(/loadPhotos\(\);/g) || []).length <= 2;
+if (!deferred) SHELL.push('data/nz/photos.json', 'data/nz/flags.json');
+ok(deferred, 'photos.json and flags.json load after the first paint (else they count in the first screen)');
 const plan2 = sum(SHELL.concat(['data/nz/land-lo.svg.html']));
 ok(plan2 <= 100 * KB, `phone ② first screen ${plan2} B gz (≤ 100 000)`);
 const collect = ['planner-collect.js', 'planner-collect.css'];

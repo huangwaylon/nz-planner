@@ -348,9 +348,7 @@ const ST={
     if(p.titles&&typeof p.titles==='object') out.titles=p.titles;
     return out;
   },
-  /* the trip, shared by every version: tiers (must|want|maybe|skip; '' = back to the inbox, no key =
-     not sorted yet, which for her saved places reads as want), groups (one outing each, a place in
-     at most one) and notes about places */
+  /* note 8 in docs/FOLD.md "Core notes" */
   trip(t){ const o=ST.obj(t), tier={}, groups=[], notes={}, seen=new Set(), gid=new Set();
     Object.entries(ST.obj(o.tier)).forEach(([k,v])=>{ if(v===''||TIERS.indexOf(v)>=0) tier[k]=v; });
     (Array.isArray(o.groups)?o.groups:[]).forEach(g=>{ if(!g||typeof g.id!=='string'||gid.has(g.id)) return; gid.add(g.id);
@@ -366,9 +364,7 @@ const ST={
     if(r.my){ add(r.my.notes); Object.keys(notes).forEach(k=>{ delete r.my.notes[k]; }); }
     r.versions.slice().sort((a,b)=>(b.at||0)-(a.at||0)).forEach(v=>add(v.notes));
     r.trip={tier:{},groups:[],notes}; },
-  /* An old cached app reads a v2 save as broken, keeps it in plan:<slug>:broken and writes v1 over
-     it. The new app takes back what that cost: the trip, My plan if the old app had none, every
-     version, import and booking. */
+  /* note 9 in docs/FOLD.md "Core notes" */
   merge(r,b){ const t=b.trip;
     Object.keys(t.tier).forEach(k=>{ if(r.trip.tier[k]==null) r.trip.tier[k]=t.tier[k]; });
     const have=new Set(r.trip.groups.flatMap(g=>g.ids));
@@ -674,7 +670,7 @@ const plannerFn=function planner(g){
   function renderStages(){ const P=plan(), cv=cover(P), inbox=DB.list.filter(p=>isCand(p)&&tierOf(p.id)==='').length, w=warnCount(P);
     const txt={collect:pt('inboxN',{n:inbox}),plan:cv.of?pt('mustN',{n:cv.n,of:cv.of}):pt('daysN',{n:DB.days.length,s:DB.days.reduce((t,d)=>t+idsOf(d.date,P).length,0)}),review:w?'⚠ '+w:'✓'};
     E.stages.querySelectorAll('.pl-stage').forEach(b=>{ const k=b.dataset.stage; b.setAttribute('aria-current',k===S.stage?'step':'false'); b.querySelector('.pl-stc').textContent=txt[k]; }); }
-  function setStage(st,quiet){ if(st===S.stage) return; S.stage=st; view.dataset.stage=st; saveUISoon(); if(sheetKind) closeSheet(); scrollTo(0,0);
+  function setStage(st,quiet){ if(st===S.stage) return; S.stage=st; view.dataset.stage=st; saveUISoon(); if(sheetKind) closeSheet(); scrollTo(0,0); if(st==="plan") M.needFit=true, setTimeout(()=>fitDay(),60);
     renderStages();
     if(st==='collect') needCollect().then(c=>c.render(),()=>{});
     else if(st==='review') needMore().then(m=>m.renderReview(E.review));
@@ -769,7 +765,7 @@ const plannerFn=function planner(g){
     const noteTxt=noteText(P,p.id), open=S.noteOpen===p.id, draft=open&&S.drafts[p.id]!=null?S.drafts[p.id]:noteTxt, eid=`pl-ne-${slug}-${p.id}`;
     return `<article class="pl-stop" data-id="${p.id}">
       <button type="button" class="pl-node" data-act="focus" data-id="${p.id}"><span class="sr">${pt('focus',{name:N})}</span><span class="pl-n">${n}</span></button>
-      <div class="pl-body">
+      <div class="pl-body"><span class="pl-sthumb" aria-hidden="true">${thumb(p)}</span>
         <div class="pl-when">${whenText(r)}</div>
         <h3 class="pl-h3"><button type="button" class="pl-nm" data-act="open" data-id="${p.id}"${nmLang(p)}>${wbr(nm(p))}</button></h3>
         <div class="pl-meta"><span class="pl-m">${ic(glyphOf(p))}<span class="sr">${tr(CAT,p.cat)}</span></span>${savedTag(p)}${fl.filter(f=>/-for-sunrise$/.test(f)).map(f=>flagT(f,p)?`<span class="pl-m">${ic('sunset','xs')}${flagT(f,p)}</span>`:'').join('')}</div>
@@ -1584,10 +1580,11 @@ const plannerFn=function planner(g){
     view.dataset.stage=S.stage; renderStages();
     if(S.stage==='collect') needCollect().then(c=>c.render(),()=>{}); else if(S.stage==='review') needMore(true).then(m=>m.renderReview(E.review));
     setTimeout(()=>{ renderMap(); setTimeout(wire,0); },0);
-    loadPhotos();
-    /* flag labels (5 KB gz) follow the first paint; the day re-renders once with them */
-    fetch(SRC+'flags.json').then(r=>r.ok?r.json():null).then(o=>{ if(!o) return; setFlags(o); DB.list.forEach(p=>{ delete p._s; }); if(!DRAG) renderSoon(); if(sheetKind==='place') refreshSheet(); }).catch(()=>{});
+    /* photos (6 KB gz) and flag labels (5 KB) wait for the first paint, so they stay off the first screen's bytes (tools/budget.test.js) */
+    afterPaint(()=>{ loadPhotos(); loadFlags(); });
   }
+  const afterPaint=f=>raf(()=>setTimeout(f,0));
+  const loadFlags=()=>fetch(SRC+'flags.json').then(r=>r.ok?r.json():null).then(o=>{ if(!o) return; setFlags(o); DB.list.forEach(p=>{ delete p._s; }); if(!DRAG) renderSoon(); if(sheetKind==='place') refreshSheet(); }).catch(()=>{});
   /* third boot task: listeners, notices, share links, then the lazy loads on idle */
   let wired=false, pendingTap=null;
   function wire(){

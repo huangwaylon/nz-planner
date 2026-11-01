@@ -258,7 +258,10 @@ html.pl-failed .pl-skel{display:none;}
 .pl-node{grid-column:1;grid-row:1;align-self:start;position:relative;width:30px;height:30px;margin-top:1px;padding:0;border:0;border-radius:50%;
   background:var(--ci);color:var(--surface);display:grid;place-items:center;font:600 var(--pl-fs-m)/1 var(--pl-font);}
 .pl-node::before{content:"";position:absolute;inset:-7px;}
-.pl-body{grid-column:2;grid-row:1;min-width:0;}
+.pl-body{grid-column:2;grid-row:1;min-width:0;display:grid;grid-template-columns:64px minmax(0,1fr);column-gap:12px;align-content:start;}
+.pl-body>*{grid-column:2;}
+.pl-body>.pl-sthumb{grid-column:1;grid-row:1 / span 3;} .pl-sthumb>.pl-glyph{width:64px;height:64px;border-radius:14px;}
+.pl-body>.pl-noteed,.pl-body>.pl-notebtn{grid-column:1 / -1;}
 .pl-when{font:600 var(--pl-fs-m)/1.3 var(--pl-font);letter-spacing:-.01em;color:var(--ink);}
 .pl-h3{margin:2px 0 0;font:inherit;}
 .pl-nm{display:flex;align-items:center;width:100%;min-height:44px;margin:0;padding:0;border:0;background:none;text-align:left;
