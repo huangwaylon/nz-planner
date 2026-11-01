@@ -12,180 +12,231 @@
 (async () => {
   const lines = [], wait = ms => new Promise(r => setTimeout(r, ms));
   let fails = 0;
-  const ok = (c, m) => { lines.push((c ? 'ok   ' : 'FAIL ') + m); if (!c) fails++; };
+  const ok = (c, m) => { lines.push((c ? 'ok   ' : 'FAIL ') + m); if (!c) fails++; document.getElementById('out').textContent = 'E2E RUNNING\n' + lines.join('\n'); };
   const until = async (f, ms = 10000) => { const t = Date.now(); while (Date.now() - t < ms) { try { const v = f(); if (v) return v; } catch (e) {} await wait(50); } return null; };
   const done = () => { lines.push(fails ? 'E2E FAIL (' + fails + ')' : 'E2E PASS'); document.getElementById('out').textContent = lines.join('\n'); document.title = fails ? 'E2E FAIL' : 'E2E PASS'; };
   try {
     const plans = await (await fetch('../data/nz/plans.json')).json();
-    const base = plans.plans[0], D12 = '2027-02-12';
-    /* an imported place, placed on Day 12 of My plan: it must survive a reload (R3 QA P0-1) */
+    /* plans.json ships no premade plans; the old curated ones are a test fixture */
+    const P = (await (await fetch('fixtures/presets.json')).json()).plans;
+    const base = P.find(x => x.id === 'classic'), hutP = P.find(x => x.id === 'hut'), D12 = '2027-02-12';
+    ok(Array.isArray(plans.plans) && plans.plans.length === 0, 'plans.json ships no premade plans');
+    /* an imported place, placed on Day 12 of My plan: it must survive a reload (R3 QA P0-1); one in Tokyo must not */
     const IMP = {id: 'gm-e2e-beach', name: 'E2E Test Beach', src: 'gmaps', lat: -36.95, lon: 174.47, note: ''};
+    const ABROAD = {id: 'gm-e2e-tokyo', name: 'E2E Tokyo', src: 'gmaps', lat: 35.68, lon: 139.7, note: ''};
     const days = JSON.parse(JSON.stringify(base.days)); days[D12] = (days[D12] || []).concat([IMP.id]);
-    localStorage.setItem('plan:nz', JSON.stringify({v: 1, active: 'my', my: {id: 'my', from: base.id, days, stay: {}, start: {}, notes: {}}, versions: [], imports: [IMP], booked: {}}));
-    localStorage.setItem('plan-ui:nz', JSON.stringify({v: 1, day: 1, map: 'peek', hideIntro: true, hideInstall: true}));
+    const hutV = Object.assign(JSON.parse(JSON.stringify(hutP)), {id: 'v-hut', name: 'Hut'});
+    ['plan:nz', 'plan:nz:imp', 'plan:nz:v1', 'plan:nz:broken'].forEach(k => localStorage.removeItem(k));
+    localStorage.setItem('plan:nz', JSON.stringify({v: 1, active: 'my', my: {id: 'my', days, stay: {}, start: {}, notes: {}}, versions: [hutV], imports: [IMP, ABROAD], booked: {}}));
+    localStorage.setItem('plan-ui:nz', JSON.stringify({v: 1, day: 1, map: 'peek', hideIntro: true, hideInstall: true, hints: {sort: 1, handoff: 1, add: 1}}));
     const fr = document.createElement('iframe'); fr.style.cssText = 'width:393px;height:852px;border:0';
     document.body.appendChild(fr);
     const errs = [];
-    const load = () => new Promise(res => { fr.onload = () => { const w = fr.contentWindow;
+    const load = (hash = '') => new Promise(res => { fr.onload = () => { const w = fr.contentWindow;
       w.addEventListener('error', e => errs.push(String(e.message)));
       w.addEventListener('unhandledrejection', e => errs.push('rejection: ' + String(e.reason && (e.reason.stack || e.reason)).slice(0, 400)));
-      w.addEventListener('unhandledrejection', e => errs.push(String(e.reason)));
       const ce = w.console.error; w.console.error = (...a) => { errs.push(a.map(String).join(' ')); ce.apply(w.console, a); };
-      res(); }; fr.src = '../index.html?nosw&e2e=' + Date.now(); });
+      res(); }; fr.src = '../index.html?nosw&e2e=' + Date.now() + hash; });
     const doc = () => fr.contentDocument, q = s => doc().querySelector(s), qa = s => [...doc().querySelectorAll(s)];
-    const view = () => q('.v-plan'), rows = () => qa('main .pl-row');
+    const view = () => q('.v-plan'), rows = () => qa('main .pl-stop');
+    const flush = () => view()._pl.flush(), saved = () => { flush(); return JSON.parse(localStorage.getItem('plan:nz')); };
+    const toastTxt = () => (q('.pl-toast__text') || {}).textContent || '';
+    const day = k => q('.pl-day[data-day="' + k + '"]'), stage = k => q('.pl-stages [data-stage="' + k + '"]');
+    const esc = () => doc().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+    const armOk = async () => { const b = q('.pl-armed [data-act="armok"]'); if (b) { b.click(); await wait(400); } return !!b; };
 
     await load();
     ok(await until(() => rows().length), 'boots and renders the day');
-    ok(!!q('main .pl-row[data-id="' + IMP.id + '"]'), 'an imported place on the day renders after a reload');
+    ok(!!q('main .pl-stop[data-id="' + IMP.id + '"]'), 'an imported place on the day renders after a reload');
+    ok(await until(() => /国外|outside New Zealand/.test(toastTxt()), 3000), 'an import outside New Zealand is dropped, with a toast count: ' + toastTxt());
+    flush();
+    const impK = JSON.parse(localStorage.getItem('plan:nz:imp') || 'null');
+    ok(Array.isArray(impK) && impK.length === 1 && impK[0].id === IMP.id && !('imports' in JSON.parse(localStorage.getItem('plan:nz'))), 'imports live in plan:nz:imp, out of the main save');
+    ok(fr.contentWindow.location.hash === '#plan/12', 'the URL names the stage and day: ' + fr.contentWindow.location.hash);
+    ok(!/[🚗🥾⛴✈]/u.test(q('main').textContent), 'no transport emoji in the day: glyphs come from the sprite');
     const n0 = rows().length;
 
-    /* add a candidate to the same day through the picker: no throw, the day grows, the import stays */
-    q('.pl-browsebtn').click();
-    const add = await until(() => qa('.pl-clist .pl-addbtn')[0]);
-    ok(!!add, 'the candidate list opens');
-    const fs0 = q('.pl-clist > section');
-    ok(!!fs0 && fs0.classList.contains('pl-mine') && !!fs0.querySelector('[data-act="tf"][data-v="must"]'), '候補 opens on わたしのリスト with 絶対 / 行きたい / 余裕 filters');
-    if (!add) {   /* say why, so a CI-only failure can be read from the log */
-      const w = fr.contentWindow, d = w.document;
-      lines.push('  diag ' + JSON.stringify({errs, more: !!(w.planner && w.planner.more),
-        moreScript: [...d.scripts].map(x => x.src).filter(x => /more/.test(x)),
-        browse: !!d.querySelector('.pl-browse'), clist: !!d.querySelector('.pl-clist'),
-        rows: d.querySelectorAll('.pl-clist > *').length, sheet: (d.querySelector('[role=dialog]') || {}).className || null, sheetText: ((d.querySelector('[role=dialog]') || {}).textContent || '').replace(/\s+/g, ' ').slice(0, 160), tz: Intl.DateTimeFormat().resolvedOptions().timeZone, now: new Date().toISOString(),
-        online: w.navigator.onLine}));
-      throw new Error('stop: no candidate list');
-    }
-    /* a camp's row offers nights, not adds: take the first row that adds */
-    let pill = null;
-    for (const b of qa('.pl-clist .pl-addbtn').slice(0, 8)) { b.click(); pill = await until(() => q('.pl-dayq .pl-dq[data-act="addday"][data-day="1"]'), 1500); if (pill) break; if (q('.pl-dayq')) b.click(); }
-    ok(!!pill && /\d/.test(pill.textContent), 'the day pill shows its simulated cost');
-    pill.click(); if (pill.dataset.why && pill.isConnected) pill.click();
-    ok(await until(() => rows().length === n0 + 1, 3000), 'adding to a day that holds an import works');
-    ok(!!q('main .pl-row[data-id="' + IMP.id + '"]'), 'the import is still on the day after the add');
+    /* one add model: ＋ in the day's drawer adds to that day at once (no day picker); the import stays */
+    q('[data-r="browse"]').click();
+    const add = await until(() => qa('.pl-sheet .pl-cand [data-act="addnow"]')[0]);
+    ok(!!add, 'the candidate drawer opens');
+    ok(!!q('.pl-browse__mine .pl-mine [data-act="tf"][data-v="must"]'), '候補 opens on わたしのリスト with its tier filter');
+    ok(fr.contentWindow.history.state && fr.contentWindow.history.state.plSheet === 'nz', 'a sheet pushes one history entry');
+    if (!add) throw new Error('stop: no candidate list');
+    add.click(); await wait(300); await armOk();
+    ok(await until(() => rows().length === n0 + 1, 3000), '＋ adds to the current day at once, even with an import on it');
+    ok(!!q('main .pl-stop[data-id="' + IMP.id + '"]'), 'the import is still on the day after the add');
+    fr.contentWindow.history.back(); await wait(500);
+    ok(!q('.pl-sheet.is-open') && fr.contentWindow.location.hash === '#plan/12', 'Back closes the sheet and leaves the URL on the day');
 
-    /* a far add on the flight day warns first and needs a second tap (R3 P0-1) */
-    const s = q('.pl-q'); s.value = 'パリトゥトゥ'; s.dispatchEvent(new Event('input', {bubbles: true}));
-    const far = await until(() => q('.pl-cand[data-id="paritutu-rock"] .pl-addbtn'));
+    fr.contentWindow.location.hash = '#review'; await wait(600);
+    ok(view().dataset.stage === 'review', 'a typed #review opens ③');
+    fr.contentWindow.location.hash = '#plan/12'; await wait(600);
+    ok(view().dataset.stage === 'plan' && day(1).getAttribute('aria-pressed') === 'true', 'a typed #plan/12 opens ② on Feb 12');
+    /* a far add on the flight day lands armed on the row: 確定 / やめる, never a timed second tap */
+    await until(() => view()._pl.ready(), 8000);
+    day(5).click(); await wait(600);
+    ok(fr.contentWindow.location.hash === '#plan/16', 'a day tap updates the URL');
+    q('[data-r="browse"]').click(); await until(() => q('.pl-sheet input[name="q"]'));
+    const s = q('.pl-sheet input[name="q"]'); s.value = 'パリトゥトゥ'; s.dispatchEvent(new Event('input', {bubbles: true}));
+    let far = await until(() => q('.pl-cand[data-id="paritutu-rock"] [data-act="addnow"]'));
     if (far) {
-      far.click();
-      const p16 = await until(() => q('.pl-cand[data-id="paritutu-rock"] .pl-dq[data-day="5"]'));
+      await wait(400); far = q('.pl-cand[data-id="paritutu-rock"] [data-act="addnow"]');   /* the search re-renders the list once it settles */
       const before = view()._pl.sim('my')[5].rows.length;
-      ok(!!p16 && /フライト|flight/i.test(p16.dataset.why || ''), 'Feb 16 pill names the flight before the tap');
-      /* the list may have re-ranked since (keywords arriving): tap the pill as it is now */
-      q('.pl-cand[data-id="paritutu-rock"] .pl-dq[data-day="5"]').click();
-      ok(view()._pl.sim('my')[5].rows.length === before && /フライト|flight/i.test(q('.pl-cand[data-id="paritutu-rock"] .pl-dayqm').textContent), 'the first tap on a ⚠ day explains and does not add');
+      far.click(); await wait(300);
+      const armed = q('.pl-armed');
+      ok(!!armed && /フライト|flight/i.test(armed.textContent) && !!armed.previousElementSibling && armed.previousElementSibling.matches('.pl-cand[data-id="paritutu-rock"]') && view()._pl.sim('my')[5].rows.length === before, 'a ⚠ add arms on the item, names the flight, and adds nothing yet' + (armed && armed.previousElementSibling && armed.previousElementSibling.matches('.pl-cand') ? '' : ': ' + (armed ? armed.parentNode.className + ' ' + armed.textContent.slice(-40) : toastTxt()) + ' ' + view()._pl.sim('my')[5].rows.map(r => r[2]).join()));
+      ok(!/もう一度|again/i.test(armed ? armed.textContent : ''), 'the armed confirm has buttons, not 「もう一度タップ」');
+      if (armed) { q('.pl-armed [data-act="armno"]').click(); await wait(200); }
+      ok(!q('.pl-armed') && view()._pl.sim('my')[5].rows.length === before, 'やめる disarms and changes nothing');
     } else ok(false, 'search finds Paritutu');
-    q('.pl-sheet [data-act="close"], [data-act="close"]').click();
+    q('.pl-sheet__close').click(); await wait(400);
 
     /* reload: the add persisted with the import */
+    day(1).click(); await wait(500);
     const n1 = rows().length;
-    await load();
+    flush(); await load();
     ok(await until(() => rows().length === n1), 'after a reload the day has the same stops');
-    ok(!!q('main .pl-row[data-id="' + IMP.id + '"]'), 'the import survives a second reload');
+    ok(!!q('main .pl-stop[data-id="' + IMP.id + '"]'), 'the import survives a second reload');
 
     /* a day tap animates the map; afterwards nothing may think a gesture is still running, and the
        full coastline must still arrive (R3 QA P1-2: M.tw was never cleared) */
-    q('.pl-daybtn[data-day="2"]').click();
+    day(2).click();
     await wait(900);
     ok(view()._pl.busy() === false, 'no gesture or tween is left running after a day tap');
     ok(await until(() => view()._pl.land() > 20, 12000), 'the full coastline replaces the light one after the tap');
-    q('.pl-daybtn[data-day="4"]').click(); await wait(900);
+    day(4).click(); await wait(900);
     ok(view()._pl.busy() === false, 'still idle after a second animated move');
 
-    /* R4 P0: every committing action previews first. 日を移動 to the flight day says why on the day
-       button and needs a second tap; the toast after it names what broke */
-    const toastTxt = () => (q('.pl-toast span') || {}).textContent || '';
-    q('.pl-daybtn[data-day="3"]').click(); await wait(700);
-    const mv = await until(() => q('main .pl-row[data-id="three-sisters-elephant-rock"] [data-act="move"]'));
-    if (mv) {
+    /* 日を移動 to the flight day: ⚠ and why on the day row, armed on tap, 確定 moves, undo puts it back */
+    day(3).click(); await wait(700);
+    const tsr = q('main .pl-stop[data-id="three-sisters-elephant-rock"] .pl-row');
+    if (tsr) {
+      tsr.click(); await wait(200);
+      ok(q('main .pl-stop[data-id="three-sisters-elephant-rock"]').classList.contains('pl-stop--open') && qa('main .pl-stop--open').length === 1, 'a tap selects the stop and shows its action row');
       const d16 = () => view()._pl.sim('my')[5].rows.map(r => r[2]).join();
       const before16 = d16();
-      mv.click();
-      const p16 = await until(() => q('.pl-sbody [data-act="domove"][data-day="5"]'));
-      ok(!!p16 && /フライト/.test((p16.querySelector('.pl-dwhy') || {}).textContent || ''), '日を移動: the flight day shows ⚠ and why before the tap');
+      q('main .pl-stop[data-id="three-sisters-elephant-rock"] [data-act="move"]').click();
+      const p16 = await until(() => q('.pl-sheet [data-act="domove"][data-day="5"]'));
+      const row16 = p16 && p16.closest('.pl-row');
+      ok(!!row16 && /フライト/.test(row16.textContent), '日を移動: the flight day shows ⚠ and why before the tap');
       p16.click(); await wait(300);
-      ok(d16() === before16 && !!q('.pl-sbody [data-act="domove"]') && /⚠/.test(toastTxt()), '日を移動: the first tap explains and moves nothing');
-      q('.pl-sbody [data-act="domove"][data-day="5"]').click(); await wait(500);
-      ok(d16() !== before16 && /⚠/.test(toastTxt()), '日を移動: the second tap moves, and the toast names what broke');
-      q('.pl-toast .pl-tu').click(); await wait(500);
+      ok(d16() === before16 && !!q('.pl-sheet .pl-armed'), '日を移動: the tap arms the confirm and moves nothing');
+      await armOk();
+      ok(d16() !== before16, '日を移動: 確定 moves');
+      const tu = await until(() => q('.pl-toast [data-act="tu"]'), 2000); if (tu) { tu.click(); await wait(500); }
       ok(d16() === before16, 'undo puts the stop back');
-    } else ok(false, 'Three Sisters has a move button on Feb 14');
+      if (q('.pl-sheet.is-open')) { q('.pl-sheet__close').click(); await wait(400); }
+    } else ok(false, 'Three Sisters is on Feb 14');
 
-    /* a typed start time that breaks the day: the inline bar offers keep or undo */
-    q('.pl-daybtn[data-day="5"]').click(); await wait(700);
-    const tin = q('main .pl-timein');
+    /* a typed start time that breaks the day arms on the anchor; やめる keeps the old start */
+    day(5).click(); await wait(700);
+    const tin = q('main input[name="start"]');
     if (tin) { const was = view()._pl.sim('my')[5].rows[0][0];
       tin.value = '16:00'; tin.dispatchEvent(new Event('change', {bubbles: true}));
-      const bar = await until(() => q('main .pl-confirm'), 3000);
-      ok(!!bar && /この並びだと|With this order/.test(bar.textContent), 'a breaking start time shows the inline keep/undo bar');
-      if (bar) { bar.querySelector('[data-act="undoit"]').click(); await wait(500); }
-      ok(view()._pl.sim('my')[5].rows[0][0] === was, '元に戻す in the bar restores the start');
+      const bar = await until(() => q('main .pl-armed'), 3000);
+      ok(!!bar && !!bar.closest('.pl-anchor'), 'a breaking start time arms on the start anchor');
+      if (bar) { bar.querySelector('[data-act="armno"]').click(); await wait(400); }
+      ok(view()._pl.sim('my')[5].rows[0][0] === was, 'やめる keeps the start as it was');
     } else ok(false, 'the start time field exists');
 
-    /* stay ± on a place that is on two days changes that day only (stayDay) */
-    q('.pl-planbtn').click(); const hut = await until(() => q('.pl-planopt[data-id="hut"]'));
-    hut.click(); await wait(600); q('[data-act="close"]') && q('[data-act="close"]').click();
-    q('.pl-daybtn[data-day="3"]').click(); await wait(700);
-    const t13 = () => JSON.stringify(view()._pl.sim('hut')[2].rows.find(r => r[2] === 'pouakai-tarns'));
-    const myT13 = () => JSON.stringify((view()._pl.sim('my')[2].rows.find(r => r[2] === 'pouakai-tarns')));
-    const plus = q('main .pl-row[data-id="pouakai-tarns"] [data-act="stay"][data-d="15"]');
-    if (plus) { const b13 = t13();
-      const myBefore = JSON.parse(localStorage.getItem('plan:nz')).my, nv0 = JSON.parse(localStorage.getItem('plan:nz')).versions.length;
-      plus.click(); await wait(400); if (/⚠/.test(toastTxt())) { q('main .pl-row[data-id="pouakai-tarns"] [data-act="stay"][data-d="15"]').click(); await wait(400); }
-      /* My plan holds edits of its own, so the first edit on the hut preset asks first — never silent */
-      const fk = await until(() => q('[data-act="forknew"]'), 3000);
-      ok(!!fk && JSON.stringify(JSON.parse(localStorage.getItem('plan:nz')).my) === JSON.stringify(myBefore), 'an edit on a preset asks before replacing an edited My plan, and changes nothing yet');
-      if (fk) { fk.click(); await wait(400); }
-      const st1 = JSON.parse(localStorage.getItem('plan:nz'));
-      ok(st1.versions.length === nv0 + 1 && st1.versions.some(v => !v.kind && JSON.stringify(v.days) === JSON.stringify(myBefore.days)), '新しい案として保存 keeps the old My plan as a named version');
-      const saved = JSON.parse(localStorage.getItem('plan:nz')).my;
-      ok(saved && saved.stayDay && saved.stayDay['2027-02-14'] && saved.stayDay['2027-02-14']['pouakai-tarns'] > 0 && (saved.stay || {})['pouakai-tarns'] === ((plans.plans.find(x => x.id === 'hut').stay || {})['pouakai-tarns']), 'stay ± writes stayDay for a place on two days');
-      ok(myT13() === b13, 'the Feb 13 visit is unchanged');
+    /* the 案 menu: switch to a saved version, edit it in place (no fork prompt), My plan untouched */
+    q('[data-r="plan"]').click();
+    const hutRow = await until(() => q('.pl-sheet.is-open [data-act="plan"][data-id="v-hut"]'));
+    ok(!!hutRow && !!q('.pl-sheet .pl-row--current'), 'the 案 menu lists My plan and the saved version');
+    if (hutRow) { hutRow.click(); await wait(600); }
+    if (q('.pl-sheet.is-open')) { q('.pl-sheet__close').click(); await wait(400); }
+    day(3).click(); await wait(700);
+    const tarns = () => q('main .pl-stop[data-id="pouakai-tarns"] .pl-row');
+    if (tarns()) { tarns().click(); await wait(200); }
+    const plus = q('main .pl-stop[data-id="pouakai-tarns"] [data-act="stay"][data-d="15"]');
+    if (plus) {
+      const t13 = () => JSON.stringify(view()._pl.sim('v-hut')[2].rows.find(r => r[2] === 'pouakai-tarns'));
+      const b13 = t13(), myBefore = JSON.stringify(saved().my);
+      plus.click(); await wait(400); await armOk();
+      ok(!q('[data-act="forknew"],[data-act="forkover"]'), 'an edit on a saved version asks nothing first');
+      const st = saved(), v = st.versions.find(x => x.id === st.active);
+      ok(v && v.stayDay && v.stayDay['2027-02-14'] && v.stayDay['2027-02-14']['pouakai-tarns'] > 0 && (v.stay || {})['pouakai-tarns'] === hutP.stay['pouakai-tarns'], 'stay ± writes stayDay for a place on two days, in the version');
+      ok(JSON.stringify(st.my) === myBefore, 'My plan is untouched by an edit on a version');
+      ok(t13() === b13, 'the Feb 13 visit is unchanged');
     } else ok(false, 'the tarns have a stay stepper on Feb 14');
+    /* すべての日を空にする, with undo */
+    q('[data-r="plan"]').click(); const rs = await until(() => q('.pl-sheet.is-open [data-act="reset"]'));
+    if (rs) { rs.click(); await wait(400); await armOk();
+      ok(view()._pl.sim(saved().active).every(d => d.rows.length <= 2), 'すべての日を空にする empties every day');
+      const tu = await until(() => q('.pl-toast [data-act="tu"]'), 2000); if (tu) { tu.click(); await wait(500); }
+      ok(view()._pl.sim(saved().active)[0].rows.length > 2, 'undo brings the days back'); }
+    else ok(false, 'the 案 menu has すべての日を空にする');
+    if (q('.pl-sheet.is-open')) { q('.pl-sheet__close').click(); await wait(400); }
+
+    /* ---------- first run: nothing saved opens ①; an empty day shows its frame and suggestions ---------- */
+    ['plan:nz', 'plan:nz:imp'].forEach(k => localStorage.removeItem(k));
+    localStorage.setItem('plan-ui:nz', JSON.stringify({v: 1, day: 0, hideIntro: true, hideInstall: true}));
+    await load();
+    ok(await until(() => q('.pl-collect .pl-card')) && view().dataset.stage === 'collect' && fr.contentWindow.location.hash === '#collect', 'first run opens ① (#collect)');
+    ok(!q('[data-act="forknew"],.pl-planopt'), 'no premade plans and no fork prompt');
+    /* ③ with zero presets, an empty My plan and no saved versions renders: the month and the save card, no throw */
+    const e0 = errs.length; stage('review').click();
+    ok(await until(() => q('.pl-review .pl-cal-d') && /保存|Save/.test((q('.pl-rvver') || {}).textContent || ''), 8000) && errs.length === e0, '③ renders with no presets and no versions: ' + errs.slice(e0).join(' | '));
+    stage('plan').click();
+    const sug = await until(() => q('main [data-act="addhere"]'), 5000);
+    ok(!!sug && !!q('main .pl-empty'), 'an empty day shows its frame and わたしのリスト suggestions with ＋');
+    if (sug) { sug.click(); ok(await until(() => rows().length === 1, 3000), '＋ on a suggestion adds it to the day'); }
+    ok(await until(() => /③|review/i.test(toastTxt()), 2000), 'the first add points to ③ once');
 
     /* ---------- the workflow (docs/WORKFLOW.md): state v2, tiers, groups ---------- */
-    const seedV1 = JSON.stringify({v: 1, active: 'my', my: {id: 'my', from: base.id, days, stay: {}, start: {}, notes: {piha: 'タオル'}}, versions: [], imports: [IMP], booked: {}});
-    localStorage.removeItem('plan:nz:v1'); localStorage.removeItem('plan:nz:broken');
+    const seedV1 = JSON.stringify({v: 1, active: 'my', my: {id: 'my', days, stay: {}, start: {}, notes: {piha: 'タオル'}}, versions: [], imports: [IMP], booked: {}});
+    ['plan:nz:v1', 'plan:nz:broken', 'plan:nz:imp'].forEach(k => localStorage.removeItem(k));
     localStorage.setItem('plan:nz', seedV1);
-    localStorage.setItem('plan-ui:nz', JSON.stringify({v: 1, day: 1, stage: 'collect', hideIntro: true, hideInstall: true}));
+    localStorage.setItem('plan-ui:nz', JSON.stringify({v: 1, day: 1, stage: 'collect', hideIntro: true, hideInstall: true, hints: {sort: 1, handoff: 1, add: 1}}));
     await load();
-    ok(await until(() => q('.pl-collect .pl-cc')), '① opens from plan-ui and shows cards');
+    ok(await until(() => q('.pl-collect .pl-card')), '① opens from plan-ui and shows cards');
     ok(localStorage.getItem('plan:nz:v1') === seedV1, 'v1 -> v2: the v1 string is copied to plan:nz:v1 first');
     ok(view()._pl.trip().notes.piha === 'タオル', 'v1 -> v2: notes move up to the trip');
-    /* a tap on 行きたい tiers the card (keys are the desktop's, tested at 1440); it survives a reload and an undo */
-    const tc = q('.pl-cs[data-k=""] .pl-cc'), tid = tc.dataset.id; tc.querySelector('[data-t="want"]').click();
-    ok(view()._pl.tier(tid) === 'want' && JSON.parse(localStorage.getItem('plan:nz')).v === 2, 'the 行きたい button sets the tier and saves v2');
-    await load(); await until(() => q('.pl-collect .pl-cc'));
+    ok(qa('.pl-card .pl-tier [data-t="maybe"]').every(b => b.textContent === 'できれば'), 'the third tier reads できれば');
+    /* a tap on 行きたい tiers the card; it survives a reload and an undo */
+    const tc = q('.pl-cs[data-k=""] .pl-card'), tid = tc.dataset.id; tc.querySelector('[data-t="want"]').click();
+    ok(view()._pl.tier(tid) === 'want' && saved().v === 2, 'the 行きたい button sets the tier and saves v2');
+    flush(); await load(); await until(() => q('.pl-collect .pl-card'));
     ok(view()._pl.tier(tid) === 'want', 'the tier survives a reload');
-    q('.pl-cs[data-k="want"] .pl-cc[data-id="'+tid+'"] [data-t="want"]').click();
+    q('.pl-cs[data-k="want"] .pl-card[data-id="' + tid + '"] [data-t="want"]').click();
     ok(view()._pl.tier(tid) === '', 'tapping the lit tier again puts it back in the inbox');
     doc().dispatchEvent(new KeyboardEvent('keydown', {code: 'KeyZ', key: 'z', metaKey: true, bubbles: true})); await wait(200);
     ok(view()._pl.tier(tid) === 'want', '⌘Z undoes a tier change');
-    /* group by the sheet, then carry tiers and the group's ids through a v3 link */
-    const gc = q('.pl-cs[data-k=""] .pl-cc'), gid0 = gc.dataset.id; gc.querySelector('[data-t="must"]').click();
-    q('[data-ca="selmode"]').click(); await wait(100); q('.pl-cc[data-id="' + gid0 + '"] .pl-ccb small').click(); await wait(100); q('[data-ca="group"]').click();
+    /* group through select mode and the action bar, then carry tiers and the group's ids through a v3 link */
+    const gc = q('.pl-cs[data-k=""] .pl-card'), gid0 = gc.dataset.id; gc.querySelector('[data-t="must"]').click(); await wait(100);
+    q('[data-ca="selmode"]').click(); await until(() => q('.pl-actionbar'), 3000);
+    const gb0 = q('.pl-actionbar [data-ca="group"]');
+    ok(!!gb0 && gb0.disabled, 'the action bar shows at once, its actions disabled at 0');
+    q('.pl-card[data-id="' + gid0 + '"] .pl-card__media').click(); await wait(150);
+    const gb = q('.pl-actionbar [data-ca="group"]'); if (gb) gb.click();
     const gname = await until(() => q('.pl-cgname'));
     if (gname) { gname.value = 'テスト外出'; q('[data-act="cgnew"]').click(); }
     ok(view()._pl.trip().groups.some(g => g.name === 'テスト外出' && g.ids.indexOf(gid0) >= 0), '選択 then グループへ makes a group');
     const code = await view()._pl.code();
-    localStorage.setItem('plan:nz', JSON.stringify({v: 2, active: 'classic', trip: {tier: {}, groups: [], notes: {}}, my: null, versions: [], imports: [], booked: {}}));
-    await load(); await until(() => q('.pl-collect .pl-cc'));
+    localStorage.setItem('plan:nz', JSON.stringify({v: 2, active: 'my', trip: {tier: {}, groups: [], notes: {}}, my: null, versions: [], booked: {}}));
+    localStorage.removeItem('plan:nz:imp');
+    await load(); await until(() => q('.pl-collect .pl-card'));
     fr.contentWindow.location.hash = '#plan-nz=' + code;
     ok(await until(() => view()._pl.tier(gid0) === 'must', 5000), 'a v3 link fills her unset tiers');
     ok(view()._pl.trip().groups.some(g => g.ids.indexOf(gid0) >= 0 && g.name !== 'テスト外出'), 'its group arrives with the ids, never the name');
     /* the old-app guard: a stale v1 app moved our v2 to :broken and wrote v1 over it */
-    const v2now = localStorage.getItem('plan:nz');
+    flush(); const v2now = localStorage.getItem('plan:nz');
     localStorage.setItem('plan:nz:broken', v2now);
-    localStorage.setItem('plan:nz', JSON.stringify({v: 1, active: 'classic', my: null, versions: [], imports: [], booked: {}}));
-    await load(); await until(() => q('.pl-collect .pl-cc'));
-    ok(view()._pl.tier(gid0) === 'must' && JSON.parse(localStorage.getItem('plan:nz')).v === 2, 'the trip comes back from :broken, saved as v2 again');
+    localStorage.setItem('plan:nz', JSON.stringify({v: 1, active: 'my', my: null, versions: [], imports: [], booked: {}}));
+    await load(); await until(() => q('.pl-collect .pl-card'));
+    ok(view()._pl.tier(gid0) === 'must' && saved().v === 2, 'the trip comes back from :broken, saved as v2 again');
 
-    /* ③: the calendar loads with ③; its Feb 14 opens ② on day 4 (index 3) */
-    q('.pl-stage[data-stage="review"]').click();
+    /* back to a full My plan (the classic days) for the place-sheet and wide checks */
+    { const tr = saved().trip; localStorage.setItem('plan:nz', JSON.stringify({v: 2, active: 'my', trip: tr, my: {id: 'my', days: base.days, stay: {}, start: {}, notes: {}}, versions: [], booked: {}}));
+      localStorage.removeItem('plan:nz:imp'); await load(); await until(() => q('.pl-collect .pl-card') || rows().length); }
+    /* ③ with fewer than two saved versions: the calendar and the save card; its Feb 14 opens ② on day 4 (index 3) */
+    stage('review').click();
     const c14 = await until(() => q('.pl-cal-d[data-date="2027-02-14"]'), 8000);
-    ok(!!c14 && qa('.pl-cal-vt thead th').length >= 2, '③ shows the month and at least two versions');
+    ok(!!c14 && /保存|Save/.test((q('.pl-rvver') || {}).textContent || '') && fr.contentWindow.location.hash === '#review', '③ shows the month and the save card (#review)');
+    ok(!q('.pl-review [data-act="share"], .pl-review [data-act="compare"]'), '③ has no share or compare buttons of its own (save and share live in the header)');
     if (c14) { c14.click(); await wait(400); }
-    ok(view().dataset.stage === 'plan' && q('.pl-daybtn[data-day="3"]').getAttribute('aria-pressed') === 'true', 'a calendar day opens ② on that day');
+    ok(view().dataset.stage === 'plan' && day(3).getAttribute('aria-pressed') === 'true', 'a calendar day opens ② on that day');
     /* the gallery: a picture that fails is dropped and the next shows; with none left, the fallback card */
     const G = await view()._pl.gal(), gid = Object.keys(G)[0], g0 = G[gid];
     ok(!!gid && !!q('link[href*="planner-gallery.css"]'), 'gallery.json and its chunk load on demand');
@@ -193,29 +244,27 @@
     G[gid] = [bad(1), Object.assign({}, g0[0], {u: 'images/nz/arataki-1a10aefe-t.jpg'})];
     view()._pl.open(gid);
     const shown = await until(() => { const f = qa('.pl-gal .pl-gf'), im = f[0] && f[0].querySelector('img'); return f.length === 1 && im.complete && im.naturalWidth > 0 && /arataki/.test(im.src); }, 6000);
-    ok(!!shown && !qa('.pl-gdots i').length && getComputedStyle(q('.pl-gal .pl-gfb')).display === 'none', 'a broken gallery URL is dropped and the next picture shows');
+    ok(!!shown && getComputedStyle(q('.pl-gal .pl-gfb')).display === 'none', 'a broken gallery URL is dropped and the next picture shows');
+    ok(/^#place=/.test(fr.contentWindow.location.hash), 'an open place is in the URL: ' + fr.contentWindow.location.hash);
     G[gid] = [bad(2), bad(3)]; view()._pl.open(gid);
     ok(await until(() => q('.pl-gal') && !q('.pl-gal .pl-gf') && getComputedStyle(q('.pl-gal .pl-gfb')).display !== 'none', 6000), 'with every gallery URL broken the photo or colour card shows');
-    G[gid] = g0; doc().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await wait(300);
+    G[gid] = g0; esc(); await wait(300);
     /* a camp is a night, not a 12-hour stop */
     view()._pl.open('belt-road-holiday-park');
     const sp = await until(() => qa('[data-act="sleep"]')[1], 4000);
     ok(!!sp && !q('[data-act="addday"][data-id="belt-road-holiday-park"]'), 'a camp offers この夜に泊まる, not an add');
-    if (sp) { sp.click(); await wait(300); if (sp.isConnected && sp.classList.contains('pl-armed')) { sp.click(); await wait(300); }
-      const fk = q('[data-act="forkover"]'); if (fk) { fk.click(); await wait(400); }
+    if (sp) { sp.click(); await wait(300); await armOk();
       ok(view()._pl.sim('my')[1].rows.slice(-1)[0][2] === 'belt-road-holiday-park' && view()._pl.sim('my')[2].rows[0][2] !== undefined, 'the camp becomes that night\'s end'); }
-    doc().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await wait(300);
+    esc(); await wait(300);
     /* a hut night (W2 P1-A): the next morning starts AT the hut, no walk down and back up, and reaches the tarns before sunrise */
     view()._pl.open('pouakai-hut');
     const hp = await until(() => q('[data-act="sleep"][data-id="pouakai-hut"][data-day="2"]'), 4000);
-    if (hp) { hp.click(); await wait(300); if (hp.isConnected && hp.classList.contains('pl-armed')) { hp.click(); await wait(300); }
-      const fk = q('[data-act="forkover"]'); if (fk) { fk.click(); await wait(400); }
+    if (hp) { hp.click(); await wait(300); await armOk();
       const d14 = view()._pl.sim('my')[3], first = d14.rows[0];
       ok(view()._pl.sim('my')[2].rows.slice(-1)[0][2] === 'pouakai-hut' && first[2] === 'pouakai-tarns' && first[0] <= '06:50' && !d14.rows.some(r => r[2] === 'mangorei-trailhead' && d14.rows.indexOf(r) < 1),
         'after a hut night the next day starts at the hut and reaches the tarns by sunrise: ' + JSON.stringify(first)); }
     else ok(false, 'the hut offers night pills');
-    doc().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await wait(300);
-    /* the phone never asked for the desktop chunk */
+    esc(); await wait(300);
     /* sync against a stub endpoint (never the live one): pair, send an edit, read the other person's */
     { const W = fr.contentWindow, KEY = 'c'.repeat(64), rows = []; let last = 0; const real = W.fetch.bind(W);
       W.fetch = (u, o) => { u = String(u);
@@ -231,11 +280,12 @@
       const SY = await view()._pl.sync(); const okp = SY && await SY.pairText('#pair=' + KEY); await wait(300);
       const st = JSON.parse(W.localStorage.getItem('plan-sync:nz') || 'null');
       ok(okp && st && st.me === 'a' && !doc().body.innerHTML.includes(KEY), 'pairing with a #pair= key stores {key, me, url} in LS and never renders the key');
-      q('.pl-stage[data-stage="plan"]').click(); await wait(300);
-      const del = q('main .pl-row [data-act="del"]'), did = del && del.dataset.id; if (del) { del.click(); await wait(300); if (del.isConnected && /⚠/.test(toastTxt())) { del.click(); await wait(300); } const fk2 = q('[data-act="forkover"]'); if (fk2) { fk2.click(); await wait(300); } }
+      stage('plan').click(); await wait(300);
+      const r0 = q('main .pl-stop .pl-row'), did = r0 && r0.closest('.pl-stop').dataset.id;
+      if (r0) { r0.click(); await wait(200); const del = q('main .pl-stop--open [data-act="del"]'); if (del) { del.click(); await wait(300); await armOk(); } }
       await until(() => rows.some(x => x[3] === 'day_set'), 3000);
       ok(rows.some(x => x[3] === 'day_set' && JSON.parse(x[4]).ids.indexOf(did) < 0) && /同期済み|Synced/.test((q('.pl-sync') || {}).textContent || ''), 'an edit goes out as a day_set and the dot says 同期済み');
-      const dk = W.document.querySelector('.pl-daybtn[aria-pressed="true"]'), k = dk ? +dk.dataset.day : 0, date = plans.days[k].date;
+      const dk = W.document.querySelector('.pl-day[aria-pressed="true"]'), k = dk ? +dk.dataset.day : 0, date = plans.days[k].date;
       rows.push([new Date(last + 5).toISOString(), 'b', 'b-e2e-1', 'day_set', JSON.stringify({plan: 'my', date, ids: ['piha'], stayDay: {}, start: null, base: null})]); last += 5;
       await SY.pull(true); await wait(400);
       ok(JSON.stringify(view()._pl.sim('my')[k].rows.slice(0, -1).map(r => r[2])) === JSON.stringify(['piha']) || /両方残して|Both are kept/.test(toastTxt()), 'the other person\'s day arrives (or both are kept)');
@@ -243,58 +293,61 @@
       SY.unpair(); W.localStorage.removeItem('plan-sync-q:nz'); W.localStorage.removeItem('plan-sync-m:nz'); W.fetch = real; }
     /* saving a version closes the sheet and offers 「一覧」 in the toast, no picker opening by itself (W2 P1-D) */
     { const m = await view()._pl.more(); m.saveVersionNamed(null, 'E2E案'); await wait(400);
-      ok(!q('.pl-plans') && /一覧|All plans/.test((q('.pl-toast .pl-tx') || {}).textContent || ''), 'saving a version toasts 「一覧」 and does not open the picker'); }
+      ok(!q('.pl-sheet.is-open .pl-plans') && /一覧|All plans/.test((q('.pl-toast [data-act="tx"]') || {}).textContent || ''), 'saving a version toasts 「一覧」 and does not open the picker'); }
     /* select mode (W2 P1-G): ○ on each card, the bar one row (≤ 12 % of the screen) */
-    q('.pl-stage[data-stage="collect"]').click(); await wait(500);
-    const sm = await until(() => q('.pl-collect [data-ca="selmode"]'), 4000); if (sm) sm.click();
-    const csk = await until(() => qa('.pl-collect .pl-csk').length > 3 && q('.pl-cbar[role="toolbar"]'), 4000);
-    ok(!!csk && q('.pl-cbar[role="toolbar"]').getBoundingClientRect().height <= 852 * .12, 'select mode shows ○ on cards and a one-row bar ≤ 12 % high');
-    const sx = q('.pl-cbar [data-ca="selx"]'); if (sx) { sx.click(); await wait(300); }
-    q('.pl-stage[data-stage="plan"]').click(); await wait(400);
+    stage('collect').click(); await wait(500);
+    const sm = await until(() => q('.pl-collect [data-ca="selmode"]'), 4000); if (sm && sm.getAttribute('aria-pressed') !== 'true') sm.click();
+    const csk = await until(() => qa('.pl-collect .pl-card__check').length > 3 && q('.pl-actionbar[role="toolbar"]'), 4000);
+    ok(!!csk && q('.pl-actionbar[role="toolbar"]').getBoundingClientRect().height <= 852 * .12, 'select mode shows ○ on cards and a one-row bar ≤ 12 % high');
+    ok(!!csk && q('.pl-actionbar').scrollWidth <= q('.pl-actionbar').clientWidth + 1, 'the action bar fits its width without scrolling');
+    const sx = q('.pl-actionbar [data-ca="selx"]'); if (sx) { sx.click(); await wait(300); }
+    stage('plan').click(); await wait(400);
     ok(!fr.contentWindow.performance.getEntriesByType('resource').some(e => /planner-desk/.test(e.name)), 'a 393-wide planner never loads planner-desk');
     /* ---------- wide: 1440 then 1920, in a second frame ---------- */
     const wf = document.createElement('iframe'); wf.style.cssText = 'width:1440px;height:900px;border:0'; document.body.appendChild(wf);
-    localStorage.setItem('plan-ui:nz', JSON.stringify({v: 1, day: 0, stage: 'plan', hideIntro: true, hideInstall: true}));
+    flush();
+    localStorage.setItem('plan-ui:nz', JSON.stringify({v: 1, day: 0, stage: 'plan', hideIntro: true, hideInstall: true, hints: {sort: 1, handoff: 1, add: 1}}));
     await new Promise(r => { wf.onload = r; wf.src = '../index.html?nosw&w=' + Date.now(); });
     const wd = () => wf.contentDocument, wq = s => wd().querySelector(s), wv = () => wq('.v-plan');
     wf.contentWindow.addEventListener('error', e => errs.push('wide: ' + e.message));
-    ok(await until(() => wq('.pl-palette .pl-pi'), 12000), 'at 1440 the desk chunk loads and the palette fills');
+    ok(await until(() => wq('.pl-palette .pl-row[data-drag]'), 12000), 'at 1440 the desk chunk loads and the palette fills');
     const R = s => wq(s).getBoundingClientRect(), pal = R('.pl-palette'), mn = R('.pl-main'), mp = R('.pl-mapcard');
     ok(pal.right <= mn.left + 1 && mn.right <= mp.left + 1 && wd().documentElement.scrollWidth <= wf.contentWindow.innerWidth, 'palette | day | map side by side, no sideways scroll');
     const mapNode = wq('svg.pl-map');
-    /* ① at 1440: the keys (J then 3) tier the focused card, and the rail sits beside the cards */
-    wq('.pl-stage[data-stage="collect"]').click();
-    const k1 = await until(() => wq('.pl-collect .pl-cs[data-k=""] .pl-cc'), 6000);
+    /* ① at 1440: the keys (3) tier the focused card, and the rail sits beside the cards */
+    wq('.pl-stages [data-stage="collect"]').click();
+    const k1 = await until(() => wq('.pl-collect .pl-cs[data-k=""] .pl-card'), 6000);
     if (k1) { const kid = k1.dataset.id; k1.click(); k1.focus();
       wd().dispatchEvent(new KeyboardEvent('keydown', {code: 'Digit3', key: '3', bubbles: true}));
-      ok(wv()._pl.tier(kid) === 'maybe', 'at 1440 key 3 sets 時間があれば on the focused card');
+      ok(wv()._pl.tier(kid) === 'maybe', 'at 1440 key 3 sets できれば on the focused card');
       const ae = wd().activeElement, inb = ae && ae.closest && ae.closest('.pl-cs');
-      ok(ae && ae.classList.contains('pl-cc') && ae.dataset.id !== kid && inb && inb.dataset.k === '', 'after a tier key the focus walks on to the next inbox card');
-      ok(wq('.pl-clist .pl-cs').dataset.k === '' && wd().querySelectorAll('.pl-collect .pl-cc[tabindex="0"]').length === 1, '未仕分け comes first, and exactly one card is in the Tab order');
+      ok(ae && ae.classList.contains('pl-card') && ae.dataset.id !== kid && inb && inb.dataset.k === '', 'after a tier key the focus walks on to the next inbox card');
+      ok(wq('.pl-clist .pl-cs').dataset.k === '' && wd().querySelectorAll('.pl-collect .pl-card[tabindex="0"]').length === 1, '未仕分け comes first, and exactly one card is in the Tab order: ' + [...wd().querySelectorAll('.pl-clist .pl-cs')].map(x => x.dataset.k + ':' + x.querySelectorAll('.pl-card[tabindex="0"]').length).join());
       ok(R('.pl-crail').right <= R('.pl-clist').left + 1, 'the filter rail sits left of the cards'); }
     else ok(false, '① cards at 1440');
-    wq('.pl-stage[data-stage="plan"]').click(); await wait(500);
-    /* Alt+→ on a stop: clean moves at once; ⚠ arms the bar (Enter / Esc), never a timed second press */
-    { const row = wq('.pl-main .pl-row'), rid = row && row.dataset.id, d0 = wv()._pl.sim('my').findIndex(d => d.rows.some(r => r[2] === rid));
+    wq('.pl-stages [data-stage="plan"]').click(); await wait(500);
+    ok(!wq('.pl-collect .pl-card'), 'leaving ① tears its cards down');
+    /* Alt+→ on a stop: clean moves at once; ⚠ arms on the item (Enter / Esc), never a timed second press */
+    { const row = wq('.pl-main .pl-stop'), rid = row && row.dataset.id, d0 = wv()._pl.sim('my').findIndex(d => d.rows.some(r => r[2] === rid));
       if (row && d0 >= 0 && d0 < 5) { (row.querySelector('button') || row).focus(); wd().dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowRight', key: 'ArrowRight', altKey: true, bubbles: true})); await wait(600);
-        const moved = wv()._pl.sim('my')[d0 + 1].rows.some(r => r[2] === rid), armedA = !wq('.pl-armbar').hidden;
-        ok(moved !== armedA, 'Alt+→ moves at once when clean, or arms the ⚠ bar: moved ' + moved + ', armed ' + armedA);
+        const moved = wv()._pl.sim('my')[d0 + 1].rows.some(r => r[2] === rid), armedA = !!wq('.pl-armed');
+        ok(moved !== armedA, 'Alt+→ moves at once when clean, or arms the ⚠ confirm: moved ' + moved + ', armed ' + armedA);
         if (armedA) { wd().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await wait(300); }
         else { wd().dispatchEvent(new KeyboardEvent('keydown', {key: 'z', metaKey: true, bubbles: true})); await wait(400); } }
       else ok(false, 'a stop row to move with Alt+→'); }
     /* drag a palette place onto the day; the ghost's arrival is the applied time */
-    const src = wq('.pl-palette .pl-pi'), sid = src.dataset.id, sr = src.getBoundingClientRect(), tl = wq('.pl-main .pl-tl').getBoundingClientRect();
+    const src = wq('.pl-palette .pl-row[data-drag]'), sid = src.dataset.id, sr = src.getBoundingClientRect(), tl = wq('.pl-main .pl-tl').getBoundingClientRect();
     const pe = (el, type, x, y) => el.dispatchEvent(new (wf.contentWindow.PointerEvent)(type, {bubbles: true, cancelable: true, pointerType: 'mouse', clientX: x, clientY: y, button: 0, pointerId: 1, isPrimary: true}));
     pe(src, 'pointerdown', sr.x + 8, sr.y + 8);
     for (let i = 1; i <= 8; i++) { pe(wf.contentWindow, 'pointermove', sr.x + 8 + (tl.x + 80 - sr.x) * i / 8, sr.y + 8 + (tl.bottom - 30 - sr.y) * i / 8); await wait(40); }
     await wait(120);
-    const gtxt = (wq('.pl-dgh') || {}).textContent || '', at = (/着 ((?:翌)?\d\d:\d\d)/.exec(gtxt) || [])[1];
+    const gtxt = (wq('.pl-dragghost') || {}).textContent || '', at = (/着 ((?:翌)?\d\d:\d\d)/.exec(gtxt) || [])[1];
     ok(!!at, 'the ghost shows the arrival before the drop: ' + gtxt.slice(0, 60));
     const opaque = el => { const b = el && wf.contentWindow.getComputedStyle(el).backgroundColor; return !!b && b !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(b); };
-    ok(opaque(wq('.pl-dgh')) && opaque(wq('.pl-armbar')), 'the drag ghost and the ⚠ bar have a solid background');
+    ok(opaque(wq('.pl-dragghost')), 'the drag ghost has a solid background');
     pe(wf.contentWindow, 'pointerup', tl.x + 80, tl.bottom - 30); await wait(400);
-    const armed = !wq('.pl-armbar').hidden;
-    if (armed) { ok(/⚠/.test(wq('.pl-armbar').textContent), 'a breaking drop lands armed with its reason'); wd().dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true})); await wait(400); }
+    const armed = wq('.pl-armed');
+    if (armed) { ok(opaque(armed) && armed.textContent.trim().length > 0, 'a breaking drop lands armed with its reason, on a solid background'); wd().dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true})); await wait(400); }
     const row = wv()._pl.sim('my').flatMap(d => d.rows).find(r => r[2] === sid);   /* whichever day the frame opened on */
     ok(row && row[0] === at, 'the dropped place starts at the ghost\'s time: ' + (row && row[0]) + ' vs ' + at);
     /* 1920: the 6-day board by default, every day on the map, the same map node */
@@ -302,13 +355,13 @@
     ok(await until(() => wv().classList.contains('pl-6') && wd().querySelectorAll('.pl-bc').length === 6, 4000), 'at 1920 the 6-day board shows six columns');
     ok(wq('svg.pl-map') === mapNode && wd().querySelectorAll('.pl-alld path').length > 0, 'the one map node draws every day');
     /* 6日: a stop dragged down its own lane onto the next row's lower half lands right after that row */
-    const lane = [...wd().querySelectorAll('.pl-bc')].find(c => c.querySelectorAll('.pl-bs').length >= 3);
-    if (lane) { const bs = [...lane.querySelectorAll('.pl-bs')], a0 = bs[0].dataset.id, b0 = bs[1].dataset.id, r0 = bs[0].getBoundingClientRect(), r1 = bs[1].getBoundingClientRect();
+    const lane = [...wd().querySelectorAll('.pl-bc')].find(c => c.querySelectorAll('.pl-row[data-id]').length >= 3);
+    if (lane) { const bs = [...lane.querySelectorAll('.pl-row[data-id]')], a0 = bs[0].dataset.id, b0 = bs[1].dataset.id, r0 = bs[0].getBoundingClientRect(), r1 = bs[1].getBoundingClientRect();
       const ty = r1.top + r1.height / 2 + 4, tx = r1.left + 20;
       pe(bs[0], 'pointerdown', r0.left + 20, r0.top + 8);
       for (let i = 1; i <= 6; i++) { pe(wf.contentWindow, 'pointermove', r0.left + 20, r0.top + 8 + (ty - r0.top - 8) * i / 6); await wait(40); }
       await wait(120); pe(wf.contentWindow, 'pointerup', tx, ty); await wait(400);
-      if (!wq('.pl-armbar').hidden) { wd().dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true})); await wait(400); }
+      if (wq('.pl-armed')) { wd().dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true})); await wait(400); }
       const ids = wv()._pl.sim('my')[+lane.dataset.day].rows.map(r => r[2]);
       ok(ids.indexOf(b0) >= 0 && ids.indexOf(a0) === ids.indexOf(b0) + 1, '6日: a same-day downward drag lands right after the row it was dropped on'); }
     else ok(false, '6日: a lane with three stops');

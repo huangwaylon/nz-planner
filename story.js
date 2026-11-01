@@ -318,9 +318,9 @@
     const scrim = document.createElement('div'); scrim.className = 'pl-story-scrim';
     const id = 'pl-story-h-' + Date.now().toString(36);
     scrim.innerHTML = `<div class="pl-story-sheet" role="dialog" aria-modal="true" aria-labelledby="${id}">
-      <div class="pl-story-head"><h2 id="${id}">${L(m, 'title')}</h2><button type="button" class="pl-story-x">${L(m, 'close')}</button></div>
+      <div class="pl-story-head"><h2 id="${id}">${L(m, 'title')}</h2><button type="button" class="pl-btn pl-btn--ghost pl-story-x">${L(m, 'close')}</button></div>
       <img class="pl-story" alt="${L(m, 'making')}">
-      <div class="pl-story-act" hidden><button type="button" class="pl-story-share" hidden>${L(m, 'share')}</button><a class="pl-story-dl" download>${L(m, 'save')}</a></div>
+      <div class="pl-story-act" hidden><button type="button" class="pl-btn pl-btn--primary pl-story-share" hidden>${L(m, 'share')}</button><a class="pl-btn pl-btn--secondary pl-story-dl" download>${L(m, 'save')}</a></div>
       <p class="pl-story-hint">${L(m, 'making')}</p></div>`;
     const inert = [...document.body.children].filter(e => e !== scrim && !e.inert);
     const close = () => { inert.forEach(e => { e.inert = false; }); scrim.remove(); document.removeEventListener('keydown', key); if (url) URL.revokeObjectURL(url); if (back && back.focus) back.focus(); };

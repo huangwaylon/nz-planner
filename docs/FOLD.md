@@ -152,11 +152,47 @@ code carries `/* note N … */` where each applies.
 2. drove: the minutes that count as driving (matrix or ≈), never walks or sailings. A leg into or out of a no-road place (plans.json noRoad: id -> road end) with no walk of its own is walk to its road end + the leg between road ends + walk from the other road end, as check_plans.leg().
 3. the sun at the place itself; best may be "sunrise,sunset" (judged by the end of the day the visit falls on: before noon = sunrise). mustSun places exist for it, so missing it is a ⚠; for the rest best is a preference and missing it a golden-hour hint. Before dawn is fine on the approach to a sunrise stop later that day.
 4. The day with ids added, simulated before anything is shown: one place goes to its cheapest open slot; a grouping (c) goes in as one block, placed by its best (sunset: the last stop ends at sunset; sunrise: the first starts at it) or its startAt, and an empty morning leaves at startAt. A block that breaks less always wins over one that is closer to its hour.
-5. plans — Three kinds, one shape {id,days,stay,start,notes,anchors?}: presets (plans.json), saved versions (frozen, ids "v-…") and My plan, the one working copy. Editing a preset or a version forks it into My plan, and the My plan it replaces is kept as an autosave first: nothing is overwritten. Plans hold place ids, minutes, HH:MM and the travellers' own notes only.
+5. plans — Two kinds, one shape {id,days,stay,start,notes,anchors?}: saved versions (frozen snapshots, ids "v-…", kind 'auto' for the automatic ones) and マイプラン, the working copy, which always exists (empty on first run). There are no premade plans: plans.json ships `plans: []`, and the old curated ones are tools/fixtures/presets.json for the tests and tools/check_plans.py. An edit changes the active plan in place: マイプラン itself, or a version replaced by its changed clone, so undo restores the original.
 6. zoom and pan — Every move — a gesture, the +/− buttons, a fit — moves .pl-world by a CSS transform and writes viewBox and --z once, when it ends, so no frame restyles the pins. --z is screen px per map unit; `scale(1/--z)` on each pin's inner group holds pins, labels and strokes at screen size.
 7. reorder: drag the handle (pointer events, iOS has no HTML5 DnD), or tap it for the 上へ/下へ/位置 sheet, which is also the VoiceOver and glove path. Transforms only while moving, layout measured once, one recompute per frame at most, and nothing re — renders under the finger. ----------
 8. the trip, shared by every version: tiers (must|want|maybe|skip; '' = back to the inbox, no key = not sorted yet, which for her saved places reads as want), groups (one outing each, a place in at most one) and notes about places
 9. An old cached app reads a v2 save as broken, keeps it in plan:<slug>:broken and writes v1 over it. The new app takes back what that cost: the trip, My plan if the old app had none, every version, import and booking.
+10. Low tides by area (NZDT), copied from tools/check_plans.py; plans.json `tides` overrides it, so the table should move there to stop the two drifting.
+11. the day simulation: tools/check_plans.py, line for line. Pure: no DOM, no storage. DB = {places:Map, days, ferries, walks, tides, travel:{ids,min}, tIdx}; P is a plan record.
+12. a night's stay carries over (as tools/check_plans.py): with no start of its own, a day starts where the day before ended at an anchored place (a hut, a camp, another bed)
+13. Minutes from a to b leaving at t: a walk from plans.json `walks` (either way; `down` the other way), an island crossing through its ferry, or a drive. kind 'drive' only for matrix minutes.
+14. and the members one by one, each into the cheapest free gap: a day with room between fixed stops takes a grouping there rather than at its start
+15. saved state, pure: what storage gave us, validated. Anything malformed is dropped and flagged broken, so the caller keeps the raw string. node: tools/state.test.js
+16. v1 -> v2: her notes move up to the trip, from My plan first, then the newest version that has them; a note a preset wrote stays where it is
+17. a preset's day title holds only while the day still matches that preset's day (60 % of the stops); otherwise the day is named by its first two stops, so two different days never read the same
+18. v2: {v:2, active, trip:{tier, groups, notes}, my, versions, imports, booked}. The v1 string it replaced was copied to plan:<slug>:v1 before the first v2 write (loadState).
+19. Saves wait for an idle moment (1 s at most) and coalesce; pagehide and a hidden tab flush them. Imports live in plan:<slug>:imp, written only when they change, so a tier tap does not re-serialise every imported place.
+20. Trip edits (tiers, groups, notes) share the one undo stack and never fork a preset into My plan. S.trip is replaced, never mutated, so a history entry can keep the old one.
+21. ⚠ confirm (docs/DESIGN.md rule 5): an edit that breaks something lands armed on the item it concerns — 「⚠ {reason}」 [確定][やめる] — Enter confirms, Esc reverts; no timers, no second tap
+22. Validate what storage gave us. Anything malformed falls back to the seed, and the raw string is kept under plan:<slug>:broken so nothing is lost silently.
+23. Imported candidates join the place list as records of their own, unless one was matched to a place we already have, which then carries it as a link. Rebuilt only when imports change.
+24. keyed on the version and the array itself: loadState() swaps in the saved imports after the first build, and a reload once lost every imported place that way
+25. tiers (the trip's, shared by every version): must want maybe skip; no tier = the inbox, except her own saved places, which start as want (「保存済みから」). Nothing else is guessed.
+26. stages: ① collect ② plan ③ review. A stepper, not a wizard: every stage is always reachable; each shows one live count.
+27. 「日の出には…出発」 is worked out, not quoted: sunrise at the place less the way there from the day's start and 10 minutes, so arriving by then really is before sunrise
+28. The note editor keeps its draft across any re-render: S.noteOpen + S.drafts. A stop is a list row (photo, time, name, one line of signal, the handle); its tools (stay, 入れ替え, 別の日へ, then 外す) sit in an action row shown when the stop is selected (a tap) or hovered.
+29. an empty day: its frame (photo, fixed label, sleep), three of her own places nearest the day's start with ＋, and one primary, 候補から追加 (docs/DESIGN.md "First run")
+30. A change that moves times but not places (stay ±, start time, a note, a booking) patches the day in place: no list rebuild, no map work. Falls back to a full render if the rows differ.
+31. Candidate pins (perf rules 4-6): built only while shown (browsing, placing, ①) and removed when hidden, never kept under display:none; above 300 they are clustered on a grid over the current view, rebuilt once per settle; a tap on a cluster zooms into it. Planned places are left out.
+32. road geometry: routes.json first, then the OSRM demo server, one leg at a time when idle and online, cached LRU (200) in plan-ui
+33. M.tw is the tween's frame id while one runs and 0 otherwise: busyUI() reads it, so it must be zeroed on the last frame and on every cancel, or routes and the coastline wait forever
+34. Patch, don't rebuild (perf rule 2): an edit marks the regions it touched; the next frame renders only those. render() (everything) is for stage, language and plan switches.
+35. sheets: the background is inert, the dialog is named by its heading, Tab stays inside, and closing makes it inert at once so a second tap cannot act twice
+36. URL state (docs/DESIGN.md interaction rule 5): #collect, #plan/13, #review, #place=<id>. The stage and day replace the entry; a sheet and the full map push one, so Back closes them. A hash that is not ours (a share link, #pair=) is left alone.
+37. Candidates: header once per open, the list on every filter change (so the search keeps focus), and adding patches one row instead of rebuilding them all.
+38. A tap on the dimmer over a day button switches the day (keeping the sheet when it is the candidates list); anywhere else it closes.
+39. import: the sheet's code and strings live in planner-import.js, loaded with the parsers (import.js) and the region table only when the sheet first opens.
+40. read layout before the DOM changes, and write storage after the frame: no forced reflow, no 200-route JSON on the tap's critical path
+41. After first paint, idle: the drive matrix, road shapes, photos and the evidence. A failed fetch retries when the phone comes back online or to the foreground.
+42. places-more.json: the vibe lines, evidence and sources, off the critical path. The vibe joins its place record (and the search index) when it arrives.
+43. Boot in two tasks so neither runs long: the day list first, the map's pins next. A render error from bad saved state drops to an empty マイプラン rather than bricking the app.
+44. Listeners attach in the third boot task (wire), so a tap on a slow phone can land on a rendered but deaf page. Hold the first such tap and replay it once wired.
+45. the matrix, road shapes, photos index and full coastline wait for her first touch or for a quiet moment after load, so the first screen downloads only what it draws
 
 ## Collect notes
 

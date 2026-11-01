@@ -19,6 +19,8 @@ vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'planner.js'), 'utf8') + '\n;this.planner=planner;', ctx);
 const J = f => JSON.parse(fs.readFileSync(path.join(D, f), 'utf8'));
 const places = J('places.json'), plans = J('plans.json'), travel = J('travel.json');
+/* plans.json ships no versions; the curated eight are the fixture check_plans reads too */
+plans.plans = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'fixtures', 'presets.json'), 'utf8')).plans;
 const have = new Set(places.map(p => p.id)), list = places.concat((plans.basePlaces || []).filter(p => !have.has(p.id)));
 const DB = {places: new Map(list.map(p => [p.id, p])), list, days: plans.days, bases: new Set(plans.bases || []), ferries: plans.ferries || [],
   walks: plans.walks || [], noRoad: plans.noRoad || {},

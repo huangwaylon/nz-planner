@@ -11,6 +11,7 @@ vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'planner.js'), 'utf8') + '\n;this.planner=planner;', ctx);
 const ST = ctx.planner.state;
 const plans = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'nz', 'plans.json'), 'utf8'));
+plans.plans = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'fixtures', 'presets.json'), 'utf8')).plans;   /* the old curated plans, as a fixture */
 const env = {days: plans.days, presets: plans.plans};
 let fails = 0, n = 0;
 const ok = (c, m) => { n++; if (!c) { fails++; console.log('FAIL ' + m); } };
@@ -84,6 +85,12 @@ const PRE = plans.plans.find(P => P.id === 'classic').notes, preK = 'pouakai-tar
 /* a v2 save that already holds a preset note in the trip (lifted by an earlier build) is cleaned on read */
 { const r = ST.read(J(Object.assign({}, v2, {trip: {tier: {}, groups: [], notes: {[preK]: preV, piha: 'towels'}}})), env);
   ok(J(r.trip.notes) === J({piha: 'towels'}), 'preset notes leave the trip on read: ' + J(r.trip.notes)); }
+
+/* NZ only: an import from another country, by its country code or its position, is not kept */
+ok(ST.home({cc: 'nz', lat: 1, lon: 1}) && !ST.home({cc: 'jp', lat: -36.9, lon: 174.7}), 'a country code decides');
+ok(ST.home({lat: -36.85, lon: 174.76}) && ST.home({lat: -39.3, lon: 174.06}) && !ST.home({lat: 35.68, lon: 139.7}) && !ST.home({lat: -33.87, lon: 151.2}), 'otherwise the position: Auckland, Taranaki in; Tokyo, Sydney out');
+ok(ST.home({id: 'ig-1', lat: null, lon: null}), 'an unplaced Instagram import stays');
+ok(J(ST.imps([{id: 'a', name: 'A', lat: 1, lon: 2}, {id: 'b', name: 'B', lat: 1}, {id: 3}]).map(m => m.id)) === '["a"]', 'imports are validated the same in either key');
 
 console.log(fails ? `${fails} of ${n} state checks failed` : `${n} state checks passed`);
 process.exit(fails ? 1 : 0);

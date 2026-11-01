@@ -15,7 +15,7 @@ vm.runInContext(fs.readFileSync(path.join(ROOT,'planner.js'),'utf8')+'\n;this.pl
 vm.runInContext(fs.readFileSync(path.join(ROOT,'planner-more.js'),'utf8'),ctx);
 const planner=ctx.planner;
 if(!planner.swapRank||!planner.sim) throw new Error('planner.swapRank / planner.sim missing');
-const places=JSON.parse(fs.readFileSync(path.join(D,'places.json'))), plans=JSON.parse(fs.readFileSync(path.join(D,'plans.json'))), travel=JSON.parse(fs.readFileSync(path.join(D,'travel.json')));
+const places=JSON.parse(fs.readFileSync(path.join(D,'places.json'))), plans=Object.assign(JSON.parse(fs.readFileSync(path.join(D,'plans.json'))),{plans:JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures','presets.json'))).plans}), travel=JSON.parse(fs.readFileSync(path.join(D,'travel.json')));
 const have=new Set(places.map(p=>p.id)), list=places.concat((plans.basePlaces||[]).filter(p=>!have.has(p.id)));
 const DB={places:new Map(list.map(p=>[p.id,p])),list,days:plans.days,bases:new Set(plans.bases||[]),ferries:plans.ferries||[],walks:plans.walks||[],noRoad:plans.noRoad||{},
   tides:Object.fromEntries(Object.entries(plans.tides||{}).filter(([k])=>k[0]!=='_')),travel,tIdx:Object.fromEntries(travel.ids.map((id,i)=>[id,i]))};

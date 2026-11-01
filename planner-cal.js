@@ -82,7 +82,7 @@ const t=k=>T[k][E],
         return A&&v!=A&&key(x)==key(A.days[d.date])?`<td class="pl-cal-same">${t('same')}</td>`:
           `<td${ac(v)}><button type="button" class="pl-cal-c" data-act="${v.active?'day':'take'}" data-v="${esc(v.id)}" data-date="${d.date}" data-r="${r}" data-c="${c}">${sp(' pl-cal-t',esc(L(x.label)))+(v.active?'':sp('',df(x,A&&A.days[d.date]||{stops:[]}))+sp(' pl-cal-hint',t('take')))}</button></td>`;
       })}</tr>`; });
-    el.innerHTML=`<div class="pl-cal-vs" style="--n:${V.length}"><table class="pl-cal-vt" data-g><caption class="sr">${t('cmp')}</caption><thead>${h}</tbody><tfoot><tr><td></td>${row((v,c)=>`<td>${v.active?'':`<button type="button" class="pl-cal-use" data-act="use" data-v="${esc(v.id)}" data-r="${m.days.length}" data-c="${c}">${t('use')}</button>`}</td>`)}</tr></tfoot></table></div>`;
+    el.innerHTML=`<div class="pl-cal-vs" style="--n:${V.length}"><table class="pl-cal-vt" data-g><caption class="sr">${t('cmp')}</caption><thead>${h}</tbody><tfoot><tr><td></td>${row((v,c)=>`<td>${v.active?'':`<button type="button" class="pl-btn pl-btn--secondary pl-btn--s pl-cal-use" data-act="use" data-v="${esc(v.id)}" data-r="${m.days.length}" data-c="${c}">${t('use')}</button>`}</td>`)}</tr></tfoot></table></div>`;
   },
   /* Arrows move focus within one [data-g]: left/right in reading order, up/down to the nearest
      button that way. Alt+arrows stay the planner's (move a stop between days). */

@@ -9,6 +9,7 @@
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const ROOT = path.join(__dirname, '..');
 const plans = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'nz', 'plans.json'), 'utf8'));
+plans.plans = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'fixtures', 'presets.json'), 'utf8')).plans;   /* a day order to sync: the old curated plans, as a fixture */
 const CORE = fs.readFileSync(path.join(ROOT, 'planner.js'), 'utf8'), SYNC = fs.readFileSync(path.join(ROOT, 'planner-sync.js'), 'utf8');
 let fails = 0, n = 0;
 const ok = (c, m) => { n++; if (!c) { fails++; console.log('FAIL ' + m); } };
@@ -64,7 +65,7 @@ function phone(name) {
 const settle = async () => { for (let i = 0; i < 30; i++) await new Promise(r => setImmediate(r)); };
 const fire = async p => { const t = p.timers.splice(0); t.forEach(f => f()); await settle(); };
 const D12 = '2027-02-12';
-const myFrom = () => ({id: 'my', from: plans.plans[0].id, days: JSON.parse(JSON.stringify(plans.plans[0].days)), stay: {}, start: {}, notes: {}});
+const myFrom = () => ({id: 'my', days: JSON.parse(JSON.stringify(plans.plans[0].days)), stay: {}, start: {}, notes: {}});
 
 (async () => {
   const A = phone('A'), B = phone('B');

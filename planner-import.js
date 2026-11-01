@@ -27,7 +27,7 @@ const PTI={
   readFail:{ja:'このファイルは読めませんでした。CSV・JSON・ZIPを選んでください。',en:'Could not read that file. Choose a CSV, JSON or ZIP.'},
   nothingFound:{ja:'取り込める場所が見つかりませんでした。',en:'No places found in that file.'},
   impFound:{ja:'{n}件',en:'{n} items'},
-  impArea:{ja:'地域',en:'Region'},
+  impArea:{ja:'地域',en:'Region'}, impOut:{ja:'ニュージーランド国外の {n}件は取り込みません',en:'{n} places outside New Zealand are left out'},
   impColl:{ja:'コレクション',en:'Collection'},
   unknownArea:{ja:'地域不明',en:'Unknown region'},
   gHas:{ja:'位置あり',en:'With location'},
@@ -40,7 +40,6 @@ const PTI={
   skip:{ja:'取り込まない',en:'Skip'},
   toTray:{ja:'場所不明として取り込む',en:'Import without a place'},
   impGo:{ja:'{n}件を取り込む',en:'Import {n}'},
-  cancel:{ja:'やめる',en:'Cancel'},
   imported2:{ja:'{n}件を取り込みました',en:'Imported {n}'},
   impTray:{ja:'未配置',en:'Not placed yet'},
   impTrayS:{ja:'地図をタップするか、名前で検索して置いてください。',en:'Tap the map or search by name to place them.'},
@@ -77,18 +76,18 @@ plimport.ui=function(c){
     box.innerHTML=S.ip?previewHTML():`
       <section class="pl-imsec"><h3>${ic('instagram','sm')}${pt('impIgT')}</h3>
         ${steps([['sliders',pt('ig1')],['bookmark',pt('ig2')],['download',pt('ig3')]])}
-        <label class="pl-btn pl-pri pl-file">${ic('download','sm')}${pt('impIgFile')}<input type="file" accept=".zip,.json,application/zip,application/json" multiple name="igfile" data-src="ig"></label>
+        <label class="pl-btn pl-btn--primary pl-file">${ic('download','sm')}${pt('impIgFile')}<input type="file" accept=".zip,.json,application/zip,application/json" multiple name="igfile" data-src="ig"></label>
         <p class="pl-hint">${pt('impIgFileS')}</p></section>
       <section class="pl-imsec"><h3>${ic('map-pin','sm')}${pt('impGmT')}</h3>
-        <label class="pl-btn pl-pri pl-file">${ic('download','sm')}${pt('impGmFile')}<input type="file" accept=".csv,.json,text/csv,application/json" multiple name="gmfile" data-src="gm"></label>
+        <label class="pl-btn pl-btn--primary pl-file">${ic('download','sm')}${pt('impGmFile')}<input type="file" accept=".csv,.json,text/csv,application/json" multiple name="gmfile" data-src="gm"></label>
         <p class="pl-hint">${pt('impGmFileS')}</p>
-        ${c.sync()&&c.sync().state().paired?`<div class="pl-linkrow"><input type="url" name="gmlink" class="pl-gmlink" placeholder="${esc(pt('impLink'))}" aria-describedby="pl-lh-${slug}" enterkeyhint="go"><button type="button" class="pl-btn pl-sec" data-act="gmgo">${pt('impLinkGo')}</button></div>
+        ${c.sync()&&c.sync().state().paired?`<div class="pl-linkrow"><input type="url" name="gmlink" class="pl-gmlink" placeholder="${esc(pt('impLink'))}" aria-describedby="pl-lh-${slug}" enterkeyhint="go"><button type="button" class="pl-btn pl-btn--secondary" data-act="gmgo">${pt('impLinkGo')}</button></div>
           <p class="pl-hint" id="pl-lh-${slug}">${pt('impLinkOn')}</p>`:`<details class="pl-other"><summary>${pt('linkSoon')}</summary>
           ${steps([['map',pt('gm1')],['share',pt('gm2')],['download',pt('gm3')]])}
           <div class="pl-linkrow"><input type="url" name="gmlink" disabled placeholder="${esc(pt('impLink'))}" aria-describedby="pl-lh-${slug}"><span class="pl-soon">${pt('soon')}</span></div>
           <p class="pl-hint" id="pl-lh-${slug}">${pt('impLinkHint')}</p></details>`}</section>
       ${trayHTML()}
-      ${S.imports.length?`<div class="pl-impfoot"><span>${pt('impCount',{n:S.imports.length})}</span><button type="button" class="pl-btn pl-ghost" data-act="impdelall">${ic('trash','sm')}${pt('impDelAll')}</button></div>`:''}`;
+      ${S.imports.length?`<div class="pl-impfoot"><span>${pt('impCount',{n:S.imports.length})}</span><button type="button" class="pl-btn pl-btn--ghost" data-act="impdelall">${ic('trash','sm')}${pt('impDelAll')}</button></div>`:''}`;
     E.sbody.scrollTop=y;
   }
   function trayHTML(){
@@ -97,17 +96,17 @@ plimport.ui=function(c){
       ${t.map(m=>`<div class="pl-trow" data-id="${esc(m.id)}">
         <div class="pl-tname"><b>${esc(m.name)}</b>${m.note?`<small>${esc(m.note)}</small>`:''}${m.url?`<a href="${esc(m.url)}" target="_blank" rel="noopener">${ic(m.src==='ig'?'instagram':'map-pin','xs')}${pt(m.src==='ig'?'openReel':'gmaps')}</a>`:''}</div>
         <div class="pl-tacts">
-          <button type="button" class="pl-btn pl-sec" data-act="placeon" data-id="${esc(m.id)}">${ic('map-pin','sm')}${pt('placeOnMap')}</button>
-          <button type="button" class="pl-btn pl-sec" data-act="nomopen" data-id="${esc(m.id)}">${ic('search','sm')}${pt('searchPlace')}</button>
-          <button type="button" class="pl-ab" data-act="impdel" data-id="${esc(m.id)}">${ic('trash','sm')}<span class="sr">${pt('impDel')}</span></button>
+          <button type="button" class="pl-btn pl-btn--secondary" data-act="placeon" data-id="${esc(m.id)}">${ic('map-pin','sm')}${pt('placeOnMap')}</button>
+          <button type="button" class="pl-btn pl-btn--secondary" data-act="nomopen" data-id="${esc(m.id)}">${ic('search','sm')}${pt('searchPlace')}</button>
+          <button type="button" class="pl-btn pl-btn--icon" data-act="impdel" data-id="${esc(m.id)}">${ic('trash','sm')}<span class="sr">${pt('impDel')}</span></button>
         </div>
-        <div class="pl-nom" hidden><div class="pl-search"><input type="search" name="nomq" value="${esc(m.name.replace(/^@/,''))}" enterkeyhint="search" aria-label="${esc(pt('searchPlace'))}"><button type="button" class="pl-btn pl-pri" data-act="nomgo" data-id="${esc(m.id)}">${pt('searchGo')}</button></div><div class="pl-nomres"></div></div>
+        <div class="pl-nom" hidden><div class="pl-field"><input type="search" name="nomq" value="${esc(m.name.replace(/^@/,''))}" enterkeyhint="search" aria-label="${esc(pt('searchPlace'))}"><button type="button" class="pl-btn pl-btn--primary" data-act="nomgo" data-id="${esc(m.id)}">${pt('searchGo')}</button></div><div class="pl-nomres"></div></div>
       </div>`).join('')}</section>`;
   }
   async function readFiles(files){
     const lib=await needLib(), G=lib.gm, I=lib.ig;
     await c.loadMore();   /* Instagram handles and tags ship in places-more */
-    const box=E.sbody.querySelector('.pl-impbody'); if(box) box.innerHTML=`<p class="pl-none">${pt('reading')}</p>`;
+    const box=E.sbody.querySelector('.pl-impbody'); if(box) box.innerHTML=`<p class="pl-hint">${pt('reading')}</p>`;
     let gm=[], posts=[], colls=[], bad=0;
     for(const f of files){
       try{
@@ -132,7 +131,7 @@ plimport.ui=function(c){
   }
   /* paired: a shared list link is read by the sync backend (gmlist) into the same preview */
   async function readLink(u){ u=u.trim(); if(!u||!c.sync()) return;
-    const lib=await needLib(), G=lib.gm, box=E.sbody.querySelector('.pl-impbody'); if(box) box.innerHTML=`<p class="pl-none">${pt('reading')}</p>`;
+    const lib=await needLib(), G=lib.gm, box=E.sbody.querySelector('.pl-impbody'); if(box) box.innerHTML=`<p class="pl-hint">${pt('reading')}</p>`;
     const r=await c.sync().call('gmlist',{url:u});
     if(!r.ok){ S.ip=null; renderImport(); toast(pt('linkFail',{e:r.error||'?'})); return; }
     const items=r.items||(r.place?[r.place]:[]); if(!items.length){ S.ip=null; renderImport(); toast(pt('nothingFound')); return; }
@@ -163,7 +162,7 @@ plimport.ui=function(c){
     const ip={src,items,on:{},choice:{},cc:null,regions:null,coll:null};
     items.forEach(it=>{ ip.on[it.key]=src==='gm'||it.status==='matched'; ip.choice[it.key]=''; });
     const ccs={}; items.forEach(it=>{ if(it.area) ccs[it.area.cc]=(ccs[it.area.cc]||0)+1; });
-    ip.cc=ccs[slug]?slug:Object.keys(ccs).sort((a,b)=>ccs[b]-ccs[a])[0]||null;
+    ip.cc=slug; ip.abroad=items.filter(it=>it.lat!=null&&(!it.area||it.area.cc!==slug)).length;   /* the planner is one country's (docs/DESIGN.md) */
     if(src==='ig'){ const c=collections(items).find(c=>/nz|new zealand|ニュージーランド/i.test(c.name)); ip.coll=c?c.name:null; }
     S.ip=ip; renderImport();
   }
@@ -172,7 +171,7 @@ plimport.ui=function(c){
     const ip=S.ip;
     return ip.items.filter(it=>{
       if(ip.src==='ig'&&ip.coll&&(it.collections||[]).indexOf(ip.coll)<0) return false;
-      if(it.lat==null||!ip.cc) return true;
+      if(it.lat==null) return true;
       if(!it.area||it.area.cc!==ip.cc) return false;
       return !ip.regions||ip.regions.has(it.area.regionCode||'?');
     });
@@ -182,11 +181,10 @@ plimport.ui=function(c){
   function previewHTML(){
     const ip=S.ip, G=window.plimport.gm, vis=visible(), n=picked().length;
     const located=ip.items.filter(it=>it.lat!=null&&(ip.src!=='ig'||!ip.coll||(it.collections||[]).indexOf(ip.coll)>=0));
-    const sum=G.summarizeAreas(located,REG).filter(c=>c.cc), cur=sum.find(c=>c.cc===ip.cc);
-    const chip=(act,v,label,on)=>`<button type="button" class="pl-chip" data-act="${act}" data-v="${esc(v)}" aria-pressed="${on}">${label}</button>`;
-    const filters=`${ip.src==='ig'?`<div class="pl-plansep">${pt('impColl')}</div><div class="pl-chips">${chip('imcoll','',pt('all')+' '+ip.items.length,!ip.coll)}${collections(ip.items).map(c=>chip('imcoll',c.name,esc(c.name)+' '+c.n,ip.coll===c.name)).join('')}</div>`:''}
-      ${sum.length?`<div class="pl-plansep">${pt('impArea')}</div><div class="pl-chips">${sum.map(c=>chip('imcc',c.cc,esc(ja()?c.countryJa||c.country:c.country)+' '+c.n,ip.cc===c.cc)).join('')}</div>
-      ${cur&&cur.regions.length>1?`<div class="pl-chips">${cur.regions.map(r=>chip('imreg',r.code||'?',esc(r.code?(ja()?r.regionJa||r.region:r.region):pt('unknownArea'))+' '+r.n,!ip.regions||ip.regions.has(r.code||'?'))).join('')}</div>`:''}`:''}`;
+    const cur=G.summarizeAreas(located,REG).find(c=>c.cc===ip.cc);
+    const chip=(act,v,label,on)=>`<button type="button" class="pl-chip pl-chip--filter" data-act="${act}" data-v="${esc(v)}" aria-pressed="${on}">${label}</button>`;
+    const filters=`${ip.src==='ig'?`<div class="pl-listhead">${pt('impColl')}</div><div class="pl-chips">${chip('imcoll','',pt('all')+' '+ip.items.length,!ip.coll)}${collections(ip.items).map(c=>chip('imcoll',c.name,esc(c.name)+' '+c.n,ip.coll===c.name)).join('')}</div>`:''}
+      ${ip.abroad?`<p class="pl-hint">${pt('impOut',{n:ip.abroad})}</p>`:''}${cur&&cur.regions.length>1?`<div class="pl-listhead">${pt('impArea')}</div><div class="pl-chips">${cur.regions.map(r=>chip('imreg',r.code||'?',esc(r.code?(ja()?r.regionJa||r.region:r.region):pt('unknownArea'))+' '+r.n,!ip.regions||ip.regions.has(r.code||'?'))).join('')}</div>`:''}`;
     const row=it=>{
       const sub=it.lat==null?'':`<small>${esc(areaName(it.area))}</small>`;
       if(ip.src==='gm') return `<label class="pl-ckrow"><input type="checkbox" name="pick" class="pl-ck" data-k="${esc(it.key)}"${ip.on[it.key]?' checked':''}><span><b>${esc(it.name)}</b>${it.host?`<small>→ ${esc(nm(place(it.host)))}</small>`:sub}${it.note?`<small>${esc(it.note)}</small>`:''}</span></label>`;
@@ -197,13 +195,13 @@ plimport.ui=function(c){
         <option value="">${pt('skip')}</option>${(it.candidates||[]).filter(id=>DB.baseMap.has(id)).map(id=>`<option value="${id}"${ip.choice[it.key]===id?' selected':''}>${esc(nm(DB.baseMap.get(id)))}</option>`).join('')}
         <option value="tray"${ip.choice[it.key]==='tray'?' selected':''}>${pt('toTray')}</option></select></div>`;
     };
-    const group=(title,list,toggle)=>list.length?`<section class="pl-imgrp"><div class="pl-clus-h"><h3>${title}<small>${pt('count',{n:list.length})}</small></h3>
-      ${toggle?`<button type="button" class="pl-addall" data-act="imall" data-keys="${esc(list.map(i=>i.key).join(' '))}">${list.every(i=>ip.on[i.key])?pt('selNone'):pt('selAll')}</button>`:''}</div>${list.map(row).join('')}</section>`:'';
+    const group=(title,list,toggle)=>list.length?`<section class="pl-imgrp"><div class="pl-clus__head"><h3>${title}<small>${pt('count',{n:list.length})}</small></h3>
+      ${toggle?`<button type="button" class="pl-btn pl-btn--secondary pl-btn--s" data-act="imall" data-keys="${esc(list.map(i=>i.key).join(' '))}">${list.every(i=>ip.on[i.key])?pt('selNone'):pt('selAll')}</button>`:''}</div>${list.map(row).join('')}</section>`:'';
     const groups=ip.src==='gm'
       ?group(pt('gHas'),vis.filter(i=>i.lat!=null),true)+group(pt('gNo'),vis.filter(i=>i.lat==null),true)
       :group(pt('gMatched'),vis.filter(i=>i.status==='matched'),true)+group(pt('gSuggest'),vis.filter(i=>i.status==='suggested'||i.status==='ambiguous'),false)+group(pt('gUnknown'),vis.filter(i=>i.status==='unmatched'),true);
-    return `<div class="pl-impsum"><b>${pt(ip.src==='gm'?'impGmT':'impIgT')}</b><span>${pt('impFound',{n:ip.items.length})}</span></div>${filters}${groups||`<p class="pl-none">${pt('noMatch')}</p>`}
-      <div class="pl-impgo"><button type="button" class="pl-btn pl-ghost" data-act="imcancel">${pt('cancel')}</button><button type="button" class="pl-btn pl-pri" data-act="imgo"${n?'':' disabled'}>${pt('impGo',{n})}</button></div>`;
+    return `<div class="pl-impsum"><b>${pt(ip.src==='gm'?'impGmT':'impIgT')}</b><span>${pt('impFound',{n:ip.items.length})}</span></div>${filters}${groups||`<p class="pl-hint">${pt('noMatch')}</p>`}
+      <div class="pl-impgo"><button type="button" class="pl-btn pl-btn--ghost" data-act="imcancel">${pt('cancel')}</button><button type="button" class="pl-btn pl-btn--primary" data-act="imgo"${n?'':' disabled'}>${pt('impGo',{n})}</button></div>`;
   }
   function commitImport(){
     const ip=S.ip, add=[];
@@ -267,7 +265,6 @@ plimport.ui=function(c){
         case 'imgo': commitImport(); break;
         case 'gmgo': readLink((E.sbody.querySelector('.pl-gmlink')||{}).value||''); break;
         case 'imcoll': S.ip.coll=b.dataset.v||null; renderImport(); break;
-        case 'imcc': S.ip.cc=b.dataset.v; S.ip.regions=null; renderImport(); break;
         case 'imreg': { const ip=S.ip, G=window.plimport.gm, all=G.summarizeAreas(ip.items.filter(i=>i.lat!=null),REG).find(x=>x.cc===ip.cc).regions.map(r=>r.code||'?');
           const set=ip.regions||new Set(all), v=b.dataset.v; if(set.has(v)) set.delete(v); else set.add(v);
           ip.regions=set.size===all.length?null:set; renderImport(); break; }

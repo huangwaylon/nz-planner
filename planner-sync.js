@@ -134,7 +134,7 @@ planner.sync=function(c){
   function keepCopy(P,name){ S.versions=[Object.assign(clone(P),{id:'v-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,at:Date.now()})].concat(S.versions); }
   const nameOf=p=>(M.names||{})[p]||p.toUpperCase();
   function ensure(id,from){ let P=planOf(id); if(P) return P;
-    const src=DB.presets.find(p=>p.id===from)||DB.presets[0], base={from:src.id,days:clone(src.days),stay:clone(src.stay||{}),start:clone(src.start||{}),notes:{},stayDay:clone(src.stayDay||{}),anchors:clone(src.anchors||{})};
+    const src=planOf(from)||{days:{}}, base={days:clone(src.days),stay:clone(src.stay||{}),start:clone(src.start||{}),notes:{},stayDay:clone(src.stayDay||{}),anchors:clone(src.anchors||{})}; if(from) base.from=from;
     if(id==='my') P=S.my=Object.assign({id:'my'},base); else { P=Object.assign({id,name:'',at:Date.now()},base); S.versions=S.versions.concat([P]); }
     DB.days.forEach(d=>{ M.B[id+'|'+d.date]=J(dayVal(P,d.date)); }); M.B['p|'+id]=P.name||''; return P; }
   function setDay(P,date,v){ P.days=Object.assign({},P.days,{[date]:v.ids.slice()});
@@ -161,7 +161,7 @@ planner.sync=function(c){
     switch(type){
       case 'plan_new': ensure(d.plan,d.from); if(d.name!=null&&d.plan!=='my'){ const P=planOf(d.plan); if(P) P.name=d.name; M.B['p|'+d.plan]=d.name||''; } break;
       case 'plan_rename': { const P=planOf(d.plan); if(P){ P.name=d.name; S.versions=S.versions.slice(); } M.B['p|'+d.plan]=d.name; break; }
-      case 'plan_drop': if(d.plan==='my') S.my=null; S.versions=S.versions.filter(v=>v.id!==d.plan); if(S.planId===d.plan) S.planId='my'; delete M.B['p|'+d.plan]; break;
+      case 'plan_drop': if(d.plan==='my') break; S.versions=S.versions.filter(v=>v.id!==d.plan); if(S.planId===d.plan) S.planId='my'; delete M.B['p|'+d.plan]; break;
       case 'day_set': { const k=d.plan+'|'+d.date, P=ensure(d.plan,null), n=DB.days.findIndex(x=>x.date===d.date)+1;
         if(mine){ M.seen[k]=id; break; }
         const local=J(dayVal(P,d.date)), pend=Q.some(e=>e.type==='day_set'&&e.data.plan===d.plan&&e.data.date===d.date);
@@ -185,7 +185,7 @@ planner.sync=function(c){
       case 'group_drop': if(mine) break; S.trip=clone(T); S.trip.groups=S.trip.groups.filter(x=>x.id!==d.id); delete M.B['g|'+d.id]; break;
       case 'note_set': if(mine) break; S.trip=clone(T); if(d.text) S.trip.notes[d.id]=String(d.text).slice(0,300); else delete S.trip.notes[d.id]; if(d.text) M.B['n|'+d.id]=S.trip.notes[d.id]; else delete M.B['n|'+d.id]; break;
       case 'booked_set': if(mine) break; S.booked=Object.assign({},S.booked); if(d.on) S.booked[d.id]=true; else delete S.booked[d.id]; if(d.on) M.B['b|'+d.id]=1; else delete M.B['b|'+d.id]; break;
-      case 'imp_add': { const m=d.imp; if(mine||!m||typeof m.id!=='string'||S.imports.some(x=>x.id===m.id)){ if(m&&m.id) M.B['i|'+m.id]=1; break; }
+      case 'imp_add': { const m=d.imp; if(mine||!m||typeof m.id!=='string'||!c.home(m)||S.imports.some(x=>x.id===m.id)){ if(m&&m.id) M.B['i|'+m.id]=1; break; }
         S.imports=S.imports.concat([m]); M.B['i|'+m.id]=1; c.rebuild(); break; }
       case 'imp_drop': if(mine) break; S.imports=S.imports.filter(x=>x.id!==d.id); delete M.B['i|'+d.id]; c.rebuild(); break;
       case 'pref': if(d.names&&typeof d.names==='object') M.names=Object.assign({},M.names,d.names); break;
@@ -194,20 +194,20 @@ planner.sync=function(c){
 
   /* ---------- UI: the dot, the day's last editor (in the day header only), the settings box ---------- */
   let D=null;
-  function dot(){ if(!D){ const t=view.querySelector('.pl-tools'); if(!t) return; D=document.createElement('span'); D.className='pl-sync'; D.setAttribute('role','status'); t.prepend(D); }
+  function dot(){ if(!D){ const t=view.querySelector('[data-r="tools"]'); if(!t) return; D=document.createElement('span'); D.className='pl-sync'; D.setAttribute('role','status'); t.prepend(D); }
     const st=!K?'':!online?'off':Q.length?'q':'ok'; D.dataset.st=st; D.hidden=!K;
     D.innerHTML=`<i aria-hidden="true"></i>${st==='off'?pt('syncOff'):st==='q'?pt('syncQ',{n:Q.length}):pt('syncOk')}`; }
   const ago=t=>{ const m=Math.max(0,Math.round((Date.now()-Date.parse(t))/60000)); return m<1?pt('agoNow'):m<60?pt('agoM',{n:m}):m<1440?pt('agoH',{n:Math.round(m/60)}):pt('agoD',{n:Math.round(m/1440)}); };
   function decor(){ const h=E.main&&E.main.querySelector('.pl-dayhead'); if(!h) return;
     const P=c.plan(), e=K&&M.ed[P.id+'|'+DB.days[S.day].date]; let w=h.querySelector('.pl-who');
     if(!e){ if(w) w.remove(); return; }
-    if(!w){ w=document.createElement('p'); w.className='pl-who'; const r=h.querySelector('.pl-dh-row'); if(r) r.after(w); else h.append(w); }
+    if(!w){ w=document.createElement('p'); w.className='pl-who'; const r=h.querySelector('.pl-dayhead__title'); if(r) r.after(w); else h.append(w); }
     w.textContent=pt('edited',{w:nameOf(e[0]),t:ago(e[1])}); }
   function box(el){ if(!el) return;
     el.innerHTML=`<h3>${pt('syncT')}</h3><p class="pl-hint">${K?esc(pt('paired',{name:nameOf(me)})):''}</p>
-      <label class="pl-search"><span class="sr">${pt('nameA')}</span><input class="pl-syname" name="nameA" data-p="a" maxlength="20" value="${esc((M.names||{}).a||'')}" placeholder="${esc(pt('nameA'))}"></label>
-      <label class="pl-search"><span class="sr">${pt('nameB')}</span><input class="pl-syname" name="nameB" data-p="b" maxlength="20" value="${esc((M.names||{}).b||'')}" placeholder="${esc(pt('nameB'))}"></label>
-      <button type="button" class="pl-btn pl-ghost" data-syn="unpair">${pt('unpair')}</button>`;
+      <label class="pl-field"><span class="sr">${pt('nameA')}</span><input class="pl-syname" name="nameA" data-p="a" maxlength="20" value="${esc((M.names||{}).a||'')}" placeholder="${esc(pt('nameA'))}"></label>
+      <label class="pl-field"><span class="sr">${pt('nameB')}</span><input class="pl-syname" name="nameB" data-p="b" maxlength="20" value="${esc((M.names||{}).b||'')}" placeholder="${esc(pt('nameB'))}"></label>
+      <button type="button" class="pl-btn pl-btn--secondary" data-syn="unpair">${pt('unpair')}</button>`;
     el.querySelectorAll('.pl-syname').forEach(i=>i.addEventListener('change',()=>setPref({[i.dataset.p]:i.value.trim().slice(0,20)})));
     el.querySelector('[data-syn="unpair"]').addEventListener('click',()=>{ unpair(); el.innerHTML=''; }); }
 
