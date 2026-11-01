@@ -324,10 +324,10 @@ planner.more=function(c){
   const bySaved=(a,b)=>(!!place(b).saved)-(!!place(a).saved);
   function candRow(id,planned,day,dist){
     const p=place(id), on=planned.get(id);
-    const sig=S.f.sort==='aes'&&p.aesthetic?`<span class="pl-sig">${pt('aesthetic')} ${p.aesthetic}/5</span>`:p.badge?`<span class="pl-sig">${esc(p.badge[lang()]||p.badge.ja)}</span>`:'';
+    /* a row is the picture, the name and one signal (distance when sorted by it, else the category) */
     return `<div class="pl-cand" data-id="${id}">${thumb(p)}
-      <button type="button" class="pl-open" data-act="open" data-id="${id}"><b${nmLang(p)}>${wbr(nm(p))}</b>${sigLine(p)}
-        <small>${savedTag(p)}${p.imp||p.reels?`<span class="pl-impbadge">${pt('imp')}</span>`:''}${p.imp?(p.imp.regionJa||p.imp.region?`<span>${esc(ja()?p.imp.regionJa||p.imp.region:p.imp.region)}</span>`:''):`<span>${tr(CAT,p.cat)}</span><span>${tr(AREA,p.area)}</span>`}${dist!=null?`<span>${uKm(Math.round(dist))}</span>`:''}${p.book?`<span>${pt('book')}</span>`:''}${sig}</small></button>
+      <button type="button" class="pl-open" data-act="open" data-id="${id}"><b${nmLang(p)}>${wbr(nm(p))}</b>
+        <small>${savedTag(p)}${p.imp||p.reels?`<span class="pl-impbadge">${pt('imp')}</span>`:''}<span>${dist!=null?uKm(Math.round(dist)):S.f.sort==='aes'&&p.aesthetic?'★'+p.aesthetic:p.imp?esc(ja()?p.imp.regionJa||p.imp.region||'':p.imp.region||''):tr(CAT,p.cat)}</span></small></button>
       ${on!=null?`<span class="pl-inplan" style="${dayStyle(on)}"><span class="sr">${esc(pt('inDay',{d:dlabel(DB.days[on])}))}</span><i aria-hidden="true">${+DB.days[on].date.slice(8)}</i></span>`
         :`<button type="button" class="pl-addbtn" data-act="pick" data-id="${id}" aria-expanded="false">${ic('plus')}<span class="sr">${esc(pt('addNTo',{name:nm(p),d:'…'}))}</span></button>`}</div>`;
   }

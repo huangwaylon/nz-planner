@@ -15,7 +15,7 @@ const PTC={
   toGroup:{ja:'グループへ',en:'To a group'}, toDays:{ja:'日程へ',en:'To the days'}, handoff:{ja:'日程に組む →',en:'Plan the days →'},
     make:{ja:'作る',en:'Create'},
   inGroup:{ja:'→ {g}',en:'→ {g}'}, inDay2:{ja:'{d}に配置',en:'on {d}'}, tiered:{ja:'{n}件を「{t}」に',en:'{n} set to “{t}”'},   ungrouped:{ja:'「{g}」を解きました',en:'Ungrouped “{g}”'}, made:{ja:'「{g}」を作りました',en:'Made “{g}”'}, nothingSel:{ja:'カードを選んでください',en:'Select some cards first'},
-  allPlaced:{ja:'絶対行く場所はすべて日程に入っています',en:'Every must is on a day'}, nextMust:{ja:'まず {name}：{d} が空いています',en:'Start with {name}: {d} has room'},
+  allPlaced:{ja:'絶対行く場所はすべて日程に入っています',en:'Every must is on a day'}, nextMust:{ja:'どの日も ⚠ — いちばん近いのは {d}',en:'Every day breaks — {d} comes closest'},
   none2:{ja:'該当なし・絞り込みを外す',en:'Nothing matches: clear the filters'}, emptyT:{ja:'まだありません。カードの［{t}］で入ります',en:'None yet: tap [{t}] on a card'}, emptyG:{ja:'まだありません',en:'None yet'}, ss_maybe:{ja:'余裕',en:'If time'}, cSearch:{ja:'名前・キーワードで絞る',en:'Filter by name or keyword'}, };
 planner.collect=function(c){
   const {S,DB,E,pt,esc,ic,head,doneBar,openSheet,closeSheet,toast,editTrip,tierOf,seeded,place,nm,nmLang,wbr,thumb,tr,CAT,AREA,
@@ -85,7 +85,7 @@ planner.collect=function(c){
     if(!o.length){ toast(pt('allPlaced')); return; }
     const P=c.plan(); let best=null;
     DB.days.forEach((d,i)=>{ const pv=c.sim().insertPlan(d,c.idsOf(d.date,P),[o[0].id],P,{deadline:S.dayEnd},null); if(pv&&(!best||(pv.breaks.length-best.b||pv.dDrive-best.v)<0)) best={i,b:pv.breaks.length,v:pv.dDrive}; });
-    if(best){ setDay(best.i); toast(pt('nextMust',{name:nm(o[0]),d:dlabel(DB.days[best.i])})); }
+    if(best){ setDay(best.i); if(best.b) toast(pt('nextMust',{d:dlabel(DB.days[best.i])})); }   /* the sheet's pills say the rest */
     openPlace(o[0].id); }
   function toggle(id){ if(sel.has(id)) sel.delete(id); else sel.add(id); render(true); }
   el.addEventListener('click',e=>{ const b=e.target.closest('[data-ca]'), cc=e.target.closest('.pl-cc');
