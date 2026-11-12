@@ -106,6 +106,38 @@ const CI = /[?&]ci=1/.test(location.search);
   const STATES = {};
   const stateStr = k => STATES[k] || (STATES[k] = JSON.stringify(k === 'seed' ? seedState() : stressState(k === 'A')));
 
+  /* ---------- the map under software GL ----------
+     MapLibre draws with WebGL. Under a software renderer (CI's headless Chrome: SwiftShader) its
+     shader compiles and first frames run on the CPU and block this thread for 100+ ms, which no
+     phone with a GPU pays. There the frame gets a stub engine with planner-map.js's API: the
+     planner's own map work (sources built, markers placed, fits computed) is still timed; only
+     MapLibre's GL is not. With a GPU (a Mac) the real map is measured. */
+  const SOFT_GL = /[?&]softgl=1/.test(location.search) || (() => { try { const g = document.createElement('canvas').getContext('webgl'); if (!g) return true;
+    const x = g.getExtension('WEBGL_debug_renderer_info'), r = String(x ? g.getParameter(x.UNMASKED_RENDERER_WEBGL) : g.getParameter(g.RENDERER));
+    return /swiftshader|llvmpipe|software|softpipe/i.test(r); } catch (e) { return true; } })();
+  function stubMap(cw) {
+    const FC = () => ({type: 'FeatureCollection', features: []}), src = {};
+    const engine = el => { let c = [174.76, -36.85], z = 8; const host = cw.document.createElement('div'); host.className = 'maplibregl-canvas-container'; el.appendChild(host);
+      const proj = (lon, lat) => [(lon - c[0]) * 60 * 2 ** (z - 8) + el.clientWidth / 2, (c[1] - lat) * 75 * 2 ** (z - 8) + el.clientHeight / 2];
+      return { map: {setPaintProperty() {}, setLayoutProperty() {}, getSource: k => ({setData(d) { src[k] = d; }})},
+        setLang() {}, setData(k, fc) { src[k] = JSON.parse(JSON.stringify(fc || FC())); }, select() {},
+        fit(b) { c = [(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2]; z = 9; }, ease(lon, lat, zz) { c = [lon, lat]; if (zz != null) z = zz; }, zoomBy(k) { z += Math.log2(k); },
+        zoom: () => z, center: () => c.slice(), bounds: () => [[c[0] - 1, c[1] - 1], [c[0] + 1, c[1] + 1]],
+        project: proj, unproject: (x, y) => [c[1], c[0]], moving: () => false, resize() {},
+        marker(node, lon, lat) { host.appendChild(node); const put = (lo, la) => { const [x, y] = proj(lo, la); node.style.transform = `translate(${x}px,${y}px)`; }; put(lon, lat);
+          return {el: node, set(lo, la) { put(lo, la); return this; }, remove() { node.remove(); }}; },
+        destroy() { host.remove(); } }; };
+    return {FRAME: [[172.40, -40.45], [178.90, -34.30]], preload: () => Promise.resolve(true), snapshot: () => Promise.resolve(null),
+      create: (el, o) => new Promise(r => setTimeout(() => { const e = engine(el); if (o && o.onMode) setTimeout(() => o.onMode('ready')); r(e); }))};
+  }
+  /* planner-map.js returns early when window.plmap is set, so the stub is defined as soon as the frame's window exists */
+  function stubWhenReady(f) {
+    const tick = () => { if (!fr || fr !== f) return; const cw = f.contentWindow;
+      if (cw && /perf=/.test(cw.location.href) && cw.document && cw.document.readyState !== 'uninitialized') { if (!cw.plmap) cw.plmap = stubMap(cw); return; }
+      setTimeout(tick, 0); };
+    tick();
+  }
+
   /* ---------- the app in a frame ---------- */
   let fr = null;
   const VP = {393: [393, 852], 1440: [1440, 900], 1920: [1920, 1080]};
@@ -117,7 +149,7 @@ const CI = /[?&]ci=1/.test(location.search);
     fr = document.createElement('iframe'); const [w, h] = VP[vp]; fr.style.width = w + 'px'; fr.style.height = h + 'px';
     document.body.appendChild(fr);
     const t0 = performance.now();
-    await new Promise(r => { fr.onload = r; fr.src = '../index.html?nosw&perf=' + Date.now(); });
+    await new Promise(r => { fr.onload = r; fr.src = '../index.html?nosw&perf=' + Date.now(); if (SOFT_GL) stubWhenReady(fr); });
     return t0;
   }
   const doc = () => fr.contentDocument, q = s => doc().querySelector(s), qa = s => [...doc().querySelectorAll(s)];
@@ -211,7 +243,7 @@ const CI = /[?&]ci=1/.test(location.search);
   let baseline = null;
   try { const r = await fetch('perf-baseline.json?' + Date.now()); if (r.ok) baseline = await r.json(); } catch (e) {}
   for (let i = 0; i < 10; i++) calibrate();   /* warm up the JIT, or the first cases get a slower yardstick */
-  say(JSON.stringify({case: 'calibration', ms: r1(median(Array.from({length: 5}, calibrate)))}));
+  say(JSON.stringify({case: 'calibration', ms: r1(median(Array.from({length: 5}, calibrate))), map: SOFT_GL ? 'stub (software GL)' : 'MapLibre (GPU)'}));
 
   let fails = 0, row0 = {}; const rec = {cases: {}};
   for (const [name, state, vp, gate] of CASES) {

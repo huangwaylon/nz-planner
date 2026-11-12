@@ -2,6 +2,7 @@
      node tools/perf-run.js              every case (CHROME=/path/to/chrome to pick the binary)
      node tools/perf-run.js --record     also print a new tools/perf-baseline.json (and write it with --write)
      node tools/perf-run.js --case=day --n=3
+     node tools/perf-run.js --softgl       the map stubbed, as CI's software-GL Chrome runs it
    The tools/e2e-run.js pattern: no dependencies, Node's own fetch and WebSocket (Node 22+) talk to
    Chrome's DevTools port, python3's http.server serves the repo on its own port. The one addition is
    Emulation.setCPUThrottlingRate {rate:4} before navigating, so the gate measures what a phone
@@ -15,6 +16,7 @@ const qs = new URLSearchParams();
 if (arg('record') != null) qs.set('record', '1');
 if (arg('case')) qs.set('case', arg('case'));
 if (arg('n')) qs.set('n', arg('n'));
+if (arg('softgl') != null) qs.set('softgl', '1');   /* as on CI: the map is a stub (tools/perf.html "software GL") */
 const find = () => [process.env.CHROME, 'google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser',
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].filter(Boolean)
   .find(c => c.includes('/') ? fs.existsSync(c) : require('child_process').spawnSync('which', [c]).status === 0);
