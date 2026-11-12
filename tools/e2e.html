@@ -335,8 +335,11 @@
     ok(!wq('.pl-collect .pl-card'), 'leaving ① tears its cards down');
     /* Alt+→ on a stop: clean moves at once; ⚠ arms on the item (Enter / Esc), never a timed second press */
     { const row = wq('.pl-main .pl-stop'), rid = row && row.dataset.id, d0 = wv()._pl.sim('my').findIndex(d => d.rows.some(r => r[2] === rid));
-      if (row && d0 >= 0 && d0 < 5) { (row.querySelector('button') || row).focus(); wd().dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowRight', key: 'ArrowRight', altKey: true, bubbles: true})); await wait(600);
-        const moved = wv()._pl.sim('my')[d0 + 1].rows.some(r => r[2] === rid), armedA = !!wq('.pl-armed');
+      if (row && d0 >= 0 && d0 < 5) { (row.querySelector('button') || row).focus(); wd().dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowRight', key: 'ArrowRight', altKey: true, bubbles: true}));
+        /* the move waits on planner-more's load; on CI that shares the CPU with the map's first draw */
+        const movedNow = () => wv()._pl.sim('my')[d0 + 1].rows.some(r => r[2] === rid);
+        await until(() => movedNow() || wq('.pl-armed'), 4000);
+        const moved = movedNow(), armedA = !!wq('.pl-armed');
         ok(moved !== armedA, 'Alt+→ moves at once when clean, or arms the ⚠ confirm: moved ' + moved + ', armed ' + armedA);
         if (armedA) { wd().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await wait(300); }
         else { wd().dispatchEvent(new KeyboardEvent('keydown', {key: 'z', metaKey: true, bubbles: true})); await wait(400); } }
