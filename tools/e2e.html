@@ -44,6 +44,8 @@
     const flush = () => view()._pl.flush(), saved = () => { flush(); return JSON.parse(localStorage.getItem('plan:nz')); };
     const toastTxt = () => (q('.pl-toast__text') || {}).textContent || '';
     const day = k => q('.pl-day[data-day="' + k + '"]'), stage = k => q('.pl-stages [data-stage="' + k + '"]');
+    /* a day tap, done: the tab is pressed and the camera has settled (not a fixed sleep: CI draws the map in software) */
+    const pick = async k => { day(k).click(); await until(() => day(k).getAttribute('aria-pressed') === 'true' && !view()._pl.busy(), 8000); await wait(100); };
     const esc = () => doc().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
     const armOk = async () => { const b = q('.pl-armed [data-act="armok"]'); if (b) { b.click(); await wait(400); } return !!b; };
 
@@ -71,13 +73,13 @@
     fr.contentWindow.history.back();
     ok(await until(() => !q('.pl-sheet.is-open') && fr.contentWindow.location.hash === '#plan/12', 5000), 'Back closes the sheet and leaves the URL on the day');
 
-    fr.contentWindow.location.hash = '#review'; await wait(600);
-    ok(view().dataset.stage === 'review', 'a typed #review opens ③');
-    fr.contentWindow.location.hash = '#plan/12'; await wait(600);
-    ok(view().dataset.stage === 'plan' && day(1).getAttribute('aria-pressed') === 'true', 'a typed #plan/12 opens ② on Feb 12');
+    fr.contentWindow.location.hash = '#review';
+    ok(await until(() => view().dataset.stage === 'review', 5000), 'a typed #review opens ③');
+    fr.contentWindow.location.hash = '#plan/12';
+    ok(await until(() => view().dataset.stage === 'plan' && day(1).getAttribute('aria-pressed') === 'true', 5000), 'a typed #plan/12 opens ② on Feb 12');
     /* a far add on the flight day lands armed on the row: 確定 / やめる, never a timed second tap */
     await until(() => view()._pl.ready(), 8000);
-    day(5).click(); await wait(600);
+    await pick(5);
     ok(fr.contentWindow.location.hash === '#plan/16', 'a day tap updates the URL');
     q('[data-r="browse"]').click(); await until(() => q('.pl-sheet input[name="q"]'));
     const s = q('.pl-sheet input[name="q"]'); s.value = 'パリトゥトゥ'; s.dispatchEvent(new Event('input', {bubbles: true}));
@@ -95,7 +97,7 @@
     q('.pl-sheet__close').click(); await wait(400);
 
     /* reload: the add persisted with the import */
-    day(1).click(); await wait(500);
+    await pick(1);
     const n1 = rows().length;
     flush(); await load();
     ok(await until(() => rows().length === n1), 'after a reload the day has the same stops');
@@ -105,14 +107,13 @@
        and the map is MapLibre's, drawing the day's pins and legs */
     day(2).click();
     ok(await until(() => view()._pl.map().ready, 15000), 'the map engine (planner-map.js, MapLibre) starts');
-    await wait(900);
-    ok(view()._pl.busy() === false, 'no gesture or tween is left running after a day tap');
+    ok(!!await until(() => view()._pl.busy() === false, 5000), 'no gesture or tween is left running after a day tap');
     { const m = view()._pl.map(); ok(m.pins > 0 && m.feats.legs > 0 && !!q('.pl-map canvas.maplibregl-canvas'), 'the day draws as HTML pins over GL legs: ' + JSON.stringify(m)); }
-    day(4).click(); await wait(900);
-    ok(view()._pl.busy() === false, 'still idle after a second animated move');
+    day(4).click(); await wait(100);
+    ok(!!await until(() => view()._pl.busy() === false, 5000), 'still idle after a second animated move');
 
     /* 日を移動 to the flight day: ⚠ and why on the day row, armed on tap, 確定 moves, undo puts it back */
-    day(3).click(); await wait(700);
+    await pick(3);
     const tsr = q('main .pl-stop[data-id="three-sisters-elephant-rock"] .pl-row');
     if (tsr) {
       tsr.click(); await wait(200);
@@ -133,7 +134,7 @@
     } else ok(false, 'Three Sisters is on Feb 14');
 
     /* a typed start time that breaks the day arms on the anchor; やめる keeps the old start */
-    day(5).click(); await wait(700);
+    await pick(5);
     const tin = q('main input[name="start"]');
     if (tin) { const was = view()._pl.sim('my')[5].rows[0][0];
       tin.value = '16:00'; tin.dispatchEvent(new Event('change', {bubbles: true}));
@@ -149,7 +150,7 @@
     ok(!!hutRow && !!q('.pl-sheet .pl-row--current'), 'the 案 menu lists My plan and the saved version');
     if (hutRow) { hutRow.click(); await wait(600); }
     if (q('.pl-sheet.is-open')) { q('.pl-sheet__close').click(); await wait(400); }
-    day(3).click(); await wait(700);
+    await pick(3);
     const tarns = () => q('main .pl-stop[data-id="pouakai-tarns"] .pl-row');
     if (tarns()) { tarns().click(); await wait(200); }
     const plus = q('main .pl-stop[data-id="pouakai-tarns"] [data-act="stay"][data-d="15"]');
