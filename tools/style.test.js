@@ -26,7 +26,7 @@ const NAMED = /\b(white|black|red|green|blue|gray|grey|silver|orange|yellow|purp
 const LIT = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?)\(\s*[\d.]/i;
 /* the colour vocabulary: WORKFLOW's list, the tint, the day hue (--c / --day / --dN, markers only) and the map's own */
 const COLOURS = new Set(['ink', 'muted', 'line', 'bg', 'surface', 'acc', 'pl-warn', 'pl-tint', 'c', 'day', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6',
-  'map-sea', 'pl-land', 'pl-coast', 'pl-scrim', 'pl-hair', 'pl-e-1', 'pl-e-2', 'pl-focus']);
+  'map-sea', 'pl-scrim', 'pl-hair', 'pl-e-1', 'pl-e-2', 'pl-focus']);
 const RETIRED = /var\(--(acc2[\w-]*|eyebrow|pl-good[\w-]*|pl-warn-soft|acc-soft|acc-ring|line-2|line-strong|ci|pl-ink-a|pl-shadow|pl-on-photo|pl-d\d-ink|faint|ink-2)\b/;
 const COLOUR_PROPS = /^(color|background(-color)?|border(-(top|right|bottom|left|block|inline)(-(start|end))?)?(-color)?|outline(-color)?|fill|stroke|caret-color|accent-color|text-decoration(-color)?|column-rule)$/;
 const SPACE_PROPS = /^(padding|margin|gap|row-gap|column-gap|inset|top|right|bottom|left|scroll-padding|scroll-margin)(-[a-z-]+)?$/;

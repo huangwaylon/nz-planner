@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>map spike</title>
+<link rel="stylesheet" href="../poc.css">
+<style>html,body{margin:0;height:100%}#m{position:absolute;inset:0}#b{position:absolute;top:8px;left:8px;z-index:2;display:flex;gap:6px}</style>
+</head><body>
+<div id="m" class="t-nz"></div>
+<div id="b"><button data-l="ja">日本語</button><button data-l="en">EN</button>
+<button data-f="akl">Auckland</button><button data-f="tnp">Taranaki</button><button data-f="all">All</button></div>
+<script src="../planner-map.js"></script>
+<script>
+const F = {akl:[[174.6,-37.0],[174.95,-36.75]], tnp:[[173.9,-39.45],[174.3,-39.1]], all:plmap.FRAME};
+const q = new URLSearchParams(location.search);
+plmap.create(document.getElementById('m'), {lang:q.get('lang')||'ja', validate:true, onMode:m=>document.title='map '+m, onClick:h=>console.log('click',h)}).then(e=>{
+  window.E = e;
+  if (q.get('f')) e.fit(F[q.get('f')], {instant:true, maxZoom:16});
+  e.setData('legs',{type:'FeatureCollection',features:[{type:'Feature',properties:{kind:'road',color:'#1f6fe0'},geometry:{type:'LineString',coordinates:[[174.763,-36.848],[174.70,-36.90],[174.47,-36.95]]}}]});
+  e.setData('cands',{type:'FeatureCollection',features:[[174.76,-36.85],[174.74,-36.86],[174.78,-36.84],[175.3,-37.8],[174.07,-39.06]].map((c,i)=>({type:'Feature',properties:{id:'c'+i},geometry:{type:'Point',coordinates:c}}))});
+  document.getElementById('b').onclick = ev => { const b = ev.target; if (b.dataset.l){ document.documentElement.lang=b.dataset.l; e.setLang(b.dataset.l);} if (b.dataset.f) e.fit(F[b.dataset.f]); };
+}, err => { document.title = 'map failed'; console.error(err); });
+</script>
+</body></html>

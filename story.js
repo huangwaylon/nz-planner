@@ -5,11 +5,13 @@
 
    model = {date:'2027-02-14', dayNo:4, title, titleJa, color:'#e07c00', lang:'ja'|'en',
             stops:[{time:'06:49', name, nameJa, cat, photo?, lat?, lon?}], stats?, tags?, ink?, legs?}
-   ink is the day colour darkened for text (else computed); legs = [{kind, pts:[[x,y],…]}] in map
-   units draw the road shapes (else straight lines between stops); tags are igTags, '#' optional.
-   photo is a URL or {src, src2x, credit}. The first stop with one is the hero. lat/lon, when
-   present, draw the mini route over the book's land (data/nz/land.svg.html, the planner's own
-   projection). Nothing personal goes on the card: no names, base, room code or link.
+   ink is the day colour darkened for text (else computed); legs = [{kind:'drive'|'walk'|'ferry',
+   ll:[[lon,lat],…]}] draw the road shapes (else straight lines between stops); home = {lat, lon},
+   where the day ends; tags are igTags, '#' optional. photo is a URL or {src, src2x, credit}. The
+   first stop with one is the hero. lat/lon, when present, draw the mini route over a still of the
+   planner's own basemap (planner-map.js plmap.snapshot: OpenFreeMap tiles, credited in its corner);
+   offline or without plmap, over the plain sea tint. Nothing personal goes on the card: no names,
+   base, room code or link.
 
    Classic script, no dependencies; tokens come from the guide's computed style. Folds into the
    book with the planner; the sheet's CSS is injected here, all under the pl- prefix. */
@@ -20,10 +22,6 @@
   /* one sans family everywhere, as in the planner (docs/WORKFLOW.md "Type and colour system"); weights 400 and 600 */
   const SANS = '"Hiragino Sans","Hiragino Kaku Gothic ProN",-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif';
   const SERIF = SANS, LATIN = SANS;
-  // The planner's projection (planner.js prj(), after .map/nz.py), so the route lands where the map has it.
-  const LAT0 = -40.45, LAT1 = -34.30, LON0 = 172.40, LON1 = 178.90, MW = 692;
-  const KC = Math.cos((LAT0 + LAT1) / 2 * Math.PI / 180), SC = MW / ((LON1 - LON0) * KC);
-  const prj = (lat, lon) => [(lon - LON0) * KC * SC, (LAT1 - lat) * SC];
   // The book's sprite (24-unit Lucide strokes), same glyph per category as planner.js GLYPH.
   const GL = {
     hike: ['m8 3 4 8 5-5 5 15H2L8 3z'],
@@ -90,14 +88,44 @@
       i.src = src;
     });
   }
-  let landP = null;
-  function land() {
-    if (!landP) {
-      const v = document.querySelector('.v-plan');
-      const src = (v && v.dataset.src || 'data/nz/') + 'land.svg.html';
-      landP = fetch(src).then(r => r.ok ? r.text() : '').then(t => [...t.matchAll(/ d="([^"]+)"/g)].map(m => new Path2D(m[1]))).catch(() => []);
-    }
-    return landP;
+  /* The mini route's basemap: a still of the planner's map (null offline, without WebGL or plmap). */
+  const MAPW = 236, MAPH = n => Math.min(80 * Math.max(n, 3) + 6, 400);
+  const NEAR = 0.01;   // degrees (~1 km): a leg belongs to the day when both its ends sit on its stops
+  function routeOf(m) {
+    const geo = m.stops.filter(s => s.lat != null && s.lon != null);
+    if (geo.length < 2) return null;
+    const home = m.home && m.home.lat != null ? [m.home.lon, m.home.lat] : null;
+    const pts = geo.map(s => [s.lon, s.lat]), all = home ? pts.concat([home]) : pts;
+    const near = q => all.some(p => Math.abs(p[0] - q[0]) < NEAR && Math.abs(p[1] - q[1]) < NEAR);
+    const legs = (m.legs || []).filter(l => l && l.ll && l.ll.length > 1 && near(l.ll[0]) && near(l.ll[l.ll.length - 1]));
+    return {pts, home, all, legs};
+  }
+  /* planner-map.js loads lazily (planner.js does it for the map; the card may come first): next to
+     story.js, or where the planner's view says (data-map-src). null when it cannot load. */
+  const ME = document.currentScript && document.currentScript.src || location.href;
+  let PLMAP = null;
+  function plmap() {
+    if (window.plmap) return Promise.resolve(window.plmap);
+    if (!PLMAP) PLMAP = new Promise(res => {
+      const v = document.querySelector('.v-plan'), s = document.createElement('script');
+      s.src = v && v.dataset.mapSrc || new URL('planner-map.js', ME).href;
+      s.onload = () => res(window.plmap || null); s.onerror = () => { PLMAP = null; s.remove(); res(null); };
+      document.head.appendChild(s);
+    });
+    return PLMAP;
+  }
+  async function still(m, R, T, mh) {
+    if (!R) return null;
+    const pm = await plmap(); if (!pm || !pm.snapshot) return null;
+    const xs = R.all.map(p => p[0]), ys = R.all.map(p => p[1]);
+    let w = Math.min(...xs), e = Math.max(...xs), s = Math.min(...ys), n = Math.max(...ys);
+    const pad = Math.max(0.004, (e - w) * 0.06, (n - s) * 0.06); w -= pad; e += pad; s -= pad; n += pad;
+    const kind = k => k === 'drive' ? 'road' : k === 'ferry' ? 'ferry' : 'walk';
+    const lines = R.legs.length ? R.legs.map(l => ({type: 'Feature', properties: {kind: kind(l.kind), color: T.day}, geometry: {type: 'LineString', coordinates: l.ll}}))
+      : [{type: 'Feature', properties: {kind: 'road', color: T.day}, geometry: {type: 'LineString', coordinates: R.home ? R.pts.concat([R.home]) : R.pts}}];
+    return pm.snapshot({w: MAPW, h: mh, scale: 2, bbox: [[w, s], [e, n]], padding: 16, maxZoom: 13, labels: false, lang: m.lang,
+      themeEl: m.guide || document.querySelector('.guide.t-nz') || document.querySelector('.guide') || document.documentElement,
+      data: {legs: {type: 'FeatureCollection', features: lines}}}).catch(() => null);
   }
   function fonts(m) {
     if (!document.fonts || !document.fonts.load) return Promise.resolve();
@@ -152,7 +180,8 @@
     const T = tokens(m.color), D = m.ink || deep(T.day);
     const heroStop = m.stops.find(photoOf);
     const hp = photoOf(heroStop);
-    const [hero, paths] = await Promise.all([img(hp && (hp.src2x || hp.src)), m.stops.some(s => s.lat != null) ? land() : [], fonts(m)]);
+    const R = routeOf(m), mh = MAPH(Math.min(m.stops.length, 5));
+    const [hero, snap] = await Promise.all([img(hp && (hp.src2x || hp.src)), still(m, R, T, mh), fonts(m)]);
 
     const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
     const c = cv.getContext('2d');
@@ -244,33 +273,37 @@
     });
     if (more > 0) { c.font = '400 28px ' + SANS; c.fillStyle = T.muted; c.fillText(L(m, 'more').replace('{n}', more), nx, y - 26); y += 54; }
 
-    // Mini route: the day's stops over the land, no labels, beside the list.
-    if (mapW) {
-      const mx = W - M - mapW, my = PT + PH + 58, mh = Math.min(RH * Math.max(rows.length, 3) + 6, 400);
-      const pts = geo.map(s => prj(s.lat, s.lon));
-      // where the day ends (the night's bed, or the airport): the drive home is part of the day
-      const home = m.home && m.home.lat != null ? prj(m.home.lat, m.home.lon) : null, all = home ? pts.concat([home]) : pts;
-      let x0 = Math.min(...all.map(p => p[0])), x1 = Math.max(...all.map(p => p[0])), y0 = Math.min(...all.map(p => p[1])), y1 = Math.max(...all.map(p => p[1]));
-      const span = Math.max(x1 - x0, (y1 - y0) * mapW / mh, 8) * 1.5;
-      const cx = (x0 + x1) / 2, cyy = (y0 + y1) / 2, k = mapW / span;
+    // Mini route: the day's stops over a still of the basemap (else the sea tint), beside the list.
+    if (mapW && R) {
+      const mx = W - M - mapW, my = PT + PH + 58;
+      let to;
       c.save(); rr(c, mx, my, mapW, mh, 30); c.clip();
-      c.fillStyle = T.sea; c.globalAlpha = .5; c.fillRect(mx, my, mapW, mh); c.globalAlpha = 1;
-      c.save(); c.translate(mx + mapW / 2, my + mh / 2); c.scale(k, k); c.translate(-cx, -cyy);
-      c.fillStyle = T.surface; paths.forEach(p => c.fill(p));
-      c.restore();
-      const to = p => [mx + mapW / 2 + (p[0] - cx) * k, my + mh / 2 + (p[1] - cyy) * k];
-      const sp = pts.map(to);
-      const line = (q, dash) => { c.beginPath(); q.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.setLineDash(dash); c.stroke(); };
-      c.lineWidth = 6; c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = T.day;
-      // Road shapes when the planner has them (map units, the same projection); walk and ferry dotted, as in the book.
-      // Legs between the day's stops and on to where it ends (the drive home is drawn too).
-      const near = q => all.some(p => Math.hypot(p[0] - q[0], p[1] - q[1]) < 1.2);
-      const legs = (m.legs || []).filter(l => l && l.pts && l.pts.length > 1 && near(l.pts[0]) && near(l.pts[l.pts.length - 1]));
-      if (legs.length) legs.forEach(l => line(l.pts.map(to), l.kind === 'drive' ? [] : [2, 12]));
-      else line(home ? sp.concat([to(home)]) : sp, []);
-      c.setLineDash([]);
-      if (home) { const q = to(home); c.fillStyle = T.day; c.fillRect(q[0] - 9, q[1] - 9, 18, 18); }
-      sp.forEach((p, i) => { c.beginPath(); c.arc(p[0], p[1], i === 0 ? 11 : 8, 0, Math.PI * 2); c.fillStyle = i === 0 ? T.day : T.surface; c.fill(); c.lineWidth = 4; c.strokeStyle = T.day; c.stroke(); });
+      if (snap) {
+        c.drawImage(snap.canvas, mx, my, mapW, mh);
+        to = p => { const q = snap.project(p[0], p[1]); return [mx + q[0], my + q[1]]; };
+      } else {
+        // no basemap: a local equirectangular fit (cos(lat) east-west), the route alone on the sea tint
+        c.fillStyle = T.sea; c.globalAlpha = .5; c.fillRect(mx, my, mapW, mh); c.globalAlpha = 1;
+        const kc = Math.cos(R.all.reduce((a, p) => a + p[1], 0) / R.all.length * Math.PI / 180);
+        const xs = R.all.map(p => p[0] * kc), ys = R.all.map(p => -p[1]);
+        const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+        const span = Math.max(x1 - x0, (y1 - y0) * mapW / mh, 0.06) * 1.5, cx = (x0 + x1) / 2, cyy = (y0 + y1) / 2, k = mapW / span;
+        to = p => [mx + mapW / 2 + (p[0] * kc - cx) * k, my + mh / 2 + (-p[1] - cyy) * k];
+        const line = (q, dash) => { c.beginPath(); q.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.setLineDash(dash); c.stroke(); };
+        c.lineWidth = 6; c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = T.day;
+        // Road shapes when the planner has them; walk and ferry dotted, as in the book. The drive home is drawn too.
+        if (R.legs.length) R.legs.forEach(l => { const d = l.kind === 'drive'; c.lineWidth = d ? 6 : 9; line(l.ll.map(to), d ? [] : [0.1, 15]); });   /* walk/ferry: round dots, heavier, so they read at mini-map size */
+        c.lineWidth = 6;
+        else line((R.home ? R.pts.concat([R.home]) : R.pts).map(to), []);
+        c.setLineDash([]);
+      }
+      if (R.home) { const q = to(R.home); c.fillStyle = T.day; c.fillRect(q[0] - 9, q[1] - 9, 18, 18); }
+      R.pts.map(to).forEach((p, i) => { c.beginPath(); c.arc(p[0], p[1], i === 0 ? 11 : 8, 0, Math.PI * 2); c.fillStyle = i === 0 ? T.day : T.surface; c.fill(); c.lineWidth = 4; c.strokeStyle = T.day; c.stroke(); });
+      if (snap) {   // the tiles' credit (ODbL), small in the corner
+        c.font = '400 15px ' + SANS; c.textAlign = 'right'; const cr = '© OpenStreetMap', tw = c.measureText(cr).width;
+        c.fillStyle = T.surface; c.globalAlpha = .8; c.fillRect(mx + mapW - tw - 30, my + mh - 30, tw + 30, 30); c.globalAlpha = 1;
+        c.fillStyle = T.muted; c.fillText(cr, mx + mapW - 18, my + mh - 10); c.textAlign = 'left';
+      }
       c.restore();
     }
 

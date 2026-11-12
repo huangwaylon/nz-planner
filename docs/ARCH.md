@@ -11,13 +11,16 @@
   bound Apps Script web app. Firestore was considered and dropped: a new provider and a new project,
   for no gain.
 - **Storage:**
-  - Shell, data and the land SVG go in Cache Storage. A versioned `SHELL` cache holds the shell; a
-    stable `data` cache holds content-hashed data files.
+  - Shell and data go in Cache Storage. A versioned `SHELL` cache holds the shell; a stable `data`
+    cache holds content-hashed data files. `vendor/maplibre` is not pre-cached (kept once fetched),
+    and map tiles are not cached: no offline map for now (the map shows its offline note).
   - Plans, history and snapshots go in localStorage through `LS`. They are tiny; IndexedDB is not needed.
   - Call `navigator.storage.persist()`. Push installing to the Home Screen, since iOS evicts after
     7 days otherwise.
 - **Data delivery:**
-  - The land SVG is fetched and cached, not inlined.
+  - The basemap is OpenFreeMap's vector tiles, fetched at runtime by MapLibre (`planner-map.js`,
+    `vendor/maplibre`, loaded by `import()` on the map's first draw: ~300 KB + ~150 KB gz for the
+    engine and its worker, off the critical path). There is no land SVG.
   - The drive-time matrix is minutes-only and lazy-loaded after first render (~26 KB gz).
   - The km column is dropped from the shipped file.
   - Until the matrix arrives, use haversine×1.35 at 50 km/h.
@@ -32,7 +35,8 @@
    `navigator.standalone` is true.
 3. Undo stack, unlimited per session. Named snapshots (「この案を保存」) as versions. Compare two versions.
 4. Opening a share link **adds a version** instead of overwriting My plan.
-5. Map gestures: CSS transform during the gesture; write `viewBox` and `--z` once at the end.
+5. Map gestures: MapLibre's own camera; the planner writes nothing per frame and waits for
+   `moveend`.
    Selection toggles classes, it never re-renders the pins.
 6. Privacy guard: plans hold only place ids, minutes and HH:MM times. No names, flights or addresses.
 
@@ -73,6 +77,8 @@
     requests a day sit far below them.
   - Over a quota, a request fails and the app stays local-first, so the cost is a delay in sync,
     not money.
-- No paid APIs at runtime. Drive times, geocodes and the basemap are fetched once at authoring time
-  from free services (OSRM demo, Nominatim, OSM) and shipped as static files.
+- No paid APIs at runtime. Drive times and geocodes are fetched once at authoring time from free
+  services (OSRM demo, Nominatim) and shipped as static files.
+- The basemap is the exception: OpenFreeMap's tiles (free, no key) at runtime. That third party
+  sees the phone's IP and the area viewed, never the plan. Attribution is always shown.
 - No Google Maps API key: links are plain maps URLs, which cost nothing.

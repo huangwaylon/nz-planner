@@ -468,7 +468,7 @@ planner.more=function(c){
   }
   /* ---------- the story image: story.js (plstory.open(dayModel)) loads only when asked ---------- */
   /* The model story.js documents: {date, dayNo, title, titleJa, color, lang, stops:[{time, name,
-     nameJa, cat, photo, lat, lon}], stats, tags}, plus the leg shapes in map units. */
+     nameJa, cat, photo, lat, lon}], stats, tags, home}, plus the leg shapes in [lon,lat]. */
   function dayModel(){
     const day=DB.days[S.day], sc=S.sc, cs=getComputedStyle(c.main);
     const P=plan(), tt=c.titleT(day,P);
@@ -480,7 +480,13 @@ planner.more=function(c){
       stats:pt('drive',{d:dur(sc.drive)})+' · '+Math.round(sc.km)+' km · '+pt('stops',{n:sc.rows.length-2}),
       home:(p=>p&&{lat:p.lat,lon:p.lon})(place(sc.rows[sc.rows.length-1].id)),
       tags:[...new Set(sc.rows.map(r=>place(r.id).igTag).filter(Boolean))].slice(0,3),
-      legs:c.legSegments(sc).map(s=>({kind:s.kind,pts:(s.kind==='drive'&&c.geom(s.a,s.b)||{pts:[s.p0,s.p1]}).pts}))};
+      legs:c.legSegments(sc).map(s=>({kind:s.kind,ll:legLL(s)}))};
+  }
+  /* a leg's shape in [lon,lat]: the road geometry for a drive (c.geomLL, the planner's route cache), else a straight line */
+  function legLL(s){
+    const g=s.kind==='drive'&&c.geomLL&&c.geomLL(s.a,s.b), pts=g&&(Array.isArray(g)?g:g.pts);
+    if(pts&&pts.length>1) return pts;
+    const A=place(s.a), B=place(s.b); return [[A.lon,A.lat],[B.lon,B.lat]];
   }
   /* a stop without its own photo may use the gallery's first Commons picture: the canvas needs CORS, which only Commons gives */
   const commons=p=>{ const G=c.gx(), x=c.gal(p).find(x=>G.isWM(x.u)); return x?{src:G.gw(x.u,640),src2x:x.u,credit:x.by}:null; };

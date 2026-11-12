@@ -15,8 +15,12 @@ its conventions win over anything here.
   `<html data-place="nz" class="js-tabs" lang="ja">` → `<article class="guide t-nz" data-guide="nz">`
   → `<div class="views"><section class="view v-plan">…</section></div>`. A tab radio
   `t-plan` (`name="tab-nz"`) can be added at fold time.
-- Plain classic scripts: no `import`/`export`, no build, no dependencies, no CDN. Modern syntax that
-  iOS 16 Safari runs is fine.
+- Plain classic scripts: no `import`/`export`, no build, no CDN. Modern syntax that iOS 16 Safari
+  runs is fine.
+- One dependency, vendored: **MapLibre GL 6.16** in `vendor/maplibre/` (its ES module, worker and
+  CSS, served from our own origin). `planner-map.js` (a classic script, global `plmap`) loads it with
+  `import()` on the map's first draw; nothing else imports anything. Folding in copies
+  `planner-map.js` and `vendor/maplibre/` into the book too.
 
 ## 2. What it may assume from the host
 Only what the book already provides. The POC ships **`host.js`**, a shim with *identical* names
@@ -49,14 +53,18 @@ and signatures, and it is dropped at fold time:
   `-webkit-touch-callout:none` on tappables, `100dvh` with `100vh` first, prefers-reduced-motion.
 
 ## 4. The map
-- Same projection, frame (lat −40.45…−34.30, lon 172.40…178.90, 692×824) and land paths as
-  `.map/nz.py`. The basemap comes out of the book's generator. `tools/basemap.py` extracts the
-  same `<g class="land">`, so the planner pin at a given lat/lon lands on the book's pixel.
-- Same mechanics: the `viewBox` holds the zoom, `--z` holds stroke and pin size, writes are
-  coalesced per frame, the screen is measured once per gesture, and `getScreenCTM()` turns screen
-  points into map units. Pins are not focusable; the list is the keyboard path.
-- The planner draws its own `<svg class="map">` inside `.v-plan` for now. Merging it with the
-  book's `v-map` is a post-fold decision.
+- A MapLibre GL map (`planner-map.js`) over OpenFreeMap's vector tiles (OpenStreetMap data, the
+  OpenMapTiles schema), no API key. The style is our own, after `../fitness` travel/map/basemap.ts,
+  coloured from the theme tokens (read once and resolved, since a GL style cannot read custom
+  properties). Labels follow the page language (`name:ja`, else `name`; English `name:en`, else
+  `name:latin`); Japanese is drawn from the system font, Latin from OpenFreeMap's glyphs.
+- Panning is held to the North Island frame (lat −40.45…−34.30, lon 172.40…178.90, with a margin).
+  There is no SVG coastline anywhere: the tiles are the only basemap.
+- The day's stops and anchors are HTML markers; candidates and other days' places are GL circle
+  layers (candidates clustered by MapLibre); the legs are line layers over the roads, under the
+  labels. Pins are not focusable; the list is the keyboard path.
+- The book's own `v-map` is still SVG. At fold time it either moves to `planner-map.js` too or the
+  two maps differ; a post-fold decision.
 
 ## 5. Data and storage
 - Per-book data lives under `data/<slug>/`: `places.json`, `plans.json`, `travel.json`. The book
@@ -80,22 +88,24 @@ and signatures, and it is dropped at fold time:
   without it, with no change to `planner(g)`.
 
 ## Fold checklist (for later)
-The planner is one module plus four files it loads on demand. All are classic scripts that add
+The planner is one module plus the files it loads on demand (table below). All are classic
+scripts except the vendored MapLibre, an ES module `planner-map.js` loads by `import()`. They add
 no new globals beyond `planner` (with `planner.sim`, `planner.more`, `planner.swapRank`),
-`plimport` (with `plimport.ui`) and `plstory`.
+`plimport` (with `plimport.ui`), `plstory` and `plmap`.
 
 | File | Loaded | Role |
 |---|---|---|
 | `planner.js` | with the book | `planner(g)`, the day simulation (`planner.sim`) |
 | `planner.css` | with the book | every rule under `.v-plan` / `pl-`; layout by `@container plan` (`.v-plan{container:plan/inline-size}`), never by the window |
 | `planner-collect.js` + `planner-collect.css` | ① opens (or the last stage was ①) | `planner.collect(ctx)`: tiers, groups, the bulk bar; ≤7.5 KB gz |
-| `planner-desk.js` + `planner-desk.css` | the planner itself is ≥1024 wide, after paint (never a phone; not in sw.js APP) | `planner.desk(ctx)`: palette, 6-day board, drag controller, hover; ≤6.5 KB gz |
+| `planner-desk.js` + `planner-desk.css` | the planner itself is ≥1024 wide, after paint (never a phone; not in sw.js APP) | `planner.desk(ctx)`: palette, 6-day board, drag controller, hover; ≤16 KB gz |
 | `planner-cal.js` + `planner-cal.css` | ③ opens | `planner.cal.render` / `renderVersions(el, model, opts)`: the month calendar and the versions grid, model from planner.sim (tools/cal_fixture.py is the field reference) |
 | `planner-gallery.js` + `planner-gallery.css` | with `data/nz/gallery.json`, from `loadGallery()`: the deferred `loadLazy()`, a place sheet, a story | `planner.gallery(ctx)` → `{gal, gimg, gw, isWM, thumb}` (core exposes `c.gal(p)` and `c.gx()`): picture markup, the small picture, the drop-on-error listener |
 | `planner-more.js` + `planner-more.css` + `data/nz/groups.json` | the first touch (prefetched), or any sheet | `planner.more(ctx)`: candidates, place, plans, move, order, swap, compare, version name, share and paste |
 | `import.js` + `planner-import.js` + `planner-import.css` | the 取り込む sheet | parsers (`plimport.gm/ig`), the sheet (`plimport.ui`) and its styles |
 | `story.js` | 「ストーリー画像」 | `plstory.open(model, g)`; the model carries `guide` and `slug` |
-| `data/nz/*.json`, `land-lo.svg.html` → `land.svg.html` | boot (light coast) and idle (full coast, `places-more.json`: vibe, kw, ig, igTag; `flags.json`: flag labels and levels) | see §5 |
+| `planner-map.js` + `vendor/maplibre/*` | the map's first draw (`import()`; vendor not pre-cached by sw.js) | `plmap.create(el, opts)` → the engine; `plmap.snapshot(opts)` for story.js; tiles from `tiles.openfreemap.org` |
+| `data/nz/*.json` | boot, and idle (`places-more.json`: vibe, kw, ig, igTag; `flags.json`: flag labels and levels) | see §5 |
 | `images/nz/*` | on view | photos and `-t` thumbnails |
 
 1. Copy `planner.js` into the book's GUIDES script (or keep it as a file) and add `planner(g)` to the loop.
@@ -153,7 +163,7 @@ code carries `/* note N … */` where each applies.
 3. the sun at the place itself; best may be "sunrise,sunset" (judged by the end of the day the visit falls on: before noon = sunrise). mustSun places exist for it, so missing it is a ⚠; for the rest best is a preference and missing it a golden-hour hint. Before dawn is fine on the approach to a sunrise stop later that day.
 4. The day with ids added, simulated before anything is shown: one place goes to its cheapest open slot; a grouping (c) goes in as one block, placed by its best (sunset: the last stop ends at sunset; sunrise: the first starts at it) or its startAt, and an empty morning leaves at startAt. A block that breaks less always wins over one that is closer to its hour.
 5. plans — Two kinds, one shape {id,days,stay,start,notes,anchors?}: saved versions (frozen snapshots, ids "v-…", kind 'auto' for the automatic ones) and マイプラン, the working copy, which always exists (empty on first run). There are no premade plans: plans.json ships `plans: []`, and the old curated ones are tools/fixtures/presets.json for the tests and tools/check_plans.py. An edit changes the active plan in place: マイプラン itself, or a version replaced by its changed clone, so undo restores the original.
-6. zoom and pan — Every move — a gesture, the +/− buttons, a fit — moves .pl-world by a CSS transform and writes viewBox and --z once, when it ends, so no frame restyles the pins. --z is screen px per map unit; `scale(1/--z)` on each pin's inner group holds pins, labels and strokes at screen size.
+6. zoom and pan — MapLibre owns the camera: gestures, the +/− buttons (zoomBy) and fits (fitBounds/easeTo) all move it, and pins, labels and strokes stay at screen size by themselves. The planner writes nothing per frame; work that must not run under a moving map waits for moveend.
 7. reorder: drag the handle (pointer events, iOS has no HTML5 DnD), or tap it for the 上へ/下へ/位置 sheet, which is also the VoiceOver and glove path. Transforms only while moving, layout measured once, one recompute per frame at most, and nothing re — renders under the finger. ----------
 8. the trip, shared by every version: tiers (must|want|maybe|skip; '' = back to the inbox, no key = not sorted yet, which for her saved places reads as want), groups (one outing each, a place in at most one) and notes about places
 9. An old cached app reads a v2 save as broken, keeps it in plan:<slug>:broken and writes v1 over it. The new app takes back what that cost: the trip, My plan if the old app had none, every version, import and booking.
@@ -180,7 +190,7 @@ code carries `/* note N … */` where each applies.
 30. A change that moves times but not places (stay ±, start time, a note, a booking) patches the day in place: no list rebuild, no map work. Falls back to a full render if the rows differ.
 31. Candidate pins (perf rules 4-6): built only while shown (browsing, placing, ①) and removed when hidden, never kept under display:none; above 300 they are clustered on a grid over the current view, rebuilt once per settle; a tap on a cluster zooms into it. Planned places are left out.
 32. road geometry: routes.json first, then the OSRM demo server, one leg at a time when idle and online, cached LRU (200) in plan-ui
-33. M.tw is the tween's frame id while one runs and 0 otherwise: busyUI() reads it, so it must be zeroed on the last frame and on every cancel, or routes and the coastline wait forever
+33. busyUI() reads the map's own moving state (engine.moving()) beside a drag or gesture; route fetches and redraws wait on it, so anything that marks the map busy must clear on moveend and on every cancel, or routes wait forever
 34. Patch, don't rebuild (perf rule 2): an edit marks the regions it touched; the next frame renders only those. render() (everything) is for stage, language and plan switches.
 35. sheets: the background is inert, the dialog is named by its heading, Tab stays inside, and closing makes it inert at once so a second tap cannot act twice
 36. URL state (docs/DESIGN.md interaction rule 5): #collect, #plan/13, #review, #place=<id>. The stage and day replace the entry; a sheet and the full map push one, so Back closes them. A hash that is not ours (a share link, #pair=) is left alone.
@@ -192,7 +202,7 @@ code carries `/* note N … */` where each applies.
 42. places-more.json: the vibe lines, evidence and sources, off the critical path. The vibe joins its place record (and the search index) when it arrives.
 43. Boot in two tasks so neither runs long: the day list first, the map's pins next. A render error from bad saved state drops to an empty マイプラン rather than bricking the app.
 44. Listeners attach in the third boot task (wire), so a tap on a slow phone can land on a rendered but deaf page. Hold the first such tap and replay it once wired.
-45. the matrix, road shapes, photos index and full coastline wait for her first touch or for a quiet moment after load, so the first screen downloads only what it draws
+45. the matrix, road shapes and photos index wait for her first touch or for a quiet moment after load, so the first screen downloads only what it draws
 
 ## Collect notes
 

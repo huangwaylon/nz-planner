@@ -22,8 +22,8 @@ const PTD={
   sleepAt:{ja:'泊 {p}',en:'stay {p}'}, warnN:{ja:'⚠ 注意 {n}',en:'⚠ {n} alerts'}, depart2:{ja:'{t} 発',en:'leave {t}'}, arrive2:{ja:'{t} 着',en:'arrive {t}'},
 };
 planner.desk=function(c){
-  const {S,DB,E,view,svg,pt,esc,ic,place,nm,nmLang,dlabel,dayStyle,hm,dur,plan,edit,openPlace,setDay,tierOf,cover,plannedMap,isCand,clone,
-    breakLine,legSegments,geom,arc,pathD,glyphOf,tr,AREA,gal,BTN,IBTN,SEG,FIELD,ROW,BADGE,STAT,hmm}=c; const gimg=(...a)=>c.gx().gimg(...a);
+  const {S,DB,E,view,pt,esc,ic,place,nm,nmLang,dlabel,dayStyle,hm,dur,plan,edit,openPlace,setDay,tierOf,cover,plannedMap,isCand,clone,
+    breakLine,glyphOf,tr,AREA,gal,BTN,IBTN,SEG,FIELD,ROW,BADGE,STAT,hmm}=c; const gimg=(...a)=>c.gx().gimg(...a);
   c.addStrings(PTD);
   const sim=()=>c.sim(), o=()=>({deadline:S.dayEnd}), fine=matchMedia('(hover:hover) and (pointer:fine)').matches;
   /* id → group, memoised on the groups array's identity (perf rule 6) */
@@ -66,9 +66,9 @@ planner.desk=function(c){
       const rows=sc.rows.slice(1,-1).map((r,i)=>(i?`<p class="pl-leg">${legT(r.leg)}</p>`:'')+ROW({media:tn(place(r.id),40),title:`<button type="button" class="pl-row__name" data-act="bopen" data-id="${r.id}"${nmLang(place(r.id))} title="${esc(nm(place(r.id)))}">${esc(nm(place(r.id)))}</button>`,meta:`<span>${hm(r.begin)}</span>${r.warns.length?STAT('alert','',{cls:'pl-stat--warn'}):''}`},{'data-drag':`s:${d.date}:${r.id}`,id:r.id})).join('');
       return `<section class="pl-bc${k===S.day?' is-current':''}" data-dz="day" data-day="${k}" data-arm style="${dayStyle(k)}" role="group" aria-label="${esc(dlabel(d))}">${head}${rows||`<p class="pl-hint">${pt('laneEmpty')}</p>`}</section>`; }).join(''); }
   /* every day's route at once, each in its day colour */
-  function allDays(on){ const g=svg.querySelector('.pl-alld'); svg.classList.toggle('pl-all',on); if(!on){ g.innerHTML=''; return; } const P=plan();
-    g.innerHTML=DB.days.map((d,k)=>`<g data-day="${k}" style="${dayStyle(k)}">${legSegments(sim().schedule(d,null,P,o())).map(s=>{ const gm=s.kind==='drive'&&geom(s.a,s.b);
-      return `<path class="pl-leg-${s.kind==='walk'||s.kind==='ferry'?s.kind:gm?'road':'est'}" d="${gm?pathD(gm.pts):arc(s.p0,s.p1).d}"/>`; }).join('')}</g>`).join(''); }
+  function allDays(on){ if(!on){ c.setAllDays(false); return; } const P=plan(), fs=[];
+    DB.days.forEach((d,k)=>c.legFeatures(sim().schedule(d,null,P,o()),c.dayCol(k)).lines.forEach(f=>{ f.properties.day=k; fs.push(f); }));
+    c.setAllDays(true,{type:'FeatureCollection',features:fs}); }
   /* ① the map shows the cards in view, not day 1's route */
   let fitK='';
   function fitCards(){ const ids=[...E.collect.querySelectorAll('.pl-card')].map(x=>x.dataset.id), k=ids.join(); if(!ids.length||k===fitK) return; fitK=k;
@@ -80,7 +80,6 @@ planner.desk=function(c){
     if(S.stage==='plan'){ palette(); if(b) renderBoard(); fitK=''; }
     /* the all-days map in its own task, so the board's first paint is not one long one */
     const ad=b&&S.stage==='plan'; if(ad) setTimeout(()=>allDays(view.classList.contains('pl-6')&&S.stage==='plan')); else allDays(false);
-    svg.classList.toggle('pl-show-cands',S.stage==='collect'||S.browsing);
     if(S.stage==='collect') fitCards(); }
   tg.addEventListener('click',e=>{ const b=e.target.closest('[data-dt]'); if(!b) return; S.board=b.dataset.dt==='1'; c.saveUI(); render(); });
   /* typing in the palette field: the list (never the field) re-renders once per frame */
@@ -175,9 +174,9 @@ planner.desk=function(c){
       hotEls.forEach(y=>y.classList.remove('is-hot')); hot=id; hotEls=id?[...view.querySelectorAll(`[data-id="${CSS.escape(id)}"]`)]:[]; hotEls.forEach(y=>y.classList.add('is-hot')); }); });
     let lane=-1, lt=0;
     E.board.addEventListener('pointerover',e=>{ const col=e.target.closest('.pl-bc'), k=col?+col.dataset.day:-1; if(k===lane||D) return; lane=k; clearTimeout(lt);
-      svg.querySelectorAll('.pl-alld>g').forEach(g=>g.classList.toggle('pl-dim',k>=0&&+g.dataset.day!==k));
+      c.dimDays(k);
       lt=setTimeout(()=>{ c.fitDay(false,k>=0?sim().schedule(DB.days[k],null,plan(),o()).rows:null); },180); });
-    E.board.addEventListener('pointerleave',()=>{ lane=-1; clearTimeout(lt); svg.querySelectorAll('.pl-alld>g').forEach(g=>g.classList.remove('pl-dim')); lt=setTimeout(()=>c.fitDay(),180); }); }
+    E.board.addEventListener('pointerleave',()=>{ lane=-1; clearTimeout(lt); c.dimDays(-1); lt=setTimeout(()=>c.fitDay(),180); }); }
   return {render};
 };
 })();

@@ -86,7 +86,7 @@ A stepper, not a wizard. Every stage is always reachable, and each shows one liv
 | ≥ 1440 | same, wider grid | same, plus a 「6日」 board toggle | same |
 | ≥ 1600 | | 6-day board by default, map docked 360 | |
 
-- **Map:** one SVG instance, moved between layouts by `grid-area`. The node is never moved in the DOM.
+- **Map:** one MapLibre instance, moved between layouts by `grid-area` (then `resize()`). The node is never moved in the DOM.
 - **Fold:** the book caps `.views` at 720 px, so the fold adds `.guide:has(.t-plan:checked) .views{max-width:none}`; FOLD.md records it.
 
 ## Calendar (③, and the trip strip in ②)
@@ -165,7 +165,7 @@ anything else.
 
 ## Budget
 - **Phone, ②:** ≤100 KB gz on the first screen.
-- **Phone, ①:** ≤100 KB gz, with land-lo deferred.
+- **Phone, ①:** ≤100 KB gz. `planner-map.js` (≤9 KB) and `vendor/maplibre` load on the map's first draw, off the first screen.
 - **Lazy chunks** load by trigger: `planner-collect.js` (≤7.5 KB) for ①, `planner-desk.js` (≤16) when the container is ≥1024 wide after paint, `planner-cal.js` (≤6) when ③ opens, `planner-gallery.js` (≤2) on the first gallery need.
   - The desk and cal caps were raised from 6.5 and 3.5 on purpose. Neither touches a phone's first screen: desk loads only on a wide container, cal only when ③ opens. The caps in `tools/budget.test.js` are the source of truth.
 - The phone never loads desktop code, because the trigger is the container's width.

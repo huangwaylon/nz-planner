@@ -29,7 +29,6 @@
   .pl-collect .pl-noph small{font:600 var(--pl-fs-m)/var(--pl-lh-m) var(--pl-font);}
   .pl-cred{display:block;position:absolute;right:var(--pl-s-2);bottom:var(--pl-s-2);max-width:calc(100% - 16px);padding:0 var(--pl-s-2);border-radius:var(--pl-r-1);
     background:rgba(var(--pl-scrim),.64);color:var(--surface);font:400 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .v-plan[data-stage="collect"] .pl-map .pl-legs{display:none;}
 }
 
 /* ---------- ② the palette: musts still to place, groups as blocks, then the wants; compact rows ---------- */
@@ -91,13 +90,5 @@
 .pl-row.is-hot,.pl-card.is-hot{outline:2px solid var(--ink);outline-offset:-2px;}
 .pl-map .pl-pin.is-hot .pl-mk{stroke:var(--ink);stroke-width:3px;}
 
-/* ---------- every day at once on the board's map ---------- */
-.pl-map.pl-all .pl-legs{display:none;}
-.pl-map .pl-alld path{fill:none;stroke:var(--c);stroke-linecap:round;stroke-width:calc(3px / var(--z));opacity:.85;transition:opacity var(--pl-t-2);}
-.pl-map .pl-alld .pl-leg-walk,.pl-map .pl-alld .pl-leg-ferry{stroke-dasharray:0 calc(6px / var(--z));}
-.pl-map .pl-alld .pl-dim{opacity:.15;}
-.pl-map .pl-cands [data-t="must"] .pl-mk{fill:var(--ink);stroke:var(--surface);}
-.pl-map .pl-cands [data-t="want"] .pl-mk{fill:color-mix(in srgb,var(--ink) 55%,var(--surface));}
-.pl-map .pl-cands [data-t="skip"]{opacity:.35;}
 /* the palette and board thumbs: the first picture that loads, else the glyph (before the gallery chunk too) */
 

@@ -5,13 +5,16 @@
    GALLERY keeps the gallery pictures someone has looked at, for offline: Commons only, because only
    a CORS response can be checked (an opaque one could be an error page, and costs ~7 MB of quota each),
    least recently used out first past GMAX. */
-const SHELL = 'nzp-shell-v22';
+const SHELL = 'nzp-shell-v23';
 /* The data cache is renamed with every SHELL bump, so a deploy never serves last build's plans.json. */
-const DATA = 'nzp-data-v22';
+const DATA = 'nzp-data-v23';
 const MEDIA = 'nzp-media';     // photos: a changed photo gets a new filename, so this name never changes
 const GALLERY = 'nzp-gallery', GMAX = 300;
-const APP = ['./', './index.html', './poc.css', './planner.css', './host.js', './planner.js', './import.js', './planner-import.js', './planner-import.css', './planner-more.js', './planner-more.css', './planner-collect.js', './planner-collect.css', './planner-cal.js', './planner-cal.css', './planner-gallery.js', './planner-gallery.css', './manifest.webmanifest', './icon-180.png'];
-const FILES = ['./data/nz/places.json', './data/nz/plans.json', './data/nz/travel.json', './data/nz/land-lo.svg.html', './data/nz/land.svg.html', './data/nz/places-more.json', './data/nz/flags.json', './data/nz/groups.json'];
+/* vendor/maplibre (the map engine, ~450 KB gz) is not pre-cached: it loads when the map first draws and
+   is kept by the fetch handler below like any same-origin file. The tiles (tiles.openfreemap.org) are
+   another origin, so they go straight to the network: no offline map for now. */
+const APP = ['./', './index.html', './poc.css', './planner.css', './host.js', './planner.js', './planner-map.js', './import.js', './planner-import.js', './planner-import.css', './planner-more.js', './planner-more.css', './planner-collect.js', './planner-collect.css', './planner-cal.js', './planner-cal.css', './planner-gallery.js', './planner-gallery.css', './manifest.webmanifest', './icon-180.png'];
+const FILES = ['./data/nz/places.json', './data/nz/plans.json', './data/nz/travel.json', './data/nz/places-more.json', './data/nz/flags.json', './data/nz/groups.json'];
 /* optional files: cached when present, a 404 never fails the install */
 const OPTIONAL = ['./data/nz/routes.json', './data/nz/photos.json', './data/nz/gallery.json', './data/nz/gm-regions.json', './story.js'];
 

@@ -12,6 +12,7 @@ const PT={
   expand:{ja:'地図を大きく',en:'Enlarge map'}, shrink:{ja:'地図を小さく',en:'Shrink map'},
   mapHide:{ja:'地図をたたむ',en:'Hide map'}, mapShow:{ja:'地図をひらく',en:'Show map'}, mapTitle:{ja:'ニュージーランド北島と行き先',en:'North Island and the stops'},
   estRoute:{ja:'≈ の線は道路の形が未取得',en:'≈ lines are not road-shaped yet'},
+  mapFail:{ja:'地図を読み込めません',en:'Map unavailable'}, mapRetry:{ja:'もう一度',en:'Try again'}, mapOffline:{ja:'地図はオフライン — ルートのみ',en:'Map offline: route only'}, mapLost:{ja:'地図を一時的に表示できません',en:'Map paused'},
   days:{ja:'日付',en:'Days'}, depart:{ja:'出発',en:'Start'}, arrive:{ja:'到着',en:'End'}, startTime:{ja:'出発時刻',en:'Start time'},
   stops:{ja:'{n}か所',en:'{n} stops'}, drive:{ja:'運転 {d}',en:'Drive {d}'}, ends:{ja:'着 {t}',en:'In by {t}'},
   slack:{ja:'{t}まで 余裕{d}',en:'{d} spare before {t}'}, over:{ja:'{t}を{d}超過',en:'{d} past {t}'}, overFlight:{ja:'フライト（{t}）に間に合いません',en:'Misses the flight ({t})'},
@@ -442,14 +443,8 @@ const plannerFn=function planner(g){
       <nav class="pl-days"></nav>
       <section class="pl-mapcard">
         <div class="pl-mapbox">
-          <svg class="pl-map" viewBox="0 0 ${W} ${H}" role="img"><title></title>
-            <rect class="pl-sea" x="-2000" y="-2000" width="4692" height="4824"/>
-            <g class="pl-world">
-              <g class="pl-land"></g><g class="pl-alld"></g><g class="pl-others"></g><g class="pl-cands"></g>
-              <g class="pl-legs"></g><g class="pl-stops"></g>
-              <g class="pl-labg" visibility="hidden"><g class="pl-s"><text class="pl-lab" x="16" y="4.5"></text></g></g>
-            </g>
-          </svg>
+          <div class="pl-map" role="img"></div>
+          <p class="pl-mapnote" role="status" hidden></p>
           <div class="pl-mapctl">
             <button type="button" class="pl-btn pl-btn--icon" data-zoom="in">${ic('plus')}<span class="sr" data-pt="zoomIn"></span></button>
             <button type="button" class="pl-btn pl-btn--icon" data-zoom="out">${ic('minus')}<span class="sr" data-pt="zoomOut"></span></button>
@@ -474,11 +469,11 @@ const plannerFn=function planner(g){
     <div class="pl-layer pl-toast" role="status" aria-live="polite"></div>`;
   [...layer.children].forEach(el=>g.appendChild(el));
   const q=s=>view.querySelector(s);
-  const E={bar:q('[data-r="plan"]'), days:q('.pl-days'), card:q('.pl-mapcard'), svg:q('.pl-map'), world:q('.pl-world'), main:q('.pl-main'),
+  const E={bar:q('[data-r="plan"]'), days:q('.pl-days'), card:q('.pl-mapcard'), mapEl:q('.pl-map'), mapnote:q('.pl-mapnote'), main:q('.pl-main'),
     notice:q('.pl-notice'), undo:q('[data-r="undo"]'), stages:q('.pl-stages'), collect:q('.pl-collect'), review:q('.pl-review'),
     palette:q('.pl-palette'), board:q('.pl-board'), shell:q('.pl-shell'), stick:q('.pl-stick'), toggle:q('[data-r="maptoggle"]'), estnote:q('.pl-estnote'),
     scrim:g.querySelector('.pl-scrim'), sheet:g.querySelector('.pl-sheet'), sbody:g.querySelector('.pl-sheet__body'), toast:g.querySelector('.pl-toast')};
-  const svg=E.svg, main=E.main;
+  const svg=E.mapEl, main=E.main;      /* svg: the map's host (the name the other chunks know) */
 
   /* note 5 in docs/FOLD.md "Core notes" */
   const place=id=>DB.places.get(id);
@@ -671,11 +666,11 @@ const plannerFn=function planner(g){
   function renderStages(){ const P=plan(), cv=cover(P), inbox=DB.list.filter(p=>isCand(p)&&tierOf(p.id)==='').length, w=warnCount(P);
     const txt={collect:pt('inboxN',{n:inbox}),plan:cv.of?pt('mustN',{n:cv.n,of:cv.of}):pt('daysN',{n:DB.days.length,s:DB.days.reduce((t,d)=>t+idsOf(d.date,P).length,0)}),review:w?'⚠ '+w:'✓'};
     E.stages.querySelectorAll('[data-stage]').forEach(b=>{ const k=b.dataset.stage; b.setAttribute('aria-current',k===S.stage?'step':'false'); b.setAttribute('aria-pressed',k===S.stage); b.querySelector('.pl-stages__n').textContent=txt[k]; }); }
-  function setStage(st,quiet){ if(st===S.stage) return; if(S.stage==='collect'&&CM) CM.release(); disarm(); if(S.csel) S.csel.clear(); S.stage=st; view.dataset.stage=st; saveUISoon(); if(sheetKind) closeSheet(); scrollTo(0,0); if(st==="plan") M.needFit=true, setTimeout(()=>fitDay(),60);
-    renderStages(); syncCands(); syncURL();
+  function setStage(st,quiet){ if(st===S.stage) return; if(S.stage==='collect'&&CM) CM.release(); disarm(); if(S.csel) S.csel.clear(); S.stage=st; view.dataset.stage=st; saveUISoon(); if(sheetKind) closeSheet(); scrollTo(0,0); if(st==="plan") needFit=true, setTimeout(()=>fitDay(),60);
+    renderStages(); syncCands(); renderLegs(); syncURL();
     if(st==='collect') needCollect().then(c=>c.render(),()=>{});
     else if(st==='review') needMore().then(m=>m.renderReview(E.review));
-    else { render(); loadLandLo(); }
+    else render();
     if(quiet==='key') E.stages.querySelector(`[data-stage="${st}"]`).focus({preventScroll:true}); }
   /* the wide layouts' code: only once the planner itself is ≥1024 wide, after first paint (a phone never asks) */
   let DKP=null, DK=null;
@@ -900,7 +895,9 @@ const plannerFn=function planner(g){
     if(t) t.focus({preventScroll:false});
   }
 
-  /* ---------- map layers. One delegated listener on the svg; pins are not focusable ---------- */
+  /* ---------- map layers (planner-map.js: MapLibre over OpenFreeMap, loaded on first need). The day's stops and
+     bases are HTML markers (the pin markup and classes below); candidates, other days' places, the legs and the
+     all-days routes are GL sources fed through mapData(). Pins are not focusable. ---------- */
   function routeKey(a,b){ return a+'>'+b; }
   function geom(a,b){
     const k=routeKey(a,b), r=k in DB.routes?DB.routes[k]:k in RC.map?RC.map[k]:null;
@@ -909,84 +906,126 @@ const plannerFn=function planner(g){
     if(r2!=null){ const d=decPoly(r2); if(d&&typeof d!=='string') return {pts:d.slice().reverse()}; if(typeof d==='string') return {pts:d}; }
     return null;
   }
-  const pathD=pts=>typeof pts==='string'?pts:'M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L');
-  /* A leg with no road geometry yet is a gentle solid arc, so it never reads as a boat. */
+  /* stored shapes stay in map units (routes.json, the cache); a tolerated SVG path is read as its points */
+  const ptsOf=pts=>{ if(typeof pts!=='string') return pts; const n=(pts.match(/-?[\d.]+/g)||[]).map(Number), o=[]; for(let i=0;i+1<n.length;i+=2) o.push([n[i],n[i+1]]); return o; };
+  const ll=xy=>{ const r=unprj(xy[0],xy[1]); return [r[1],r[0]]; };      /* map units -> [lon,lat] */
+  /* the road shape between two places as [[lon,lat],…], or null (story.js draws it) */
+  function geomLL(a,b){ const g=geom(a,b); return g?ptsOf(g.pts).map(ll):null; }
+  /* A leg with no road geometry yet is a gentle arc (sampled), so it never reads as a boat. */
   function arc(p0,p1){
-    const dx=p1[0]-p0[0], dy=p1[1]-p0[1], k=0.12, mx=(p0[0]+p1[0])/2-dy*k, my=(p0[1]+p1[1])/2+dx*k;
-    return {d:`M${p0[0].toFixed(1)} ${p0[1].toFixed(1)}Q${mx.toFixed(1)} ${my.toFixed(1)} ${p1[0].toFixed(1)} ${p1[1].toFixed(1)}`, mid:[(p0[0]+2*mx+p1[0])/4,(p0[1]+2*my+p1[1])/4], len:Math.hypot(dx,dy)};
+    const dx=p1[0]-p0[0], dy=p1[1]-p0[1], k=0.12, mx=(p0[0]+p1[0])/2-dy*k, my=(p0[1]+p1[1])/2+dx*k, pts=[];
+    for(let i=0;i<=16;i++){ const t=i/16, u=1-t; pts.push([u*u*p0[0]+2*u*t*mx+t*t*p1[0], u*u*p0[1]+2*u*t*my+t*t*p1[1]]); }
+    return {pts, mid:[(p0[0]+2*mx+p1[0])/4,(p0[1]+2*my+p1[1])/4], len:Math.hypot(dx,dy)};
   }
   function legSegments(sc){
     const segs=[];
     for(let k=1;k<sc.rows.length;k++){ const r=sc.rows[k], l=r.leg, a=sc.rows[k-1].id;
       (l.parts||[{a,b:r.id,kind:'drive'}]).forEach(pp=>{ if(pp.a===pp.b) return; const A=place(pp.a), B=place(pp.b); if(!A||!B) return;
-        segs.push({a:pp.a,b:pp.b,kind:pp.kind,p0:prj(A.lat,A.lon),p1:prj(B.lat,B.lon)}); }); }
+        segs.push({a:pp.a,b:pp.b,kind:pp.kind,p0:prj(A.lat,A.lon),p1:prj(B.lat,B.lon),ll0:[A.lon,A.lat],ll1:[B.lon,B.lat]}); }); }
     return segs;
   }
-  function renderLegs(){
-    const segs=legSegments(S.sc); let html='', anyEst=false;
-    segs.forEach(s=>{
-      if(s.kind==='ferry'){ html+=`<path class="pl-leg-ferry" d="M${s.p0[0].toFixed(1)} ${s.p0[1].toFixed(1)}L${s.p1[0].toFixed(1)} ${s.p1[1].toFixed(1)}"/>`; return; }
-      if(s.kind==='walk'){ const a=arc(s.p0,s.p1); html+=`<path class="pl-leg-walk" d="${a.d}"/>`+(a.len>10?`<g class="pl-estmk pl-boot" transform="translate(${a.mid[0].toFixed(1)} ${a.mid[1].toFixed(1)})"><g class="pl-s"><use href="#i-walk" x="-7" y="-7" width="14" height="14"/></g></g>`:''); return; }
-      const gm=geom(s.a,s.b);
-      if(gm) html+=`<path class="pl-leg-road" d="${pathD(gm.pts)}"/>`;
-      else { const a=arc(s.p0,s.p1); anyEst=true;
-        html+=`<path class="pl-leg-est" d="${a.d}"/>`+(a.len>14?`<g class="pl-estmk" transform="translate(${a.mid[0].toFixed(1)} ${a.mid[1].toFixed(1)})"><g class="pl-s"><text>≈</text></g></g>`:''); }
-    });
-    svg.querySelector('.pl-legs').innerHTML=html;
-    E.estnote.hidden=!anyEst||!DB.routesLoaded; E.estnote.textContent=pt('estRoute');
-    if(anyEst) queueRoutes(segs);
+  const FC=features=>({type:'FeatureCollection',features:features||[]});
+  const lineF=(c,properties)=>({type:'Feature',properties,geometry:{type:'LineString',coordinates:c}});
+  const pointF=(c,properties)=>({type:'Feature',properties,geometry:{type:'Point',coordinates:c}});
+  /* the tokens a GL paint needs, resolved (GL cannot read custom properties); the day hues --d1…--d6 */
+  let COL=null;
+  function tok(){
+    if(COL) return COL;
+    const cs=getComputedStyle(view), v=n=>cs.getPropertyValue('--'+n).trim();
+    const hex=s=>{ const m=/^#([\da-f]{6})$/i.exec(s); return m?[0,2,4].map(i=>parseInt(m[1].slice(i,i+2),16)):null; };
+    const mix=(a,b,t)=>{ const A=hex(a), B=hex(b); return A&&B?'rgb('+A.map((x,i)=>Math.round(x+(B[i]-x)*t)).join(',')+')':a; };
+    COL={d:[1,2,3,4,5,6].map(i=>v('d'+i)), ink:v('ink'), surface:v('surface'), muted:v('muted'), acc:v('acc')};
+    COL.want=mix(COL.ink,COL.surface,.45);
+    return COL;
   }
-  const tfxy=xy=>`transform="translate(${xy[0].toFixed(1)} ${xy[1].toFixed(1)})"`;
+  const dayCol=i=>tok().d[i%6];
+  /* a schedule's legs as GL lines in one colour (+ the ≈ marks of the ones not road-shaped yet) */
+  function legFeatures(sc,color){
+    const lines=[], marks=[]; let anyEst=false; const segs=legSegments(sc);
+    segs.forEach(s=>{
+      if(s.kind==='ferry'){ lines.push(lineF([s.ll0,s.ll1],{kind:'ferry',color})); return; }
+      if(s.kind==='walk'){ lines.push(lineF(arc(s.p0,s.p1).pts.map(ll),{kind:'walk',color})); return; }
+      const gm=geom(s.a,s.b);
+      if(gm){ lines.push(lineF(ptsOf(gm.pts).map(ll),{kind:'road',color})); return; }
+      const a=arc(s.p0,s.p1); anyEst=true; lines.push(lineF(a.pts.map(ll),{kind:'est',color}));
+      if(a.len>14) marks.push(pointF(ll(a.mid),{text:'≈',color:tok().ink}));
+    });
+    return {lines,marks,anyEst,segs};
+  }
+  /* the 6日 board draws every day instead (planner-desk.js allDays), and ① shows no route */
+  let ALLD=false;
+  function renderLegs(){
+    if(!S.sc) return;
+    const r=legFeatures(S.sc,dayCol(S.day)), hide=ALLD||S.stage==='collect';
+    mapData('legs',FC(hide?[]:r.lines)); mapData('marks',FC(hide?[]:r.marks));
+    mapData('alld',ALLD&&S.stage==='plan'&&ALLFC||FC());
+    E.estnote.hidden=hide||!r.anyEst||!DB.routesLoaded; E.estnote.textContent=pt('estRoute');
+    if(r.anyEst) queueRoutes(r.segs);
+  }
+  /* the day's pins: HTML markers, rebuilt with the day (a dozen at most) */
+  let PINS=[];
+  const pinHTML=(cls,id,k,inner)=>`<div class="pl-pin${cls}" data-id="${esc(id)}" data-k="${k}"><svg class="pl-pinsvg" viewBox="-20 -20 40 40" aria-hidden="true"><g class="pl-s">${inner}</g></svg></div>`;
+  function setPins(list){
+    PINS.forEach(m=>m.remove()); PINS=[];
+    if(!EN) return;
+    const tmp=document.createElement('div');
+    list.forEach(x=>{ tmp.innerHTML=x.html; const el=tmp.firstChild, p=place(x.id); if(p) PINS.push(EN.marker(el,p.lon,p.lat)); });
+  }
   function renderMap(){
     if(!S.sc) return;
     const sc=S.sc, planned=plannedMap(), cur=new Set(sc.rows.map(r=>r.id));
-    svg.setAttribute('style',dayStyle(S.day));
-    const pts=sc.rows.map(r=>{ const p=place(r.id); return prj(p.lat,p.lon); });
+    E.mapEl.setAttribute('style',dayStyle(S.day));
     renderLegs();
-    let st=''; const seen=new Set();
-    sc.rows.forEach((r,k)=>{ if(r.kind==='stop'||seen.has(r.id)) return; seen.add(r.id);
-      st+=`<g class="pl-pin pl-anc" data-id="${r.id}" data-k="anc" ${tfxy(pts[k])}><g class="pl-s"><circle class="pl-hit" r="18"/><circle class="pl-ring" r="15"/><circle class="pl-mk" r="10"/><use href="#i-${glyphOf(place(r.id))}" x="-6.5" y="-6.5" width="13" height="13"/></g></g>`; });
+    const pins=[], seen=new Set();
+    sc.rows.forEach(r=>{ if(r.kind==='stop'||seen.has(r.id)) return; seen.add(r.id);
+      pins.push({id:r.id,html:pinHTML(' pl-anc',r.id,'anc',`<circle class="pl-hit" r="18"/><circle class="pl-ring" r="15"/><circle class="pl-mk" r="10"/><use href="#i-${glyphOf(place(r.id))}" x="-6.5" y="-6.5" width="13" height="13"/>`)}); });
     for(let k=sc.rows.length-2;k>=1;k--)   /* later stops underneath, so 1 sits on top */
-      st+=`<g class="pl-pin" data-id="${sc.rows[k].id}" data-k="stop" ${tfxy(pts[k])}><g class="pl-s"><circle class="pl-hit" r="20"/><circle class="pl-ring" r="16"/><circle class="pl-mk" r="11"/><text class="pl-num">${k}</text>${place(sc.rows[k].id).saved?SVMARK.replace('translate(4 -13)','translate(7 -18)'):''}</g></g>`;
-    svg.querySelector('.pl-stops').innerHTML=st;
-    let ot='';
+      pins.push({id:sc.rows[k].id,html:pinHTML('',sc.rows[k].id,'stop',`<circle class="pl-hit" r="20"/><circle class="pl-ring" r="16"/><circle class="pl-mk" r="11"/><text class="pl-num">${k}</text>${place(sc.rows[k].id).saved?SVMARK.replace('translate(4 -13)','translate(7 -18)'):''}`)});
+    setPins(pins);
+    const ot=[];
     planned.forEach((di,id)=>{ if(cur.has(id)) return; const p=place(id); if(!p||!isCand(p)) return;
-      ot+=`<g class="pl-pin" data-id="${id}" data-k="other" style="${dayStyle(di)}" ${tfxy(prj(p.lat,p.lon))}><g class="pl-s"><circle class="pl-hit" r="14"/><circle class="pl-mk" r="4.5"/></g></g>`; });
-    svg.querySelector('.pl-others').innerHTML=ot;
+      ot.push(pointF([p.lon,p.lat],{id,fill:dayCol(di),stroke:tok().surface,r:4.5})); });
+    mapData('others',FC(ot));
     syncCands(planned,cur);
     if(S.sel) select(S.sel.id,S.sel.k,true);
   }
-  /* note 31 */
-  let CANDON=false, CANDBIG=false, CANDK='';
-  function syncCands(planned,cur,force){
-    const layer=svg.querySelector('.pl-cands'), on=S.browsing||!!S.placing||S.stage==='collect';
-    if(!on){ if(CANDON){ layer.textContent=''; CANDON=false; CANDK=''; } return; }
-    planned=planned||plannedMap(); cur=cur||new Set();
-    const list=DB.list.filter(p=>isCand(p)&&!planned.has(p.id)&&!cur.has(p.id)); CANDBIG=list.length>300;
-    const v=M.cur, key=DB.impVer+'|'+list.length+'|'+planned.size+'|'+(CANDBIG?v.map(n=>Math.round(n)).join():'')+'|'+S.trip.tier;
-    if(CANDON&&key===CANDK&&!force) return; CANDON=true; CANDK=key;
-    const pin=p=>p.imp?`<g class="pl-pin pl-impin" data-id="${p.id}" data-k="cand" data-t="${tierOf(p.id)}" ${tfxy(prj(p.lat,p.lon))}><g class="pl-s"><circle class="pl-hit" r="16"/><circle class="pl-ring" r="12"/><rect class="pl-mk" x="-4.6" y="-4.6" width="9.2" height="9.2" transform="rotate(45)"/></g></g>`
-      :`<g class="pl-pin${p.saved?' pl-svpin':''}" data-id="${p.id}" data-k="cand" data-t="${tierOf(p.id)}" ${tfxy(prj(p.lat,p.lon))}><g class="pl-s"><circle class="pl-hit" r="16"/><circle class="pl-ring" r="11"/><circle class="pl-mk" r="4"/>${p.saved?SVMARK:''}</g></g>`;
-    if(!CANDBIG){ layer.innerHTML=list.map(pin).join(''); return; }
-    const cell=v[2]/18, x0=v[0]-cell, y0=v[1]-cell, x1=v[0]+v[2]+cell, y1=v[1]+v[3]+cell, bins=new Map();
-    list.forEach(p=>{ const xy=prj(p.lat,p.lon); if(xy[0]<x0||xy[0]>x1||xy[1]<y0||xy[1]>y1) return; const k=Math.floor(xy[0]/cell)+','+Math.floor(xy[1]/cell);
-      const b=bins.get(k); if(b){ b.n++; b.x+=xy[0]; b.y+=xy[1]; b.p=null; } else bins.set(k,{n:1,x:xy[0],y:xy[1],p}); });
-    layer.innerHTML=[...bins.values()].map(b=>b.n===1?pin(b.p):`<g class="pl-pin pl-cluster" data-k="cluster" data-x="${(b.x/b.n).toFixed(1)}" data-y="${(b.y/b.n).toFixed(1)}" ${tfxy([b.x/b.n,b.y/b.n])}><g class="pl-s"><circle class="pl-hit" r="18"/><circle class="pl-mk" r="12"/><text class="pl-num">${b.n}</text></g></g>`).join('');
+  /* note 31: candidates show only while browsing or placing (and on ①), so the day's own pins read first;
+     MapLibre clusters them (planner-map.js) */
+  let CANDON=false, CANDK='';
+  function candProps(p){
+    const c=tok(), t=tierOf(p.id);
+    if(p.imp) return {id:p.id,fill:c.surface,stroke:c.acc,r:5,sw:2};
+    const s={id:p.id,fill:c.surface,stroke:p.saved?c.ink:c.muted,r:4.5,sw:1.6};
+    if(t==='must'){ s.fill=c.ink; s.stroke=c.surface; } else if(t==='want') s.fill=c.want;
+    if(t==='skip') s.op=.35;
+    return s;
   }
-  /* Candidates show only while browsing or placing, so the day's own pins read first. */
-  function showCands(on){ S.browsing=on; svg.classList.toggle('pl-show-cands',on||!!S.placing); raf(()=>syncCands()); }
-  /* Selection toggles one class and moves the one shared label; it never rebuilds pins. */
+  function syncCands(planned,cur,force){
+    const on=S.browsing||!!S.placing||S.stage==='collect';
+    if(!on){ if(CANDON){ mapData('cands',FC()); CANDON=false; CANDK=''; } return; }
+    planned=planned||plannedMap(); cur=cur||new Set();
+    const list=DB.list.filter(p=>isCand(p)&&!planned.has(p.id)&&!cur.has(p.id));
+    const key=DB.impVer+'|'+list.length+'|'+planned.size+'|'+S.trip.tier;
+    if(CANDON&&key===CANDK&&!force) return; CANDON=true; CANDK=key;
+    mapData('cands',FC(list.map(p=>pointF([p.lon,p.lat],candProps(p)))));
+  }
+  function showCands(on){ S.browsing=on; raf(()=>syncCands()); }
+  const inSrc=(src,id)=>!!(DATA[src]&&DATA[src].features.some(f=>f.properties.id===id));
+  /* Selection toggles one class (a pin) or one feature state (a candidate) and moves the one shared label;
+     it never rebuilds pins. */
   function select(id,k,quiet){
-    const prev=svg.querySelector('.pl-pin.pl-sel'); if(prev) prev.classList.remove('pl-sel');
-    const lab=svg.querySelector('.pl-labg'); lab.setAttribute('visibility','hidden'); S.sel=null;
+    const prev=E.mapEl.querySelector('.pl-pin.pl-sel'); if(prev) prev.classList.remove('pl-sel');
+    if(LAB) LAB.el.hidden=true; if(EN) EN.select(null); S.sel=null;
     if(!id) return;
-    const pin=svg.querySelector(`.pl-pin[data-id="${id}"][data-k="${k}"]`)||svg.querySelector(`.pl-pin[data-id="${id}"]`); if(!pin) return;
-    S.sel={id,k}; pin.classList.add('pl-sel');
-    lab.setAttribute('transform',pin.getAttribute('transform'));
-    const t=lab.querySelector('text'), x=prj(place(id).lat,place(id).lon)[0], right=x>M.cur[0]+M.cur[2]*0.62;
-    t.textContent=nm(place(id)); t.setAttribute('text-anchor',right?'end':'start');
-    const off=pin.dataset.k==='cand'||pin.dataset.k==='other'?11:16; t.setAttribute('x',right?-off:off);
-    lab.setAttribute('visibility','visible');
+    const p=place(id); if(!p) return;
+    const q=`.pl-pin[data-id="${CSS.escape(id)}"]`, pin=E.mapEl.querySelector(q+`[data-k="${k}"]`)||E.mapEl.querySelector(q);
+    const gl=!pin&&(inSrc('cands',id)||inSrc('others',id));
+    if(!pin&&!gl&&EN) return;
+    S.sel={id,k};
+    if(pin) pin.classList.add('pl-sel'); else if(EN) EN.select(id);
+    if(EN&&LAB){ const xy=EN.project(p.lon,p.lat), t=LAB.el.firstChild, small=!pin;
+      t.textContent=nm(p); t.className='pl-lab'+(xy[0]>E.mapEl.clientWidth*0.62?' pl-lab--r':'')+(small?' pl-lab--sm':'');
+      LAB.set(p.lon,p.lat); LAB.el.hidden=false; }
     if(!quiet) ensureVisible(id);
   }
 
@@ -998,7 +1037,6 @@ const plannerFn=function planner(g){
       if(!geom(s.a,s.b)&&RQ.q.indexOf(k)<0) RQ.q.push(k); });
     pumpRoutes();
   }
-  const busyUI=()=>!!(DRAG||gest||M.tw||M.wm||M.frame);
   function pumpRoutes(){
     if(RQ.busy||!RQ.q.length||!navigator.onLine||Date.now()<RQ.dead||!DB.routesLoaded||busyUI()) return;
     RQ.busy=true;
@@ -1017,126 +1055,83 @@ const plannerFn=function planner(g){
     },3000);
   }
 
-  /* note 6 in docs/FOLD.md "Core notes" */
-  const M={vb:[0,0,W,H],cur:[0,0,W,H],A:W/H,pxw:343,frame:0,tw:0,wheel:0,wm:null,ready:false,needFit:false};
-  const maxW=()=>Math.max(W,H*M.A);
-  const fin=b=>b.every(Number.isFinite)&&b[2]>0&&b[3]>0;
-  function clampBox(cx,cy,w){
-    w=Math.max(W/60,Math.min(maxW(),w)); const h=w/M.A;
-    cx=w>=W?W/2:Math.max(w/2,Math.min(W-w/2,cx)); cy=h>=H?H/2:Math.max(h/2,Math.min(H-h/2,cy));
-    return [cx-w/2,cy-h/2,w,h];
+  /* note 6 in docs/FOLD.md "Core notes": the map is MapLibre's camera (planner-map.js). The engine starts once the
+     map has a size; until then every layer's data waits in DATA and is handed over on start. */
+  let EN=null, ENP=null, LAB=null, needFit=false;
+  const DATA={};
+  function mapData(src,fc){ DATA[src]=fc||FC(); if(EN) EN.setData(src,DATA[src]); }
+  const libMap=()=>window.plmap?Promise.resolve(window.plmap):new Promise((res,rej)=>{ const s=document.createElement('script');
+    s.src=view.dataset.mapSrc||'planner-map.js'; s.onload=()=>window.plmap?res(window.plmap):rej(new Error('plmap')); s.onerror=rej; document.head.appendChild(s); });
+  function startMap(){
+    if(EN||ENP) return ENP;
+    mapNote('loading');
+    ENP=libMap().then(m=>m.create(E.mapEl,{lang:lang(),onClick:mapClick,onMove:()=>setTimeout(afterUI,0),onMode:mapNote})).then(en=>{
+      EN=en; const d=document.createElement('div'); d.className='pl-labm'; d.hidden=true; d.innerHTML='<span class="pl-lab"></span>'; LAB=EN.marker(d,174.76,-36.85);
+      Object.keys(DATA).forEach(k=>EN.setData(k,DATA[k])); renderMap(); fitDay(true); return en;
+    },err=>{ ENP=null; console.error(err); mapNote('failed'); return null; });
+    return ENP;
   }
-  function commit(){ if(!fin(M.vb)) return; svg.setAttribute('viewBox',M.vb.map(n=>n.toFixed(2)).join(' '));
-    const z=(M.pxw/M.vb[2]).toFixed(4); if(z!==M.z){ M.z=z; E.world.style.setProperty('--z',z); }   /* on the pin layer, once per settle (perf rule 5) */
-    if(CANDON&&CANDBIG) syncCands(); }
-  function setNow(box){ if(!fin(box)) return; cancelAnimationFrame(M.frame); M.frame=0; M.vb=box.slice(); M.cur=box.slice(); E.world.style.transform=''; commit(); }
-  function paintLive(){ M.frame=0; const v=M.vb, c=M.cur, k=v[2]/c[2]; E.world.style.transform=`matrix(${k},0,0,${k},${v[0]-c[0]*k},${v[1]-c[1]*k})`; }
-  function live(cx,cy,w){ const b=clampBox(cx,cy,w); if(!fin(b)) return; M.cur=b; if(!M.frame) M.frame=raf(paintLive); }
-  function settle(){ M.wm=null; setNow(M.cur); if(!gest) setTimeout(afterUI,0); }
-  const centre=()=>[M.cur[0]+M.cur[2]/2,M.cur[1]+M.cur[3]/2];
-  /* note 33 */
-  const stopTw=()=>{ if(M.tw){ cancelAnimationFrame(M.tw); M.tw=0; } };
-  function animateTo(cx,cy,w){
-    stopTw();
-    const to=clampBox(cx,cy,w); if(!fin(to)) return;
-    if(reduced.matches||S.map==='closed'){ setNow(to); return; }
-    if(M.cur.some((v,i)=>v!==M.vb[i])) setNow(M.cur);
-    const [ax,ay]=centre(), w0=M.cur[2], bx=to[0]+to[2]/2, by=to[1]+to[3]/2, t0=performance.now();
-    const step=now=>{ const t=Math.min(1,(now-t0)/420), e=1-Math.pow(1-t,3);
-      M.cur=clampBox(ax+(bx-ax)*e, ay+(by-ay)*e, w0*Math.pow(to[2]/w0,e)); paintLive();
-      if(t<1) M.tw=raf(step); else { M.tw=0; setNow(to); setTimeout(afterUI,0); } };
-    M.tw=raf(step);
+  /* what the map shows: loading, ready, offline (no basemap tile came), lost (iOS took the WebGL context), failed */
+  function mapNote(m){
+    E.card.dataset.mode=m; const n=E.mapnote;
+    if(m==='failed'){ n.hidden=false; n.innerHTML=`<span>${esc(pt('mapFail'))}</span><button type="button" class="pl-btn pl-btn--secondary" data-act="mapretry">${esc(pt('mapRetry'))}</button>`; }
+    else if(m==='offline'||m==='lost'){ n.hidden=false; n.innerHTML=`<span>${esc(pt(m==='lost'?'mapLost':'mapOffline'))}</span>`; }
+    else n.hidden=true;
   }
   function fitDay(instant,only){
-    if(!M.ready||S.map==='closed'||!S.sc){ M.needFit=true; return; }
-    M.needFit=false;
-    const xs=[], ys=[];
-    (only||(view.classList.contains('pl-6')?DB.days.flatMap(d=>schedule(d).rows):S.sc.rows)).forEach(r=>{ const p=place(r.id), xy=prj(p.lat,p.lon); xs.push(xy[0]); ys.push(xy[1]); });   /* the board fits every day */
-    const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys), pw=M.pxw, ph=pw/M.A;
-    const PL=24, PR=62, PT=26, PB=58;   /* clear of the zoom buttons (right) and the map footer (bottom) */
-    const floor=x1-x0<1&&y1-y0<1?120:16;  /* one place only: a city-sized frame, not 43× on a roof */
-    const w=Math.max(floor,(x1-x0)*pw/Math.max(60,pw-PL-PR),(y1-y0)*pw/Math.max(60,ph-PT-PB)), u=w/pw;
-    const cx=(x0+x1)/2+(PR-PL)/2*u, cy=(y0+y1)/2+(PB-PT)/2*u;
-    if(instant===true) setNow(clampBox(cx,cy,w)); else animateTo(cx,cy,w);
+    if(!EN||S.map==='closed'||!S.sc){ needFit=true; return; }
+    needFit=false;
+    const ps=(only||(view.classList.contains('pl-6')?DB.days.flatMap(d=>schedule(d).rows):S.sc.rows)).map(r=>place(r.id)).filter(Boolean);   /* the board fits every day */
+    if(!ps.length) return;
+    const lo=ps.map(p=>p.lon), la=ps.map(p=>p.lat), w=E.mapEl.clientWidth, h=E.mapEl.clientHeight;
+    /* clear of the zoom buttons (right) and the map footer (bottom), shrunk on a small map */
+    const k=Math.min(1,w/360,h/220), pad={top:44*k,right:62*k,bottom:76*k,left:24*k};
+    /* a map taller than the window (the wide layout's card runs to 100vh from where it starts): fit in the part on screen */
+    const r=E.mapEl.getBoundingClientRect(), off=Math.max(0,r.bottom-innerHeight);
+    if(off>0&&h-off>=160) pad.bottom+=off;
+    EN.fit([[Math.min(...lo),Math.min(...la)],[Math.max(...lo),Math.max(...la)]],{padding:pad,instant:instant===true,oneZoom:10.5,maxZoom:14});
   }
-  function ensureVisible(id){ const p=place(id), [x,y]=prj(p.lat,p.lon), v=M.cur, m=v[2]*0.12;
-    if(x<v[0]+m||x>v[0]+v[2]-m||y<v[1]+m||y>v[1]+v[3]-m) animateTo(x,y,v[2]); }
-  function measure(w,h){
-    if(w==null){ const r=svg.getBoundingClientRect(); w=r.width; h=r.height; }
-    if(!(h>=40&&w>=40)) return;
-    const c=centre(), cw=M.cur[2]; M.A=w/h; M.pxw=w;
-    if(!M.ready||M.needFit){ M.ready=true; fitDay(true); return; }
-    const b=clampBox(c[0],c[1],cw); fin(b)?setNow(b):fitDay(true);
+  function ensureVisible(id){ const p=place(id); if(!EN||!p) return; const [x,y]=EN.project(p.lon,p.lat), w=E.mapEl.clientWidth, h=E.mapEl.clientHeight, m=Math.min(w,h)*0.12;
+    if(x<m||x>w-m||y<m||y>h-m) EN.ease(p.lon,p.lat); }
+  /* a client point as [lat,lon] (placing an import) */
+  function toLL(x,y){ if(!EN) return null; const r=E.mapEl.getBoundingClientRect(); return EN.unproject(x-r.left,y-r.top); }
+  /* a tap on the map's GL layers (candidates, other days' places) or on nothing; a pin's tap is the marker listener's */
+  function mapClick(h){
+    if(h.target&&h.target.closest&&h.target.closest('.pl-pin,.pl-labm')) return;
+    if(S.placing){ const r=E.mapEl.getBoundingClientRect(); placeAt(r.left+h.x,r.top+h.y); return; }
+    if(!h.id){ select(null); return; }
+    select(h.id,h.kind,true); openPlace(h.id);
   }
-  /* A gesture reads getScreenCTM() once, at its start, and works in map units from there. */
-  let gest=null, dragged=false;
-  function ctm(){ const m=svg.getScreenCTM(); return {a:m.a,e:m.e,f:m.f}; }
-  const toMap=(m,x,y)=>[(x-m.e)/m.a,(y-m.f)/m.a];
-  const tMid=t=>({clientX:(t[0].clientX+t[1].clientX)/2,clientY:(t[0].clientY+t[1].clientY)/2});
-  const tGap=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
-  function gStart(ts){
-    stopTw();
-    if(M.cur.some((v,i)=>v!==M.vb[i])) settle();      /* the CTM must describe the committed box */
-    const m=ctm(); gest={m,vb:M.cur.slice(),pts:ts.map(t=>({clientX:t.clientX,clientY:t.clientY}))};
-    if(ts.length===2){ const mid=tMid(ts), p=toMap(m,mid.clientX,mid.clientY); gest.gap=tGap(ts)||1;
-      gest.ax=p[0]; gest.ay=p[1]; gest.fx=(p[0]-gest.vb[0])/gest.vb[2]; gest.fy=(p[1]-gest.vb[1])/gest.vb[3]; }
-  }
-  function gMove(ts){
-    if(!gest) return false;
-    if(ts.length===1&&gest.pts.length===1){
-      const dx=ts[0].clientX-gest.pts[0].clientX, dy=ts[0].clientY-gest.pts[0].clientY;
-      if(!dragged&&Math.hypot(dx,dy)<6) return false;
-      live(gest.vb[0]+gest.vb[2]/2-dx/gest.m.a, gest.vb[1]+gest.vb[3]/2-dy/gest.m.a, gest.vb[2]); return true;
-    }
-    if(ts.length===2&&gest.pts.length===2){
-      const w=Math.max(W/60,Math.min(maxW(),gest.vb[2]*gest.gap/(tGap(ts)||1))), h=w/M.A;
-      live(gest.ax-gest.fx*w+w/2, gest.ay-gest.fy*h+h/2, w); return true;
-    }
-    return false;
-  }
-  function gEnd(){ if(gest){ gest=null; settle(); afterUI(); } }
-  function afterUI(){ if(busyUI()) return; if(RQ.redraw){ RQ.redraw=false; renderLegs(); } if(LANDQ) putLand(LANDQ[0],LANDQ[1]); setTimeout(pumpRoutes,300); }
+  /* the 6日 board: every day's route at once (planner-desk.js), one day's lit while its lane is hovered */
+  let ALLFC=null;
+  function setAllDays(on,fc){ ALLD=on; ALLFC=on?fc:null; renderLegs(); }
+  function dimDays(k){ if(EN) EN.map.setPaintProperty('alld','line-opacity',k>=0?['case',['==',['get','day'],k],.85,.15]:.55); }
+  const busyUI=()=>!!(DRAG||(EN&&EN.moving()));
+  function afterUI(){ if(busyUI()) return; if(RQ.redraw){ RQ.redraw=false; renderLegs(); } setTimeout(pumpRoutes,300); }
   function wireMap(){
-    const arr=e=>Array.prototype.slice.call(e.touches);
-    svg.addEventListener('touchstart',e=>{ dragged=false; gest=null; gStart(arr(e)); },{passive:true});
-    svg.addEventListener('touchmove',e=>{ if(!gMove(arr(e))) return; dragged=true; e.preventDefault(); },{passive:false});
-    svg.addEventListener('touchend',e=>{ gEnd(); if(e.touches.length) gStart(arr(e)); });   /* a finger lifted mid-pinch */
-    svg.addEventListener('touchcancel',gEnd);
-    svg.addEventListener('wheel',e=>{
-      e.preventDefault(); stopTw();
-      if(!M.wm){ if(M.cur.some((v,i)=>v!==M.vb[i])) setNow(M.cur); M.wm=ctm(); }
-      const p=toMap(M.wm,e.clientX,e.clientY), base=M.vb, c=M.cur;
-      const fx=(p[0]-base[0])/base[2], fy=(p[1]-base[1])/base[3], ax=c[0]+fx*c[2], ay=c[1]+fy*c[3];
-      const w=Math.max(W/60,Math.min(maxW(),c[2]/Math.exp(-e.deltaY*(e.deltaMode?0.05:0.0022)))), h=w/M.A;
-      live(ax-fx*w+w/2, ay-fy*h+h/2, w);
-      clearTimeout(M.wheel); M.wheel=setTimeout(settle,160);
-    },{passive:false});
-    svg.addEventListener('mousedown',e=>{
-      if(e.button) return; dragged=false; gStart([e]);
-      const mv=ev=>{ if(gMove([ev])) dragged=true; };
-      const up=()=>{ gEnd(); removeEventListener('mousemove',mv); removeEventListener('mouseup',up); };
-      addEventListener('mousemove',mv); addEventListener('mouseup',up);
-    });
-    svg.addEventListener('click',e=>{
-      if(dragged){ dragged=false; return; }      /* a pan of the map is not a tap */
+    let pd=null;
+    E.mapEl.addEventListener('pointerdown',e=>{ pd=[e.clientX,e.clientY]; },true);
+    E.mapEl.addEventListener('click',e=>{
+      const pin=e.target.closest('.pl-pin'); if(!pin) return;
+      if(pd&&Math.hypot(e.clientX-pd[0],e.clientY-pd[1])>6) return;      /* a pan of the map is not a tap */
       if(S.placing){ placeAt(e.clientX,e.clientY); return; }
-      const pin=e.target.closest('.pl-pin'); if(!pin){ select(null); return; }
-      if(pin.dataset.k==='cluster'){ animateTo(+pin.dataset.x,+pin.dataset.y,M.cur[2]/3); return; }
       const id=pin.dataset.id, k=pin.dataset.k;
       select(id,k,true);
       if(k==='stop'){ const card=main.querySelector(`.pl-stop[data-id="${CSS.escape(id)}"]`);
         if(card){ card.scrollIntoView({block:'center',behavior:reduced.matches?'auto':'smooth'}); flash(card); } }
       else if(k!=='anc') openPlace(id);
     });
+    E.mapnote.addEventListener('click',e=>{ if(e.target.closest('[data-act="mapretry"]')) startMap(); });
     view.querySelector('.pl-mapctl').addEventListener('click',e=>{
-      const b=e.target.closest('button'); if(!b) return; const c=centre();
+      const b=e.target.closest('button'); if(!b) return;
+      if(b.dataset.zoom==='full'){ setFull(S.map!=='full'); return; }
+      if(!EN) return;
       if(b.dataset.zoom==='fit') fitDay();
-      else if(b.dataset.zoom==='full') setFull(S.map!=='full');
-      else animateTo(c[0],c[1],M.cur[2]/(b.dataset.zoom==='in'?1.7:1/1.7));
+      else EN.zoomBy(b.dataset.zoom==='in'?1.7:1/1.7);
     });
-    /* the map's own size, from the observer entry, applied once the resize has settled (no --z writes mid-transition) */
-    let mt=0; if(window.ResizeObserver) new ResizeObserver(es=>{ const c=es[es.length-1].contentRect; clearTimeout(mt); mt=setTimeout(()=>measure(c.width,c.height),M.ready?120:0); }).observe(svg);
-    else { addEventListener('resize',()=>measure()); raf(()=>measure()); }
+    /* the engine starts once the map has a size (a phone's ① keeps it hidden); MapLibre follows its own resizes */
+    if(window.ResizeObserver) new ResizeObserver(es=>{ const c=es[es.length-1].contentRect; if(c.width>=40&&c.height>=40){ if(!EN&&!ENP) idle(startMap,1500); else if(needFit) fitDay(true); } }).observe(E.mapEl);
+    else startMap();
     E.toggle.addEventListener('click',()=>{ S.map=S.map==='closed'?'peek':'closed'; saveUI(); mapState(); if(S.map!=='closed') setTimeout(()=>fitDay(),380); });
     /* the sticky map shrinks to a strip once the list scrolls under it */
     if(window.IntersectionObserver){ const sen=document.createElement('div'); sen.className='pl-sentinel'; E.notice.before(sen);
@@ -1484,7 +1479,7 @@ const plannerFn=function planner(g){
   function ctx(){ return {home:ST.home,saveNow,dirty,dragDone,S,DB,E,view,svg,slug,SRC,pt,esc,ic,head,doneBar,openSheet,closeSheet,toast,undo,pushHist,save,render,edit,plan,findPlan,planName,presetName,
     idsOf,schedule,dayStyle,dlabel,dayTitle,dur,hm,nm,nmLang,wbr,place,bodyOf,snapshot,renderTop,fitDay,isCand,plannedMap,FAMILY,thumb,tr,CAT,AREA,
     unverifiedHours,reorder,focusStop,afterRender,okHM,clone,switchToMe,hav,mapState,saveUI,select,unprj,ja,showCands,stopPlacing,impChanged,
-    savedTag,sigLine,titleT,flagT,warnText,breakText,guard,arm,disarm,trial,breakLine,BTN,IBTN,CHIP,SEG,FIELD,ROW,BADGE,STAT,EMPTY,hmm,foot,legSegments,geom,arc,pathD,g,main,heroOf,thumb,glyphOf,ic,col:()=>CM,gal:p=>GX?GX.gal(p):[],gx:()=>GX,loadGallery,sync:()=>SY,loadSync,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,loadCss,loadJs,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:(o,soft)=>Object.keys(o).forEach(k=>{ if(!soft||!PT[k]) PT[k]=o[k]; })}; }
+    savedTag,sigLine,titleT,flagT,warnText,breakText,guard,arm,disarm,trial,breakLine,BTN,IBTN,CHIP,SEG,FIELD,ROW,BADGE,STAT,EMPTY,hmm,foot,legSegments,geom,geomLL,legFeatures,dayCol,mapData,setAllDays,dimDays,toLL,syncCands,arc,g,main,heroOf,thumb,glyphOf,ic,col:()=>CM,gal:p=>GX?GX.gal(p):[],gx:()=>GX,loadGallery,sync:()=>SY,loadSync,toggleBooked,setDay,tierOf,seeded,skipSet,cover,editTrip,setStage,warnCount,openPlace,needMore,loadCss,loadJs,hoursText,photoHTML,colorCard,closeBtn,alt,altLang,latin,bestText,domain,hhmm,arg:()=>sheetArg,addIds,clusterOf,closure,wdName,GLYPH,fold,flagsOf,FLAG,eqKm,uKm,trayN,lang,loadMore:()=>loadMore(),rebuild:()=>rebuildPlaces(),sim:()=>SIM,frame:{LAT0,LAT1,LON0,LON1},kind:()=>sheetKind,addStrings:(o,soft)=>Object.keys(o).forEach(k=>{ if(!soft||!PT[k]) PT[k]=o[k]; })}; }
   const openOrder=id=>needMore().then(m=>m.openOrder(id));
   const openSwap=id=>needMore().then(m=>m.openSwap(id));
   const openVerName=id=>needMore().then(m=>m.openVerName(id));
@@ -1517,7 +1512,7 @@ const plannerFn=function planner(g){
   /* ---------- boot ---------- */
   function labels(){
     view.querySelectorAll('[data-pt]').forEach(el=>{ el.textContent=pt(el.dataset.pt); });
-    svg.querySelector('title').textContent=pt('mapTitle');
+    E.mapEl.setAttribute('aria-label',pt('mapTitle'));
     E.days.setAttribute('aria-label',pt('days'));
     g.querySelectorAll('.pl-layer').forEach(el=>{ el.lang=lang(); });
     mapState();
@@ -1535,20 +1530,12 @@ const plannerFn=function planner(g){
   }
   /* note 41 */
   const lazy={travel:false,routes:false,photos:false};
-  /* the coastline is written only between gestures: a write that lands mid-pan waits for afterUI() */
-  let LANDQ=null;
-  /* the light coast never replaces the full one, whichever arrives first */
-  let LANDLV=0, LANDLO=false;
-  function putLand(t,lv){ lv=lv||2; if(!t||lv<LANDLV) return; if(busyUI()){ LANDQ=[t,lv]; return; } LANDQ=null; LANDLV=lv; svg.querySelector('.pl-land').innerHTML=t; }
-  /* the light coast is for a visible map: on a phone's ① the map is hidden, so it waits */
-  function loadLandLo(){ if(LANDLO) return; LANDLO=true; fetch(SRC+'land-lo.svg.html').then(r=>r.ok?r.text():'').then(t=>putLand(t,1)).catch(()=>{ LANDLO=false; }); }
   /* new minutes: the candidates list re-ranks, but an open day picker keeps its place and only re-simulates */
   function refreshPicks(){ if(sheetKind==='browse') renderList(); }
   function loadLazy(){
     /* a phone on ① waits for its first scroll (or a sheet) before the 56 KB gallery */
     if(S.stage!=='collect'||view.clientWidth>=1024) loadGallery(); else addEventListener('scroll',()=>loadGallery(),{once:true,passive:true});
     if(!MOREP) needMore(true).catch(()=>{});      /* the drawer and the other sheets, before the first tap on them */
-    if(!lazy.land){ lazy.land=true; idle(()=>fetch(SRC+'land.svg.html').then(r=>r.ok?r.text():'').then(putLand).catch(()=>{ lazy.land=false; }),4000); }
     if(!lazy.travel) fetch(SRC+'travel.json').then(r=>r.ok?r.json():null).then(t=>{
       if(!t||!Array.isArray(t.ids)||!Array.isArray(t.min)) return;
       lazy.travel=true; DB.travel=t; DB.tIdx={}; t.ids.forEach((id,i)=>{ DB.tIdx[id]=i; }); dirty('main','map','stages','desk','review'); refreshPicks(); }).catch(()=>{});
@@ -1556,6 +1543,8 @@ const plannerFn=function planner(g){
       if(j&&typeof j==='object'&&!Array.isArray(j)){ DB.routes=j; lazy.routes=true; } DB.routesLoaded=true; if(S.sc&&!DRAG) renderLegs(); });
     loadMore();
     loadPhotos();
+    /* the map's engine (planner-map.js, then MapLibre itself), warmed for when the map first shows */
+    if(!EN) idle(()=>libMap().then(m=>m.preload()).catch(()=>{}),6000);
   }
   /* the day's hero is on the first screen (it is the LCP), so its index loads right after boot */
   function loadPhotos(){ if(!lazy.photos&&!lazy.photosP) lazy.photosP=fetch(SRC+'photos.json').then(r=>r.ok?r.json():null).then(j=>{ if(j&&typeof j==='object'){ DB.photos=j; lazy.photos=true; dirty('main','desk'); if(CM) CM.media(); } }).catch(()=>{}).then(()=>{ lazy.photosP=null; }); }
@@ -1630,7 +1619,7 @@ const plannerFn=function planner(g){
     E.notice.addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(!b) return;
       if(b.dataset.act==='hideinstall'){ S.hideInstall=true; saveUI(); renderNotice(); }
       if(b.dataset.act==='purge'){ S.versions=S.versions.filter(v=>v.kind!=='auto'); S.hist=[]; if(saveNow()) toast(pt('purged')); renderTop(); } });
-    document.addEventListener('langchange',()=>{ labels(); DB.list.forEach(p=>{ delete p._s; }); render(); renderNotice(); select(null); if(!DRAG) refreshSheet(); });
+    document.addEventListener('langchange',()=>{ labels(); if(EN) EN.setLang(lang()); DB.list.forEach(p=>{ delete p._s; }); render(); renderNotice(); select(null); if(!DRAG) refreshSheet(); });
     addEventListener('hashchange',()=>{ importHash(); const u=/^#(collect|review|plan)(?:\/(\d+))?$|^#place=([\w.-]+)$/.exec(location.hash); if(!u) return;
       if(u[3]){ if(DB.places.has(u[3])&&!(sheetKind==='place'&&sheetArg.id===u[3])) openPlace(u[3]); return; }
       setStage(u[1]); const di=u[2]?DB.days.findIndex(d=>+d.date.slice(8)===+u[2]):-1; if(di>=0) setDay(di); });
@@ -1652,14 +1641,12 @@ const plannerFn=function planner(g){
     Object.defineProperty(view,'_pl',{value:{sim:id=>DB.days.map(d=>{ const sc=schedule(d,null,findPlan(id)||plan());
       return {date:d.date,drive:Math.round(sc.drive),end:hm(sc.end),rows:sc.rows.slice(1).map(r=>[r.kind==='end'?hm(r.arr):hm(r.begin),r.kind==='end'?'':hm(r.dep),r.id,Math.round(r.leg.min)]),
         warns:sc.rows.flatMap(r=>r.warns.map(w=>w.k)).concat(sc.long?['long']:[])}; }), ready:()=>lazy.travel,
-      /* tools/e2e.html: is a gesture or tween still thought to be running; how much coastline is drawn */
-      busy:()=>busyUI(), land:()=>svg.querySelectorAll('.pl-land path').length, places:()=>DB.places.size,
+      /* tools/e2e.html: is a camera move still thought to be running; what the map shows and holds */
+      busy:()=>busyUI(), engine:()=>EN, map:()=>({mode:E.card.dataset.mode||'',ready:!!EN,pins:PINS.length,feats:Object.fromEntries(Object.keys(DATA).map(k=>[k,DATA[k].features.length]))}), places:()=>DB.places.size,
       code:()=>needMore(true).then(m=>m.codeNow()), tier:id=>tierOf(id), trip:()=>S.trip, gal:loadGallery, open:openPlace, more:()=>needMore(), sync:loadSync, flush:flushSave}});
     if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{});
   }
   const get=u=>fetch(u).then(r=>{ if(!r.ok) throw new Error(u+' '+r.status); return r.json(); });
-  /* A light coastline (5 KB gz) paints first; the full one replaces it when the page is idle. */
-  if(S.stage!=='collect'||view.clientWidth>=640) loadLandLo();
   Promise.all([get(SRC+'places.json'),get(SRC+'plans.json')]).then(init)
     .catch(err=>{ main.innerHTML=`<p class="pl-hint">${pt('loadFail')}</p>`; console.error(err); });
 };

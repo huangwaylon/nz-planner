@@ -55,7 +55,7 @@ const PTI={
   impCount:{ja:'取り込み済み {n}件',en:'{n} imported'}
 };
 plimport.ui=function(c){
-  const {S,DB,E,view,svg,slug,SRC,pt,esc,ic,head,toast,undo,pushHist,impChanged,place,nm,hav,isCand,mapState,saveUI,select,afterRender,unprj,ja,showCands,closeSheet,stopPlacing}=c;
+  const {S,DB,E,view,slug,SRC,pt,esc,ic,head,toast,undo,pushHist,impChanged,place,nm,hav,isCand,mapState,saveUI,select,afterRender,unprj,ja,showCands,closeSheet,stopPlacing}=c;
   const {LAT0,LAT1,LON0,LON1}=c.frame;
   c.addStrings(PTI);
   /* ---------- import: Google Maps (Takeout now, shared links once the backend exists) and the
@@ -237,7 +237,7 @@ plimport.ui=function(c){
     impChanged(); afterRender(()=>select(id,'cand',true)); toast(pt('placed',{name:m.name}),undo);
   }
   function placeAt(x,y){
-    const id=S.placing, c=svg.getScreenCTM(), ux=(x-c.e)/c.a, uy=(y-c.f)/c.d, ll=unprj(ux,uy);
+    const id=S.placing, ll=c.toLL(x,y); if(!ll) return;
     stopPlacing(); setImportPos(id,ll[0],ll[1]);
   }
   /* Nominatim: user-initiated, one request a second at most, inside the map frame. */

@@ -133,8 +133,9 @@ into the map, every ① card is re-rendered, and every edit re-renders the whole
    the same task. Take the width from ResizeObserver entries, not from layout reads.
 4. **No hidden heavy DOM.** Things that are not shown are not built: candidate pins, ① when on ②,
    off-screen sheets. `display:none` is not free on SVG.
-5. **Map:** at most ~500 SVG nodes that change per frame. Large point sets go on canvas or into
-   clusters. Write `--z` on the pin layer, once per settle, never from a resize in flight.
+5. **Map:** MapLibre draws it. HTML markers only for the day's own pins (a dozen or so); large
+   point sets (candidates, other days) go in GL layers, candidates clustered. Nothing is written
+   per frame; `setData` once per change, never from a move in flight.
 6. **Id lookups go through `Map`s,** never `querySelector('[data-id=…]')` in a loop, and never
    `Array.find` inside a filter over `DB.list`.
 7. **Input:**

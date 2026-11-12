@@ -6,7 +6,7 @@
 .v-plan,.pl-layer{
   --pl-warn:#a3243b;
   --pl-tint:color-mix(in srgb,var(--ink) 6%,transparent);
-  --pl-land:var(--bg-2); --pl-coast:var(--acc-d); --pl-scrim:var(--scrim,14,16,34);
+  --pl-scrim:var(--scrim,14,16,34);
   /* type (docs/WORKFLOW.md "Type and colour system"): one sans family, two weights, five sizes, line boxes on 4 px */
   --pl-font:"Hiragino Sans","Hiragino Kaku Gothic ProN",-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;
   --pl-fs-s:.75rem; --pl-fs-m:.875rem; --pl-fs-l:1.0625rem; --pl-fs-xl:1.375rem; --pl-fs-d:2.5rem;
@@ -377,35 +377,32 @@ summary.pl-cs__head{cursor:pointer;}
 .pl-mapcard.pl-full .pl-mapbox{height:calc(100vh - 232px);height:calc(100dvh - 232px);}
 .pl-stick.pl-scrolled .pl-mapcard.pl-full .pl-mapbox{height:calc(40vh - 80px);height:calc(40dvh - 80px);}
 .pl-mapcard.pl-closed .pl-mapbox{height:0;}
-.v-plan svg.pl-map{--z:1;display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none;}
-.pl-map .pl-sea{fill:var(--map-sea);}
-.pl-map .pl-land path{fill:var(--pl-land);stroke:var(--pl-coast);stroke-width:calc(1.6px / var(--z));stroke-linejoin:round;}
-.pl-map .pl-s{transform:scale(calc(1 / var(--z)));}      /* each pin's inner group holds its screen size */
-/* legs: solid road geometry, a solid thinner arc where the road is not known yet, dotted only for boats */
-.pl-map .pl-leg-road{fill:none;stroke:var(--c);stroke-linecap:round;stroke-linejoin:round;stroke-width:calc(4px / var(--z));opacity:.92;}
-.pl-map .pl-leg-est{fill:none;stroke:var(--c);stroke-linecap:round;stroke-width:calc(2.6px / var(--z));opacity:.62;}
-.pl-map .pl-leg-ferry{fill:none;stroke:var(--c);stroke-linecap:round;stroke-width:calc(3.4px / var(--z));stroke-dasharray:0 calc(7px / var(--z));opacity:.9;}
-.pl-map .pl-estmk text{font:600 var(--pl-fs-s) var(--pl-font);fill:var(--ink);stroke:var(--map-sea);stroke-width:4px;paint-order:stroke;text-anchor:middle;dominant-baseline:central;}
+.v-plan .pl-map{position:absolute;inset:0;background:var(--map-sea);font-family:var(--pl-font);}   /* MapLibre's host (planner-map.js) */
+.pl-map .maplibregl-ctrl-bottom-left{bottom:calc(var(--pl-h-m) + var(--pl-s-2));}   /* the credit sits above the map foot */
+.pl-mapcard.pl-closed .pl-map{visibility:hidden;}
+/* the day's pins: HTML markers, one 40 px svg each, drawn at screen size */
+.pl-map .pl-pin{cursor:pointer;width:var(--pl-m-s);height:var(--pl-m-s);}
+.pl-map .pl-pin.pl-sel,.pl-map .pl-pin.is-hot{z-index:1;}
+.pl-map .pl-pinsvg{display:block;width:100%;height:100%;overflow:visible;}
 .pl-map .pl-hit{fill:transparent;}
-.pl-map .pl-cands{display:none;}
-.pl-map.pl-show-cands .pl-cands{display:inline;}
-.pl-map .pl-others .pl-mk{fill:var(--c);stroke:var(--surface);stroke-width:1px;}
-.pl-map .pl-cands .pl-mk{fill:var(--surface);stroke:var(--muted);stroke-width:1.4px;}
-.pl-map .pl-cands .pl-pin.pl-sel .pl-mk{stroke:var(--ink);stroke-width:2.4px;}
-.pl-map .pl-stops .pl-mk{fill:var(--c);stroke:var(--surface);stroke-width:2px;}
+.pl-map .pl-pin .pl-mk{fill:var(--c);stroke:var(--surface);stroke-width:2px;}
 .pl-map .pl-anc .pl-mk{fill:var(--ink);}
 .pl-map .pl-num{fill:var(--surface);font:600 var(--pl-fs-s) var(--pl-font);text-anchor:middle;dominant-baseline:central;pointer-events:none;}
 .pl-map .pl-anc use{color:var(--surface);pointer-events:none;}
 .pl-map .pl-ring{fill:none;stroke:var(--c);stroke-width:2.4px;opacity:0;transition:opacity var(--pl-t-2);}
 .pl-map .pl-pin.pl-sel .pl-ring{opacity:.7;}
-.pl-map .pl-lab{font:600 var(--pl-fs-s) var(--pl-font);fill:var(--ink);stroke:var(--surface);stroke-width:4px;paint-order:stroke;stroke-linejoin:round;pointer-events:none;}
-.pl-map .pl-pin{cursor:pointer;}
-.pl-map .pl-cands .pl-impin .pl-mk{fill:var(--surface);stroke:var(--acc);stroke-width:2px;}
-.pl-map .pl-cands .pl-impin .pl-ring{stroke:var(--acc);}
 .pl-map .pl-svm{fill:var(--ink);stroke:var(--surface);stroke-width:1.2px;}
-.pl-map .pl-cands .pl-svpin .pl-mk{stroke:var(--ink);}
-.pl-map .pl-leg-walk{fill:none;stroke:var(--c);stroke-linecap:round;stroke-width:calc(3px / var(--z));stroke-dasharray:0 calc(6px / var(--z));opacity:.9;}
-.pl-map .pl-boot text{font-size:var(--pl-fs-m);stroke:none;}
+/* the one shared name label: a zero-size marker, its text beside the pin */
+.pl-map .pl-labm{width:0;height:0;z-index:2;pointer-events:none;}
+.pl-map .pl-lab{position:absolute;left:var(--pl-s-4);top:0;transform:translateY(-50%);white-space:nowrap;font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--ink);
+  -webkit-text-stroke:4px var(--surface);paint-order:stroke fill;}
+.pl-map .pl-lab--r{left:auto;right:var(--pl-s-4);}
+.pl-map .pl-lab--sm{left:var(--pl-s-3);}
+.pl-map .pl-lab--sm.pl-lab--r{left:auto;right:var(--pl-s-3);}
+.pl-mapnote{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:var(--pl-s-2);margin:0;padding:var(--pl-s-2) var(--pl-s-3);border-radius:var(--pl-r-2);
+  background:var(--surface);box-shadow:var(--pl-e-1);font:400 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);color:var(--muted);}
+.pl-mapnote[hidden],.pl-mapcard.pl-closed .pl-mapnote{display:none;}
+.pl-mapcard[data-mode="offline"] .pl-mapnote{top:auto;bottom:calc(var(--pl-h-m) + var(--pl-s-4));transform:translateX(-50%);}
 .pl-mapctl{position:absolute;top:var(--pl-s-2);right:var(--pl-s-2);display:flex;flex-direction:column;gap:var(--pl-s-1);}
 .pl-mapcard.pl-closed .pl-mapctl,.pl-mapcard.pl-closed .pl-estnote{display:none;}
 .pl-stick.pl-scrolled .pl-mapcard:not(.pl-full) .pl-mapctl :is([data-zoom="in"],[data-zoom="out"],[data-zoom="fit"]){display:none;}
@@ -420,7 +417,7 @@ summary.pl-cs__head{cursor:pointer;}
 .pl-sentinel{height:1px;}
 .pl-stick.pl-scrolled .pl-mapcard:not(.pl-full) .pl-mapfoot .pl-btn span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
 .pl-mapcard.pl-placemode .pl-mapbox{outline:3px solid var(--acc);outline-offset:-3px;}
-.pl-mapcard.pl-placemode .pl-map{cursor:crosshair;}
+.pl-mapcard.pl-placemode .pl-map .maplibregl-canvas{cursor:crosshair;}
 .pl-placing{position:absolute;left:var(--pl-s-2);right:calc(var(--pl-h-m) + var(--pl-s-3));top:var(--pl-s-2);display:flex;align-items:center;gap:var(--pl-s-2);padding:var(--pl-s-1) var(--pl-s-1) var(--pl-s-1) var(--pl-s-3);border-radius:var(--pl-r-2);
   background:var(--ink);color:var(--surface);font:600 var(--pl-fs-s)/var(--pl-lh-s) var(--pl-font);}
 .pl-placing span{flex:1;min-width:0;}

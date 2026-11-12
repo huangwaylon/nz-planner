@@ -101,12 +101,13 @@
     ok(await until(() => rows().length === n1), 'after a reload the day has the same stops');
     ok(!!q('main .pl-stop[data-id="' + IMP.id + '"]'), 'the import survives a second reload');
 
-    /* a day tap animates the map; afterwards nothing may think a gesture is still running, and the
-       full coastline must still arrive (R3 QA P1-2: M.tw was never cleared) */
+    /* a day tap moves the map's camera; afterwards nothing may think a move is still running (R3 QA P1-2),
+       and the map is MapLibre's, drawing the day's pins and legs */
     day(2).click();
+    ok(await until(() => view()._pl.map().ready, 15000), 'the map engine (planner-map.js, MapLibre) starts');
     await wait(900);
     ok(view()._pl.busy() === false, 'no gesture or tween is left running after a day tap');
-    ok(await until(() => view()._pl.land() > 20, 12000), 'the full coastline replaces the light one after the tap');
+    { const m = view()._pl.map(); ok(m.pins > 0 && m.feats.legs > 0 && !!q('.pl-map canvas.maplibregl-canvas'), 'the day draws as HTML pins over GL legs: ' + JSON.stringify(m)); }
     day(4).click(); await wait(900);
     ok(view()._pl.busy() === false, 'still idle after a second animated move');
 
@@ -318,7 +319,7 @@
     ok(await until(() => wq('.pl-palette .pl-row[data-drag]'), 12000), 'at 1440 the desk chunk loads and the palette fills');
     const R = s => wq(s).getBoundingClientRect(), pal = R('.pl-palette'), mn = R('.pl-main'), mp = R('.pl-mapcard');
     ok(pal.right <= mn.left + 1 && mn.right <= mp.left + 1 && wd().documentElement.scrollWidth <= wf.contentWindow.innerWidth, 'palette | day | map side by side, no sideways scroll');
-    const mapNode = wq('svg.pl-map');
+    const mapNode = wq('.pl-map');
     /* ① at 1440: the keys (3) tier the focused card, and the rail sits beside the cards */
     wq('.pl-stages [data-stage="collect"]').click();
     const k1 = await until(() => wq('.pl-collect .pl-cs[data-k=""] .pl-card'), 6000);
@@ -358,7 +359,7 @@
     /* 1920: the 6-day board by default, every day on the map, the same map node */
     wf.style.width = '1920px'; wf.style.height = '1080px';
     ok(await until(() => wv().classList.contains('pl-6') && wd().querySelectorAll('.pl-bc').length === 6, 4000), 'at 1920 the 6-day board shows six columns');
-    ok(wq('svg.pl-map') === mapNode && wd().querySelectorAll('.pl-alld path').length > 0, 'the one map node draws every day');
+    ok(wq('.pl-map') === mapNode && await until(() => (wv()._pl.map().feats.alld || 0) > 0, 6000), 'the one map node draws every day');
     /* 6日: a stop dragged down its own lane onto the next row's lower half lands right after that row */
     const lane = [...wd().querySelectorAll('.pl-bc')].find(c => c.querySelectorAll('.pl-row[data-id]').length >= 3);
     if (lane) { const bs = [...lane.querySelectorAll('.pl-row[data-id]')], a0 = bs[0].dataset.id, b0 = bs[1].dataset.id, r0 = bs[0].getBoundingClientRect(), r1 = bs[1].getBoundingClientRect();

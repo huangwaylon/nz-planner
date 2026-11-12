@@ -1,6 +1,9 @@
 /* node tools/budget.test.js — the byte budget (docs/WORKFLOW.md "Budget"), gzip -9 of the shipped files.
-   - a phone's first screen on ② (the day view): the page, the shell, its CSS, places, plans and the light coastline
-   - a phone's first screen on ① (collect): the same without the coastline, plus the collect chunk
+   - a phone's first screen on ② (the day view): the page, the shell, its CSS, places and plans (and
+     planner-map.js if index.html loads it at boot; else it is a lazy chunk under its own cap)
+   - a phone's first screen on ① (collect): the same plus the collect chunk
+   - vendor/maplibre (the map engine and its worker) is off the critical path: planner-map.js import()s it
+     when the map first draws, so it is not counted here (it is checked below to stay out of index.html)
    - each lazy chunk under its own cap, loaded only by its trigger
    - sw.js never pre-caches the desktop chunk (the phone must not download it), and dist.sh ships
      every chunk the shell can ask for */
@@ -18,20 +21,23 @@ const SHELL = ['index.html', 'host.js', 'planner.js', 'planner.css', 'poc.css', 
 const core0 = fs.readFileSync(path.join(ROOT, 'planner.js'), 'utf8');
 const deferred = /afterPaint\(\(\)=>\{ loadPhotos\(\); loadFlags\(\);/.test(core0) && (core0.match(/loadPhotos\(\);/g) || []).length <= 2;
 if (!deferred) SHELL.push('data/nz/photos.json', 'data/nz/flags.json');
+const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const mapAtBoot = /<script[^>]+src="planner-map\.js"/.test(html);
+if (mapAtBoot) SHELL.push('planner-map.js');
 ok(deferred, 'photos.json and flags.json load after the first paint (else they count in the first screen)');
-const plan2 = sum(SHELL.concat(['data/nz/land-lo.svg.html']));
+const plan2 = sum(SHELL);
 /* 1.5 KB under the line: gzip output differs by platform (CI's Linux measured 830 B more than macOS) */
 const ROOM = 1500;
 ok(plan2 <= 100 * KB - ROOM, `phone ② first screen ${plan2} B gz (≤ 98 500, 1.5 KB under 100 000)`);
 const collect = ['planner-collect.js', 'planner-collect.css'];
 const plan1 = sum(SHELL.concat(collect));
-ok(plan1 <= 100 * KB - ROOM, `phone ① first screen ${plan1} B gz (≤ 98 500, 1.5 KB under 100 000; coastline deferred)`);
+ok(plan1 <= 100 * KB - ROOM, `phone ① first screen ${plan1} B gz (≤ 98 500, 1.5 KB under 100 000)`);
 /* the gallery (data and chunk) loads only from loadGallery(), which nothing on the boot path calls directly */
 const coreSrc = fs.readFileSync(path.join(ROOT, 'planner.js'), 'utf8');
 ok(!SHELL.concat(collect).some(f => /gallery/.test(f)) && (coreSrc.match(/'gallery\.json'/g) || []).length === 1 && /function loadLazy\(\)\{[^}]*loadGallery\(\)/.test(coreSrc),
   'gallery.json is fetched only by loadGallery(), from the deferred loadLazy() and on demand — not on the first screen');
 
-const CAPS = [[['planner-collect.js', 'planner-collect.css'], 7.5], [['planner-desk.js', 'planner-desk.css'], 16], [['planner-cal.js', 'planner-cal.css'], 6], [['planner-gallery.js', 'planner-gallery.css'], 2], [['planner-sync.js', 'planner-sync.css'], 8]];   /* sync: paired phones only, after paint */
+const CAPS = [[['planner-collect.js', 'planner-collect.css'], 7.5], [['planner-desk.js', 'planner-desk.css'], 16], [['planner-cal.js', 'planner-cal.css'], 6], [['planner-gallery.js', 'planner-gallery.css'], 2], [['planner-sync.js', 'planner-sync.css'], 8]].concat(mapAtBoot ? [] : [[['planner-map.js'], 9]]);   /* sync: paired phones only, after paint */
 const shellSrc = ['planner.js', 'planner-more.js'].map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
 /* desktop-only, after paint (coordinator's budget decision): 16 KB. A chunk counts once the shell or planner-more can load it; one still being built beside it is reported only */
 CAPS.forEach(([fs_, cap]) => { const n = sum(fs_); if (!fs_.some(has)) { console.log(`--   ${fs_[0]} not built yet`); return; }
@@ -39,8 +45,13 @@ CAPS.forEach(([fs_, cap]) => { const n = sum(fs_); if (!fs_.some(has)) { console
   if (live) ok(n <= cap * KB, `${fs_.join(' + ')} ${n} B gz (≤ ${cap * KB})`);
   else console.log(`--   ${fs_.join(' + ')} ${n} B gz (cap ${cap * KB}; not loaded by the shell yet)`); });
 
+ok(!/vendor\/maplibre/.test(html), 'index.html does not load vendor/maplibre (planner-map.js import()s it on first draw)');
+const dist0 = fs.readFileSync(path.join(ROOT, 'tools', 'dist.sh'), 'utf8');
+['planner-map.js', 'vendor/maplibre/maplibre-gl.js', 'vendor/maplibre/maplibre-gl-worker.js', 'vendor/maplibre/maplibre-gl.css'].forEach(f => ok(has(f) && dist0.includes(f), `dist.sh ships ${f}`));
+
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8'), app = (sw.match(/const APP = \[([^\]]*)\]/) || [])[1] || '';
 ok(app && !/planner-desk/.test(app), 'sw.js APP does not pre-cache the desktop chunk');
+ok(app && !/vendor\/maplibre/.test(app), 'sw.js APP does not pre-cache vendor/maplibre');
 const dist = fs.readFileSync(path.join(ROOT, 'tools', 'dist.sh'), 'utf8');
 const shell = shellSrc;
 const chunks = [...new Set([...shell.matchAll(/'((?:planner-[a-z]+|import|story)\.(?:js|css))'/g)].map(m => m[1]))];

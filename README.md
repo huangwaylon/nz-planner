@@ -1,11 +1,12 @@
 # NZ Planner
 
 A proof-of-concept trip planner for the New Zealand book of
-[travel-plans](https://github.com/huangwaylon/travel-plans): candidate places on an offline SVG map,
+[travel-plans](https://github.com/huangwaylon/travel-plans): candidate places on a MapLibre map of OpenStreetMap,
 preset versions of the trip, drag or tap to rearrange a day, and live times between stops. It
 is built to fold into that book as one more tab; see [docs/FOLD.md](docs/FOLD.md).
 
-Static, with no build step and no dependencies. Runs on GitHub Pages at $0. Japanese first,
+Static, with no build step and one vendored dependency (MapLibre GL, `vendor/maplibre/`). Runs on
+GitHub Pages at $0. Japanese first,
 English toggle. Made for Safari on iPhone.
 
 ## Run it
@@ -29,7 +30,6 @@ English toggle. Made for Safari on iPhone.
 | Drive-time matrix, OSRM free-flow | `tools/fetch.js` `startMatrix()` | `data/nz/travel.json` |
 | Road shapes for preset legs | `tools/fetch.js` `startRoutes()` → `tools/routes.py` | `data/nz/routes.json` |
 | Photos (Wikimedia Commons, CC only) | `tools/photos.js` → `tools/photos.py` | `images/nz/`, `data/nz/photos.json` |
-| Coastline (from the book's generator) | `tools/basemap.py` | `data/nz/land*.svg.html` |
 
 The `fetch.js` steps run inside Chrome, which is the only thing on the authoring machine that
 reaches OSRM, Nominatim and Commons. `tools/serve.py` serves the repo and accepts their results.
@@ -41,6 +41,15 @@ allowlist in `tools/dist.sh`, which refuses to publish if a private string appea
 it. `research/` and `SPEC.md` hold the traveller's profile and tester reports; they are
 gitignored and never published.
 
+## vendor/maplibre
+
+MapLibre GL 6.16 (`vendor/maplibre/VERSION`), loaded by `planner-map.js` with `import()` on the
+map's first draw. To update: `npm install maplibre-gl@<version>` somewhere scratch, then copy
+`dist/maplibre-gl.mjs` → `maplibre-gl.js` and `dist/maplibre-gl-worker.mjs` →
+`maplibre-gl-worker.js` (renamed: some hosts serve `.mjs` as octet-stream, which a module worker
+refuses), stripping the trailing `//# sourceMappingURL=` line, plus `dist/maplibre-gl.css` and
+`LICENSE.txt`. Bump `VERSION` and `SHELL` in `sw.js`.
+
 ## Privacy
 
 - Plans hold place ids, minutes and HH:MM times only.
@@ -49,7 +58,9 @@ gitignored and never published.
 
 ## Credits
 
-- Map data © OpenStreetMap contributors, ODbL. Routes and drive times from the OSRM demo server.
+- Map data © OpenStreetMap contributors, ODbL. Tiles from [OpenFreeMap](https://openfreemap.org),
+  schema © OpenMapTiles (CC-BY). Map engine [MapLibre GL](https://maplibre.org), BSD-3-Clause
+  (`vendor/maplibre/LICENSE.txt`). Routes and drive times from the OSRM demo server.
 - Tides from LINZ.
 - Photos from Wikimedia Commons; each photo's author and licence is shown under it and listed in
   `data/nz/photos.json`. The Pouākai Tarns photo is from the travel book.
