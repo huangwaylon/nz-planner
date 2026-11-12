@@ -189,6 +189,7 @@
 
     /* ---------- the workflow (docs/WORKFLOW.md): state v2, tiers, groups ---------- */
     const seedV1 = JSON.stringify({v: 1, active: 'my', my: {id: 'my', days, stay: {}, start: {}, notes: {piha: 'タオル'}}, versions: [], imports: [IMP], booked: {}});
+    flush();   /* nothing queued may land on pagehide over the seed */
     ['plan:nz:v1', 'plan:nz:broken', 'plan:nz:imp'].forEach(k => localStorage.removeItem(k));
     localStorage.setItem('plan:nz', seedV1);
     localStorage.setItem('plan-ui:nz', JSON.stringify({v: 1, day: 1, stage: 'collect', hideIntro: true, hideInstall: true, hints: {sort: 1, handoff: 1, add: 1}}));
@@ -217,6 +218,8 @@
     if (gname) { gname.value = 'テスト外出'; q('[data-act="cgnew"]').click(); }
     ok(view()._pl.trip().groups.some(g => g.name === 'テスト外出' && g.ids.indexOf(gid0) >= 0), '選択 then グループへ makes a group');
     const code = await view()._pl.code();
+    /* flush first: a save still queued for idle would otherwise land on pagehide, over the reset below */
+    flush();
     localStorage.setItem('plan:nz', JSON.stringify({v: 2, active: 'my', trip: {tier: {}, groups: [], notes: {}}, my: null, versions: [], booked: {}}));
     localStorage.removeItem('plan:nz:imp');
     await load(); await until(() => q('.pl-collect .pl-card'));
@@ -334,6 +337,8 @@
     wq('.pl-stages [data-stage="plan"]').click(); await wait(500);
     ok(!wq('.pl-collect .pl-card'), 'leaving ① tears its cards down');
     /* Alt+→ on a stop: clean moves at once; ⚠ arms on the item (Enter / Esc), never a timed second press */
+    /* the day's list may still re-render after the stage switch on a slow runner: take a row that stays put */
+    let prevRow = null; await until(() => { const r = wq('.pl-main .pl-stop'); const same = r && r === prevRow; prevRow = r; return same; }, 6000);
     { const row = wq('.pl-main .pl-stop'), rid = row && row.dataset.id, d0 = wv()._pl.sim('my').findIndex(d => d.rows.some(r => r[2] === rid));
       if (row && d0 >= 0 && d0 < 5) { (row.querySelector('button') || row).focus(); wd().dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowRight', key: 'ArrowRight', altKey: true, bubbles: true}));
         /* the move waits on planner-more's load; on CI that shares the CPU with the map's first draw */

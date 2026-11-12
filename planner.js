@@ -514,11 +514,12 @@ const plannerFn=function planner(g){
     const b=body(); if(b!==lastW){ LS.set(KP,b); const k=LS.get(KP)===b; if(k) lastW=b; ok=ok&&k; }
     noteSave(ok); if(SY) SY.saved(); return ok; }
   function save(){ if(!saveQ) saveQ=idle(saveNow,1000); return true; }
-  const flushSave=()=>{ if(saveQ){ (window.cancelIdleCallback||clearTimeout)(saveQ); saveNow(); } };
+  /* the plan, and a UI save still waiting for idle (the day picked just before the tab hides) */
+  const flushSave=()=>{ if(saveQ){ (window.cancelIdleCallback||clearTimeout)(saveQ); saveNow(); } if(uiP){ clearTimeout(uiT); saveUI(); } };
   /* sync (planner-sync.js) loads only on a paired phone, or to read a #pair= link */
   let SY=null, SYP=null; const loadSync=()=>SYP||(SYP=Promise.all([loadCss('pl-sync',view.dataset.syncCss||'planner-sync.css'),loadJs(view.dataset.syncSrc||'planner-sync.js')]).then(()=>SY=planner.sync(ctx()),()=>{ SYP=null; }));
-  let uiT=0; const saveUISoon=()=>{ clearTimeout(uiT); uiT=setTimeout(()=>idle(saveUI,2000),400); };
-  function saveUI(){ LSJ.set(KU,{v:1,stage:S.stage,cf:S.cf,board:S.board,pin:S.pin,day:S.day,map:S.map==='full'?'peek':S.map,dayEnd:S.dayEnd!==DEADLINE?hhmm(S.dayEnd):undefined,hideInstall:S.hideInstall,hideIntro:S.hideIntro,hints:S.hints,routes:RC.map,rorder:RC.order}); }
+  let uiT=0, uiP=false; const saveUISoon=()=>{ uiP=true; clearTimeout(uiT); uiT=setTimeout(()=>idle(()=>{ if(uiP) saveUI(); },2000),400); };
+  function saveUI(){ uiP=false; LSJ.set(KU,{v:1,stage:S.stage,cf:S.cf,board:S.board,pin:S.pin,day:S.day,map:S.map==='full'?'peek':S.map,dayEnd:S.dayEnd!==DEADLINE?hhmm(S.dayEnd):undefined,hideInstall:S.hideInstall,hideIntro:S.hideIntro,hints:S.hints,routes:RC.map,rorder:RC.order}); }
   function noteSave(ok){ if(ok===!S.saveFail) return; S.saveFail=!ok; renderNotice(); }
   const bodyOf=p=>JSON.stringify([p.days,p.stay||{},p.start||{},p.notes||{},p.stayDay||{}]);
   const nowHM=()=>{ const d=new Date(); return (d.getMonth()+1)+'/'+d.getDate()+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); };
