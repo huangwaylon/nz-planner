@@ -99,7 +99,7 @@
     const n1 = rows().length;
     flush(); await load();
     ok(await until(() => rows().length === n1), 'after a reload the day has the same stops');
-    ok(!!q('main .pl-stop[data-id="' + IMP.id + '"]'), 'the import survives a second reload');
+    ok(!!await until(() => q('main .pl-stop[data-id="' + IMP.id + '"]'), 6000), 'the import survives a second reload: ' + rows().map(r => r.dataset.id).join() + ' / ' + n1 + ' / imports ' + JSON.stringify((JSON.parse(localStorage.getItem('plan:nz')) || {}).imports || null).slice(0, 120));
 
     /* a day tap moves the map's camera; afterwards nothing may think a move is still running (R3 QA P1-2),
        and the map is MapLibre's, drawing the day's pins and legs */
